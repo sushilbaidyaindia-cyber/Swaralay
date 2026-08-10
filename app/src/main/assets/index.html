@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>স্বরালয় · Swaralay</title>
+    <style>
+        :root { --bg: #121212; --panel: #1e1e2f; --accent: #00d2ff; --text: #ffffff; --danger: #ff4757; --success: #20bf6b; --warning: #ff9f43; --purple: #9b59b6; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 80px; }
+        .header { background: linear-gradient(180deg, #1a1a2e 0%, #161625 100%); padding: 16px 12px 14px; text-align: center; font-size: 24px; font-weight: 700; letter-spacing: 1px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.45); margin: 0; border-bottom: 1px solid #2a2a45; }
+        .header-sub { display:block; font-size:11px; font-weight:500; color:#888; letter-spacing:2px; margin-top:2px; }
+        
+        .tabs { display: flex; background: #1c1c2e; position: fixed; bottom: 0; width: 100%; box-shadow: 0 -4px 20px rgba(0,0,0,0.55); z-index: 100; border-top: 1px solid #2a2a40; }
+        .tab-btn { flex: 1; padding: 15px 2px; text-align: center; cursor: pointer; border: none; background: none; color: #888; font-size: 13px; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { color: var(--accent); border-top: 3px solid var(--accent); background: #2a2a40; }
+        
+        .content { padding: 20px; display: none; max-width: 600px; margin: auto; }
+        .content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        h2 { color: var(--accent); margin-top: 0; font-size: 18px; font-weight: 700; border-bottom: 1px solid #2e2e48; padding-bottom: 10px; letter-spacing: 0.3px; }
+        button { padding: 12px 15px; background: var(--accent); border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; margin-top: 10px; }
+        button:active { transform: scale(0.98); }
+        button.danger { background: var(--danger); color: #fff; }
+        button.secondary { background: #383854; color: #fff; }
+        
+        input[type=file] { width: 100%; padding: 10px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; }
+        input[type=range] { width: 100%; margin: 10px 0; accent-color: var(--accent); }
+        .input-group { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+        .input-group input[type=number], .input-group input[type=text], .input-group select { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; }
+        
+        .card { background: var(--panel); padding: 18px; border-radius: 14px; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.28); border: 1px solid #2a2a40; }
+        
+        .stepper-group { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .stepper-group input[type=number] { width: 80px; text-align: center; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; font-weight: bold; font-size: 16px; margin: 0; }
+        .stepper-btn { padding: 10px 15px; background: #383854; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: auto; margin: 0; flex: 0 0 auto;}
+        .stepper-btn:hover { background: #50507a; }
+        .time-box-group { flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 4px; background:#2a2a40; padding:6px; border-radius:8px; }
+        .time-box-group input { text-align: center; margin: 0; padding: 8px 4px; }
+        .time-box-group .stepper-btn { padding: 8px 4px; font-size: 13px; width: 100%; }
+        .time-box-group .del-time-btn { background: var(--danger); }
+        .time-box-group .del-time-btn:hover { background: #ff6b6b; }
+        .time-box-label { text-align:center; font-size:10px; color:#888; }
+
+        .track-row { background: #2a2a40; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; flex-direction: column; gap: 8px; }
+        .track-row-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .mini-btn { padding: 8px 12px; font-size: 12px; margin: 0; width: auto; flex: 0 0 auto; }
+        
+        .editor-nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #333; scrollbar-width: none; }
+        .editor-nav::-webkit-scrollbar { display: none; }
+        .editor-sub-tab { flex: 0 0 auto; width: auto; margin-top: 0; padding: 10px 15px; background: #2a2a40; color: #ccc; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid #444; white-space: nowrap; transition: 0.2s;}
+        .editor-sub-tab.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
+        .editor-panel { display: none; animation: fadeIn 0.3s; }
+        .editor-panel.active { display: block; }
+
+        .loading-text { display: none; color: var(--accent); font-weight: bold; margin-top: 10px; text-align: center; }
+        
+        .track-list { background: var(--panel); border-radius: 8px; max-height: 250px; overflow-y: auto; margin-top: 15px; }
+        .track-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center;}
+        .track-item.playing { color: var(--accent); font-weight: bold; background: #2a2a40; border-left: 4px solid var(--accent); }
+        .controls { display: flex; justify-content: space-between; gap: 4px; margin-top: 15px; }
+        .controls button { flex: 1; padding: 10px 0; font-size: 10px; border-radius: 5px; background: #2a2a40; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .controls button span { font-size: 14px; margin-bottom: 3px; }
+        .controls button:nth-child(3) { background: var(--accent); color: black; font-weight: bold; transform: scale(1.1); font-size: 11px;}
+        .time-display { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-top: -5px; }
+        
+        .playlist-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px;}
+        .del-btn { background: var(--danger); padding: 5px 8px; border-radius: 4px; color: white; font-size: 10px; margin: 0; width: auto;}
+
+        .rec-indicator { display: inline-block; width: 10px; height: 10px; background: red; border-radius: 50%; margin-right: 5px; animation: blink 1s infinite; display: none; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        .fx-label { font-size: 12px; display: block; font-weight: bold; margin-top: 12px; }
+        .fx-label.noise { color: var(--success); }
+        .fx-label.bass { color: var(--accent); }
+        .fx-label.treble { color: var(--accent); }
+        .fx-label.echo { color: var(--purple); }
+        .fx-label.reverb { color: var(--purple); }
+    </style>
+</head>
+<body>
+
+    <h1 class="header">স্বরালয়<span class="header-sub">SWARALAY</span></h1>
+
+    <!-- 🎵 PLAYER TAB -->
+    <div id="player" class="content active">
+        <div class="card">
+            <h2>🎵 প্লেয়ার</h2>
+            <input type="file" id="fileInput" multiple accept="audio/*" aria-label="Select audio files">
+            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-label="Select folder of audio files">
+            <button type="button" onclick="document.getElementById('folderInput').click()" style="background: var(--purple); color:#fff; margin-top:10px;">📁 পুরো ফোল্ডার অ্যাড করুন (সব গান একসাথে)</button>
+            <div id="nowPlayingSection" style="background: #2a2a40; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #00d2ff;">
+                <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">কোনো গান নেই</h4>
+                <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span id="totalTime">0:00</span>
+                </div>
+                <div class="controls">
+                    <button onclick="prevTrack()" aria-label="Previous Track"><span>⏮</span>Prev</button>
+                    <button onclick="rewind()" aria-label="Rewind"><span>⏪</span>-<b class="skip-val">10</b>s</button>
+                    <button onclick="togglePlay()" id="playPauseBtn" aria-label="Play"><span>▶</span>Play</button>
+                    <button onclick="fastForward()" aria-label="Fast Forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
+                    <button onclick="nextTrack()" aria-label="Next Track"><span>⏭</span>Next</button>
+                </div>
+                <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:15px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
+                <p id="playlistMsg" style="color: var(--success); font-size:12px; text-align:center; display:none; margin-top:10px;" aria-live="polite">Added to DB Playlist!</p>
+            </div>
+        </div>
+
+        <div class="playlist-header">
+            <h3 style="margin:0; font-size:16px;">📂 Selected Files</h3>
+            <button onclick="loadDbPlaylist()" style="margin:0; width:auto; padding:5px 10px; background:var(--warning); color:#000;">📑 View DB Playlist</button>
+        </div>
+        <div class="track-list" id="trackList"></div>
+    </div>
+
+    <!-- ✂️ EDITOR TAB -->
+    <div id="editor" class="content">
+        
+        <div class="editor-nav" role="tablist" aria-label="Editor Tools">
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-cut" onclick="openEditorPanel('panel-cut', this)">✂️ Cut</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-merge" onclick="openEditorPanel('panel-merge', this)">🔗 Merge</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-mix" onclick="openEditorPanel('panel-mix', this)">🎛️ Mix</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-boost" onclick="openEditorPanel('panel-boost', this)">🔊 Booster</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-pitch" onclick="openEditorPanel('panel-pitch', this)">🎼 Pitch</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-fx" onclick="openEditorPanel('panel-fx', this)">🚀 FX</button>
+        </div>
+
+        <!-- Empty state when no sub-tab selected -->
+        <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
+            <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
+            <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">এডিটর টুল বেছে নিন</p>
+            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX</p>
+        </div>
+
+        <!-- 1. CUTTER PANEL -->
+        <div id="panel-cut" class="editor-panel card">
+            <h2>✂️ Audio Cutter</h2>
+            <input type="file" id="cutFile" accept="audio/*" aria-label="Select file to cut">
+            <audio id="cutterAudioPlayer" controls style="display: none; width:100%; border-radius:5px; margin-top:10px;"></audio>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <button class="secondary" onclick="setCutStart()" style="background: var(--success);">📍 Set Start</button>
+                <button id="cutPlayPauseBtn" onclick="toggleCutterPlayback()" style="background: var(--accent); color:#000; flex:0 0 60px;" aria-label="Play/Pause">▶</button>
+                <button class="secondary" onclick="setCutEnd()" style="background: var(--danger);">📍 Set End</button>
+            </div>
+            <input type="hidden" id="cutStart" value="0">
+            <input type="hidden" id="cutEnd" value="0">
+
+            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">Start Time (মিনিট : সেকেন্ড : মিলিসেকেন্ড)</label>
+            <div style="display:flex; gap:6px;">
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartMin', 1, 0)" aria-label="Increase Start Minute">➕</button>
+                    <input type="number" id="cutStartMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="মিনিট" aria-label="Start Minute">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartMin', -1, 0)" aria-label="Decrease Start Minute">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartMin')" aria-label="Clear Start Minute">🗑</button>
+                    <span class="time-box-label">মিনিট</span>
+                </div>
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartSec', 1, 0, 59)" aria-label="Increase Start Second">➕</button>
+                    <input type="number" id="cutStartSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="সেকেন্ড" aria-label="Start Second">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartSec', -1, 0, 59)" aria-label="Decrease Start Second">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartSec')" aria-label="Clear Start Second">🗑</button>
+                    <span class="time-box-label">সেকেন্ড</span>
+                </div>
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartMs', 1, 0, 999)" aria-label="Increase Start Millisecond">➕</button>
+                    <input type="number" id="cutStartMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="মিলি সেকেন্ড" aria-label="Start Millisecond">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutStartMs', -1, 0, 999)" aria-label="Decrease Start Millisecond">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartMs')" aria-label="Clear Start Millisecond">🗑</button>
+                    <span class="time-box-label">মিলি সে.</span>
+                </div>
+            </div>
+
+            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">End Time (মিনিট : সেকেন্ড : মিলিসেকেন্ড)</label>
+            <div style="display:flex; gap:6px;">
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndMin', 1, 0)" aria-label="Increase End Minute">➕</button>
+                    <input type="number" id="cutEndMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="মিনিট" aria-label="End Minute">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndMin', -1, 0)" aria-label="Decrease End Minute">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndMin')" aria-label="Clear End Minute">🗑</button>
+                    <span class="time-box-label">মিনিট</span>
+                </div>
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndSec', 1, 0, 59)" aria-label="Increase End Second">➕</button>
+                    <input type="number" id="cutEndSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="সেকেন্ড" aria-label="End Second">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndSec', -1, 0, 59)" aria-label="Decrease End Second">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndSec')" aria-label="Clear End Second">🗑</button>
+                    <span class="time-box-label">সেকেন্ড</span>
+                </div>
+                <div class="time-box-group">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndMs', 1, 0, 999)" aria-label="Increase End Millisecond">➕</button>
+                    <input type="number" id="cutEndMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="মিলি সেকেন্ড" aria-label="End Millisecond">
+                    <button class="stepper-btn" onclick="stepTimeBox('cutEndMs', -1, 0, 999)" aria-label="Decrease End Millisecond">➖</button>
+                    <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndMs')" aria-label="Clear End Millisecond">🗑</button>
+                    <span class="time-box-label">মিলি সে.</span>
+                </div>
+            </div>
+            
+
+            <div class="input-group">
+                Name: <input type="text" id="cutName" value="My_Ringtone" aria-label="File Name">
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewCutBtn" onclick="togglePreviewCut()" style="background: var(--warning); color: #000; flex: 1;">▶ Preview Cut</button>
+                <button onclick="processCut()" style="flex: 1;">💾 Save Audio</button>
+            </div>
+            <div id="cutLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 2. MERGER PANEL -->
+        <div id="panel-merge" class="editor-panel card">
+            <h2>🔗 Merge Audio (Join)</h2>
+            <div id="mergeTrackContainer"></div>
+            <button onclick="addTrackRow('merge')" style="background: var(--success); margin-top: 5px;">➕ Add Music</button>
+            <div class="input-group" style="margin-top: 15px;">
+                Name: <input type="text" id="mergeName" value="Merged_Audio" aria-label="File Name">
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewMergeBtn" onclick="previewGeneratedAudio('merge')" style="background: var(--warning); color: #000; flex: 1;">▶ Preview Merge</button>
+                <button onclick="saveGeneratedAudio('merge')" style="flex: 1;">💾 Save</button>
+            </div>
+            <div id="mergeLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 3. MIXER PANEL -->
+        <div id="panel-mix" class="editor-panel card">
+            <h2>🎛️ Audio Mixer (Overlap)</h2>
+            <div id="mixTrackContainer"></div>
+            <button onclick="addTrackRow('mix')" style="background: var(--success); margin-top: 5px;">➕ Add Music</button>
+            <div class="input-group" style="margin-top: 15px;">
+                Name: <input type="text" id="mixName" value="Mixed_Audio" aria-label="File Name">
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewMixBtn" onclick="previewGeneratedAudio('mix')" style="background: var(--warning); color: #000; flex: 1;">▶ Preview Mix</button>
+                <button onclick="saveGeneratedAudio('mix')" style="flex: 1;">💾 Save</button>
+            </div>
+            <div id="mixLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 4. BOOSTER EXPORT PANEL -->
+        <div id="panel-boost" class="editor-panel card">
+            <h2>🔊 Volume Booster</h2>
+            <input type="file" id="boostFile" accept="audio/*" aria-label="Select file to boost">
+            <label style="margin-top: 15px; display: block; font-size:12px; color:#ccc;">Boost Level (%)</label>
+            <div class="stepper-group">
+                <button class="stepper-btn" onclick="adjustInputVal('boostExportIntensity', -1)" aria-label="Decrease Boost">➖</button>
+                <input type="number" id="boostExportIntensity" value="200" min="10" max="500" aria-label="Boost percentage">
+                <button class="stepper-btn" onclick="adjustInputVal('boostExportIntensity', 1)" aria-label="Increase Boost">➕</button>
+            </div>
+            <div class="input-group">
+                Name: <input type="text" id="boostName" value="Boosted_Audio" aria-label="File Name">
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewBoostBtn" onclick="previewBoost()" style="background: var(--warning); color: #000; flex: 1;">▶ Preview Boost</button>
+                <button onclick="processBoost()" style="flex: 1;">💾 Save Audio</button>
+            </div>
+            <div id="boostLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 5. PITCH & RHYTHM PANEL -->
+        <div id="panel-pitch" class="editor-panel card">
+            <h2>🎼 Pitch & Rhythm</h2>
+            <input type="file" id="pitchFile" accept="audio/*" aria-label="Select file for pitch and speed" onchange="onPitchFileSelected()">
+
+            <div id="detectedKeyBox" style="display:none; background:#2a2a40; border-radius:8px; padding:12px; margin-top:12px;">
+                <div style="display:flex; gap:12px; text-align:center;">
+                    <div style="flex:1;">
+                        <span style="color:#888; font-size:12px;">Key</span>
+                        <div id="detectedKeyLabel" style="font-size:20px; font-weight:bold; color:var(--accent); margin-top:4px;">—</div>
+                    </div>
+                    <div style="flex:1; border-left:1px solid #444;">
+                        <span style="color:#888; font-size:12px;">BPM</span>
+                        <div id="detectedBpmLabel" style="font-size:20px; font-weight:bold; color:var(--warning); margin-top:4px;">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <label class="fx-label" style="color:var(--warning); margin-top:16px;">⚡ Rhythm / Speed (%)</label>
+            <div class="stepper-group" style="margin-bottom:6px;">
+                <button class="stepper-btn" onclick="adjustInputVal('fxSpeed', -1)" aria-label="Decrease Speed">➖</button>
+                <input type="number" id="fxSpeed" value="100" min="50" max="150" step="5" aria-label="Playback speed percent">
+                <button class="stepper-btn" onclick="adjustInputVal('fxSpeed', 1)" aria-label="Increase Speed">➕</button>
+            </div>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">50 = স্লো · 100 = নরমাল · 150 = ফাস্ট</p>
+
+            <label class="fx-label" style="color:var(--warning);">🎼 Target Scale / Key</label>
+            <select id="fxTargetKey" aria-label="Target musical key" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-top:6px; font-size:15px;" onchange="onTargetKeyChange()">
+                <option value="same">Same as original</option>
+                <option value="0">C</option>
+                <option value="1">C# / Db</option>
+                <option value="2">D</option>
+                <option value="3">D# / Eb</option>
+                <option value="4">E</option>
+                <option value="5">F</option>
+                <option value="6">F# / Gb</option>
+                <option value="7">G</option>
+                <option value="8">G# / Ab</option>
+                <option value="9">A</option>
+                <option value="10">A# / Bb</option>
+                <option value="11">B</option>
+            </select>
+            <input type="hidden" id="fxPitch" value="0">
+            <p id="pitchShiftInfo" style="font-size:12px; color:#aaa; margin:8px 0 10px 0; text-align:center;">Shift: 0 semitones</p>
+
+            <label class="fx-label" style="color:var(--warning);">Or transpose directly (semitones)</label>
+            <div class="stepper-group" style="margin-bottom:6px;">
+                <button class="stepper-btn" onclick="adjustPitchDirect(-1)" aria-label="Pitch down">➖</button>
+                <input type="number" id="fxPitchDirect" value="0" min="-12" max="12" step="1" aria-label="Direct transpose" onchange="syncPitchDirect()">
+                <button class="stepper-btn" onclick="adjustPitchDirect(1)" aria-label="Pitch up">➕</button>
+            </div>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = দুই সেমিটোন উপরে · BPM একই থাকবে</p>
+
+            <div class="input-group">
+                Name: <input type="text" id="pitchName" value="Pitched_Audio" aria-label="File Name">
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewPitchBtn" onclick="previewPitchEditor()" style="background: var(--warning); color: #000; flex: 1;">▶ Preview</button>
+                <button onclick="savePitchEditor()" style="flex: 1;">💾 Save</button>
+            </div>
+            <div id="pitchLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 6. FX STUDIO PANEL -->
+        <div id="panel-fx" class="editor-panel card">
+            <h2>🚀 FX Studio</h2>
+            
+            <!-- RECORDING + MULTI-TRACK SECTION -->
+            <div style="background:#383854; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed var(--danger);">
+                <h4 style="margin:0 0 12px 0; color:#fff; text-align:center;">🎙️ Recorder</h4>
+                
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                    <button id="recordBtn" 
+                            type="button"
+                            onclick="toggleRecording()" 
+                            style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
+                            aria-label="রেকর্ড"
+                            aria-live="off">
+                        <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
+                    </button>
+
+                    <button id="pauseBtn" 
+                            type="button"
+                            onclick="togglePauseRecording()" 
+                            style="background: #555; color: #fff; flex: 0 0 90px; font-size: 14px; padding: 12px; margin:0; opacity: 0.5;"
+                            aria-label="পজ"
+                            aria-live="off"
+                            disabled>
+                        <span aria-hidden="true" id="pauseBtnText">⏸</span>
+                    </button>
+                </div>
+
+                <!-- After Stop buttons -->
+                <div id="afterStopButtons" style="display:none; gap:8px; margin-bottom:10px;">
+                    <button onclick="addToProject()" style="background: var(--success); color:#fff; flex:1; margin:0; padding:10px; font-size:13px;">
+                        ➕ প্রজেক্টে যোগ করো
+                    </button>
+                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; flex:1; margin:0; padding:10px; font-size:13px;">
+                        💾 এই রেকর্ড সেভ
+                    </button>
+                </div>
+
+                
+
+
+                <!-- Project Tracks List -->
+                <div id="projectTracksBox" style="background:#2a2a40; border-radius:8px; padding:10px; margin-top:10px; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <strong style="color:var(--accent); font-size:13px;">📁 প্রজেক্ট ট্র্যাকসমূহ</strong>
+                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:6px 10px; font-size:12px; background:var(--warning); color:#000;">মিক্স ও সেভ</button>
+                    </div>
+                    <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
+                    <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">প্রজেক্ট মুছুন</button>
+                </div>
+            </div>
+
+            <input type="file" id="fxFile" accept="audio/*" aria-label="Select file for FX">
+            
+
+            
+            <div style="background:#2a2a40; padding:15px; border-radius:8px; margin-top:15px;">
+                
+                <label class="fx-label noise">🔇 Noise Remover (%)</label>
+                <div class="stepper-group" style="margin-bottom:12px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxNoise', -1)" aria-label="Decrease Noise Reduction">➖</button>
+                    <input type="number" id="fxNoise" value="0" min="0" max="100" aria-label="Noise reduction amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxNoise', 1)" aria-label="Increase Noise Reduction">➕</button>
+                </div>
+
+                <label class="fx-label bass">🎚️ Bass Boost (%)</label>
+                <div class="stepper-group" style="margin-bottom:15px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxBass', -1)" aria-label="Decrease Bass">➖</button>
+                    <input type="number" id="fxBass" value="0" min="0" max="200" aria-label="Bass boost amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxBass', 1)" aria-label="Increase Bass">➕</button>
+                </div>
+
+                <label class="fx-label treble">🎙️ Treble / Voice Clear (%)</label>
+                <div class="stepper-group" style="margin-bottom:15px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxTreble', -1)" aria-label="Decrease Treble">➖</button>
+                    <input type="number" id="fxTreble" value="0" min="0" max="200" aria-label="Treble amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxTreble', 1)" aria-label="Increase Treble">➕</button>
+                </div>
+
+                <label class="fx-label echo">🗣️ Echo Amount (%)</label>
+                <div class="stepper-group" style="margin-bottom:8px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxEcho', -1)" aria-label="Decrease Echo">➖</button>
+                    <input type="number" id="fxEcho" value="0" min="0" max="100" aria-label="Echo amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxEcho', 1)" aria-label="Increase Echo">➕</button>
+                </div>
+                
+                <label style="font-size:12px; color:#aaa; display:block;">Echo Delay Time (ms)</label>
+                <div class="stepper-group" style="margin-bottom:15px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxEchoDelay', -10)" aria-label="Decrease Echo Delay">➖</button>
+                    <input type="number" id="fxEchoDelay" value="280" min="50" max="800" step="10" aria-label="Echo delay in milliseconds">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxEchoDelay', 10)" aria-label="Increase Echo Delay">➕</button>
+                </div>
+
+                <label class="fx-label reverb">🏟️ Reverb Amount (%)</label>
+                <div class="stepper-group" style="margin-bottom:8px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', -1)" aria-label="Decrease Reverb">➖</button>
+                    <input type="number" id="fxReverb" value="0" min="0" max="100" aria-label="Reverb amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', 1)" aria-label="Increase Reverb">➕</button>
+                </div>
+
+                <label style="font-size:12px; color:#aaa; display:block; margin-top:8px;">Reverb Type</label>
+                <select id="fxReverbType" aria-label="Select Reverb Category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:4px;">
+                    <option value="room">Room</option>
+                    <option value="hall">Hall</option>
+                    <option value="plate">Plate</option>
+                    <option value="cathedral">Cathedral</option>
+                </select>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                Name: <input type="text" id="fxName" value="Studio_Audio" aria-label="File Name">
+            </div>
+            
+            <div class="input-group" style="margin-top: 15px;">
+                <button id="previewFxBtn" onclick="previewFxEditor()" style="background: var(--warning); color: #000; flex: 1;">▶ Preview FX</button>
+                <button onclick="saveFxEditor()" style="flex: 1;">💾 Save Audio</button>
+            </div>
+            <div id="fxLoading" class="loading-text" aria-live="polite"></div>
+
+            <!-- ========== LIVE FX SECTION ========== -->
+            <div style="background:#1a1a2e; border:1px solid var(--purple); border-radius:10px; padding:15px; margin-top:20px;">
+                <h3 style="margin:0 0 12px 0; color:var(--purple); text-align:center; font-size:16px;">🎛️ Live FX</h3>
+                
+
+
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <button id="livePlayBtn" onclick="toggleLivePlay()" style="flex:1; background:var(--accent); color:#000; margin:0; padding:12px;">
+                        ▶ প্লে
+                    </button>
+                    <button id="liveStopBtn" onclick="stopLivePlay()" aria-label="Stop" style="flex:0 0 80px; background:#555; color:#fff; margin:0; padding:12px;" disabled>
+                        ⏹
+                    </button>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <button id="liveEchoBtn" onclick="toggleLiveEcho()" style="flex:1; background:#383854; color:#fff; margin:0; padding:12px;" disabled>
+                        Echo OFF
+                    </button>
+                    <button id="liveReverbBtn" onclick="toggleLiveReverb()" style="flex:1; background:#383854; color:#fff; margin:0; padding:12px;" disabled>
+                        Reverb OFF
+                    </button>
+                </div>
+
+                <button id="liveAllFxBtn" onclick="toggleLiveAllFx()" style="width:100%; background:#383854; color:#fff; margin:0 0 10px 0; padding:12px;" disabled>
+                    ⚡ All FX OFF
+                </button>
+
+                <button id="liveSaveAutoBtn" onclick="saveLiveAutomation()" style="width:100%; background:var(--success); color:#fff; margin:0 0 10px 0; padding:12px;" disabled>
+                    💾 অটোমেশনসহ সেভ করো
+                </button>
+
+                <p id="liveFxStatus" style="font-size:12px; color:#aaa; text-align:center; margin:0;">
+                    ফাইল সিলেক্ট করে প্লে চাপুন
+                </p>
+                <p id="liveAutoInfo" style="font-size:11px; color:#888; text-align:center; margin:5px 0 0 0;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ SETTINGS TAB -->
+    <div id="settings" class="content">
+        <div class="card">
+            <h2>⚙️ Settings</h2>
+            <div class="input-group">
+                Skip time (sec): <input type="number" id="skipSetting" value="10" min="1" max="60" aria-label="Fast Forward Skip Time"> 
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
+                Volume/FX Step (%): <input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume Increase Decrease Amount"> 
+            </div>
+            
+
+            <button onclick="saveSettings()">Save Settings</button>
+            <p id="settingsMsg" style="color: var(--accent); display: none; text-align:center; margin-top:10px;" aria-live="polite">Saved Successfully!</p>
+        </div>
+    </div>
+
+    <!-- NAVIGATION TABS (Bottom) -->
+    <div class="tabs" role="tablist" aria-label="Main Navigation">
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="player" onclick="openMainTab('player', this)" aria-label="Player">🎵<br>Player</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="editor" onclick="openMainTab('editor', this)" aria-label="Editor">✂️<br>Editor</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="settings" onclick="openMainTab('settings', this)" aria-label="Settings">⚙️<br>Settings</button>
+    </div>
+
+    <script>
+        // --- GLOBAL VARIABLES & SETTINGS ---
+        let skipTime = 10;
+        let volStep = 10; 
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audio = new Audio(); audio.crossOrigin = "anonymous";
+        let files = [];
+        let currentTrackIndex = 0;
+        let isDbPlaylistView = false;
+        
+        // Editor Previews
+        let rowAudioPlayer = new Audio();
+        let currentRowBtn = null;
+        let currentMasterSource = null;
+        let isPreviewingMaster = false;
+        let currentPreviewType = ''; 
+        let cutterPlayer = document.getElementById('cutterAudioPlayer');
+        let isPreviewingCut = false; 
+        let previewCutInterval;
+
+        // DB variables
+        let db;
+        let isDbReady = false;
+
+        // Recording + Multi-Track variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let currentStream = null;
+        let lastRecordingBlob = null;      // temporary after stop
+        let lastRecordingName = "Track";
+        let projectTracks = [];            // {id, name, blob, buffer, duration}
+        let monitorSources = [];           // for playing previous tracks while recording
+        let monitorCtx = null;
+
+        // Live FX variables
+        let liveCtx = null;
+        let liveSource = null;
+        let liveDryGain = null;
+        let liveEchoDelay = null;
+        let liveEchoFeedback = null;
+        let liveEchoWet = null;
+        let liveConvolver = null;
+        let liveReverbWet = null;
+        let liveIsPlaying = false;
+        let liveEchoOn = false;
+        let liveReverbOn = false;
+        let liveBuffer = null;
+        let liveStartTime = 0;
+        let liveAutomation = [];   // [{t, echo, reverb}]
+        let liveOriginalFile = null;
+
+        // --- INIT INDEXEDDB ---
+        function initDB() {
+            let request = indexedDB.open("SwaralayDB", 1);
+            request.onupgradeneeded = function(e) {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains("playlist")) {
+                    db.createObjectStore("playlist", { keyPath: "id", autoIncrement: true });
+                }
+            };
+            request.onsuccess = function(e) { db = e.target.result; isDbReady = true; };
+            request.onerror = function(e) { console.error("IndexedDB Error: ", e); };
+        }
+        initDB();
+
+        // --- TAB LOGIC ---
+        function openMainTab(tabName, btn) {
+            document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tabs .tab-btn').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-selected', 'false'); });
+            document.getElementById(tabName).classList.add('active');
+            let activeBtn = btn || document.querySelector(`.tabs .tab-btn[onclick*="'${tabName}'"]`);
+            if (activeBtn) { activeBtn.classList.add('active'); activeBtn.setAttribute('aria-selected', 'true'); }
+            stopAllPreviews();
+            // When opening Editor, show empty state (no panel active)
+            if (tabName === 'editor') {
+                document.querySelectorAll('.editor-panel').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.editor-sub-tab').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-selected', 'false'); });
+                let empty = document.getElementById('editorEmpty');
+                if (empty) empty.style.display = 'block';
+            }
+        }
+        function openEditorPanel(panelId, btn) {
+            document.querySelectorAll('.editor-panel').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.editor-sub-tab').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-selected', 'false'); });
+            document.getElementById(panelId).classList.add('active');
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+            let empty = document.getElementById('editorEmpty');
+            if (empty) empty.style.display = 'none';
+            stopAllPreviews();
+        }
+
+        // --- ACCESSIBLE STEPPER LOGIC ---
+        function adjustInputVal(inputId, direction) {
+            let input = document.getElementById(inputId);
+            let val = parseFloat(input.value) || 0;
+            let step = volStep;
+            if (inputId === 'fxEchoDelay') step = 10;
+            else if (inputId === 'fxSpeed') step = 5;
+            else if (inputId === 'fxPitch') step = 1;
+            let newVal = val + (step * direction);
+            if (input.min !== "" && newVal < parseFloat(input.min)) newVal = parseFloat(input.min);
+            if (input.max !== "" && newVal > parseFloat(input.max)) newVal = parseFloat(input.max);
+            input.value = newVal;
+        }
+
+        function adjustRowVol(btn, direction) {
+            let input = btn.parentElement.querySelector('.vol-input');
+            let val = parseInt(input.value) || 0;
+            let newVal = val + (volStep * direction);
+            if (newVal < 0) newVal = 0;
+            input.value = newVal;
+            if (currentRowBtn && rowAudioPlayer && !rowAudioPlayer.paused) {
+                let row = input.closest('.track-row');
+                let playBtn = row.querySelector('.track-row-header .mini-btn');
+                if (currentRowBtn === playBtn) rowAudioPlayer.volume = Math.max(0, Math.min(newVal / 100, 1));
+            }
+        }
+
+        function saveSettings() {
+            skipTime = parseInt(document.getElementById('skipSetting').value);
+            volStep = parseInt(document.getElementById('volStepSetting').value) || 10;
+            document.querySelectorAll('.skip-val').forEach(el => el.innerText = skipTime);
+            let msg = document.getElementById('settingsMsg');
+            msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000);
+        }
+
+        // --- RECORDING + MULTI-TRACK LOGIC ---
+        function stopMonitorPlayback() {
+            monitorSources.forEach(src => {
+                try { src.stop(); } catch(e) {}
+                try { src.disconnect(); } catch(e) {}
+            });
+            monitorSources = [];
+            if (monitorCtx) {
+                try { monitorCtx.close(); } catch(e) {}
+                monitorCtx = null;
+            }
+        }
+
+        async function startMonitorPlayback() {
+            if (projectTracks.length === 0) return;
+            stopMonitorPlayback();
+            try {
+                monitorCtx = new AudioContext();
+                for (let track of projectTracks) {
+                    if (!track.buffer) continue;
+                    let src = monitorCtx.createBufferSource();
+                    src.buffer = track.buffer;
+                    src.connect(monitorCtx.destination);
+                    src.start(0);
+                    monitorSources.push(src);
+                }
+            } catch(e) {
+                console.error("Monitor playback error:", e);
+            }
+        }
+
+        function updateProjectTracksUI() {
+            let box = document.getElementById('projectTracksBox');
+            let list = document.getElementById('projectTracksList');
+            if (projectTracks.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'block';
+            list.innerHTML = '';
+            projectTracks.forEach((t, idx) => {
+                let div = document.createElement('div');
+                div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #444; font-size:13px;';
+                div.innerHTML = `
+                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${t.name} (${t.duration.toFixed(1)}s)</span>
+                    <button onclick="playProjectTrack(${idx})" aria-label="Play ${t.name}" style="margin:0 4px; width:auto; padding:4px 8px; font-size:11px; background:#383854;">▶</button>
+                    <button onclick="removeProjectTrack(${idx})" aria-label="Remove ${t.name}" style="margin:0; width:auto; padding:4px 8px; font-size:11px; background:var(--danger); color:#fff;">❌</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function toggleRecording() {
+            let btn = document.getElementById('recordBtn');
+            let pauseBtn = document.getElementById('pauseBtn');
+            let afterStop = document.getElementById('afterStopButtons');
+            
+            if (isRecording) {
+                // ===== STOP (silent — no TalkBack announcement) =====
+                try {
+                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                } catch(e) {}
+                
+                stopMonitorPlayback();
+                isRecording = false;
+                isPaused = false;
+
+                // Visual only — never change aria-label (TalkBack silent)
+                let rt = document.getElementById('recordBtnText');
+                if (rt) rt.textContent = '🔴 রেকর্ড';
+                btn.style.background = 'var(--danger)';
+                pauseBtn.style.background = '#555';
+                pauseBtn.style.opacity = '0.5';
+                pauseBtn.disabled = true;
+                let pt = document.getElementById('pauseBtnText');
+                if (pt) pt.textContent = '⏸';
+
+            } else {
+                // ===== START HIGH QUALITY (silent) =====
+                try {
+                    if (afterStop) afterStop.style.display = 'none';
+                    lastRecordingBlob = null;
+
+                    if (projectTracks.length > 0) {
+                        await startMonitorPlayback();
+                    }
+
+                    // Best quality mic constraints
+                    // Note: Android Chrome's built-in echoCancellation / noiseSuppression / autoGainControl
+                    // often makes voice & music recordings sound muffled, robotic, or "underwater".
+                    // Turning these off gives a much cleaner raw capture (use the Noise Remover slider
+                    // in FX Studio afterward if background noise needs cleaning up).
+                    currentStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                            channelCount: { ideal: 2 },
+                            sampleRate: { ideal: 48000 },
+                            sampleSize: { ideal: 16 }
+                        } 
+                    });
+
+                    // Best available codec + high bitrate
+                    let mimeType = '';
+                    let candidates = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm;codecs=pcm',
+                        'audio/webm',
+                        'audio/mp4;codecs=mp4a.40.2',
+                        'audio/mp4',
+                        'audio/ogg;codecs=opus'
+                    ];
+                    for (let t of candidates) {
+                        if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) {
+                            mimeType = t;
+                            break;
+                        }
+                    }
+                    let recOpts = { audioBitsPerSecond: 256000 };
+                    if (mimeType) recOpts.mimeType = mimeType;
+
+                    try {
+                        mediaRecorder = new MediaRecorder(currentStream, recOpts);
+                    } catch(e1) {
+                        try {
+                            mediaRecorder = new MediaRecorder(currentStream, { mimeType: mimeType || undefined });
+                        } catch(e2) {
+                            mediaRecorder = new MediaRecorder(currentStream);
+                        }
+                    }
+
+                    audioChunks = [];
+                    isPaused = false;
+                    let usedMime = mediaRecorder.mimeType || mimeType || 'audio/webm';
+
+                    mediaRecorder.ondataavailable = e => { 
+                        if (e.data && e.data.size > 0) audioChunks.push(e.data); 
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        if (currentStream) {
+                            currentStream.getTracks().forEach(track => track.stop());
+                            currentStream = null;
+                        }
+                        lastRecordingBlob = new Blob(audioChunks, { type: usedMime });
+                        try {
+                            let ext = usedMime.indexOf('mp4') >= 0 ? 'm4a' : 'webm';
+                            let file = new File([lastRecordingBlob], 'Last_Recording.' + ext, { type: usedMime });
+                            let dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            document.getElementById('fxFile').files = dataTransfer.files;
+                        } catch(e) {}
+                        let after = document.getElementById('afterStopButtons');
+                        if (after) after.style.display = 'flex';
+                    };
+
+                    // timeslice 100ms — smoother, less drop risk
+                    mediaRecorder.start(100);
+                    isRecording = true;
+
+                    // Visual only — aria-label unchanged, text is aria-hidden
+                    let rt = document.getElementById('recordBtnText');
+                    if (rt) rt.textContent = '⏹';
+                    btn.style.background = '#ff9f43';
+                    pauseBtn.style.background = '#ff9f43';
+                    pauseBtn.style.opacity = '1';
+                    pauseBtn.disabled = false;
+                    // Remove focus so TalkBack does not speak again
+                    try { btn.blur(); document.activeElement && document.activeElement.blur(); } catch(e) {}
+
+                } catch (err) {
+                    stopMonitorPlayback();
+                    alert('মাইক্রোফোনের অনুমতি পাওয়া যায়নি।');
+                    console.error(err);
+                    isRecording = false;
+                }
+            }
+        }
+
+        function togglePauseRecording() {
+            if (!isRecording || !mediaRecorder) return;
+            let pauseBtn = document.getElementById('pauseBtn');
+
+            if (!isPaused) {
+                try {
+                    mediaRecorder.pause();
+                    // also pause monitors
+                    monitorSources.forEach(s => { try { s.stop(); } catch(e){} });
+                    isPaused = true;
+                    let _pt=document.getElementById('pauseBtnText'); if(_pt) _pt.textContent='▶'; else pauseBtn.innerHTML='▶';
+                    pauseBtn.style.background = 'var(--success)';
+                    pauseBtn.setAttribute('aria-label', 'পজ');
+                } catch(e) { console.error(e); }
+            } else {
+                try {
+                    mediaRecorder.resume();
+                    // restart monitors from beginning (simple approach)
+                    startMonitorPlayback();
+                    isPaused = false;
+                    let _pt2=document.getElementById('pauseBtnText'); if(_pt2) _pt2.textContent='⏸'; else pauseBtn.innerHTML='⏸';
+                    pauseBtn.style.background = '#ff9f43';
+                    pauseBtn.setAttribute('aria-label', 'পজ');
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        async function addToProject() {
+            if (!lastRecordingBlob) {
+                alert('আগে রেকর্ড করে স্টপ করুন।');
+                return;
+            }
+            try {
+                let arrayBuffer = await lastRecordingBlob.arrayBuffer();
+                let tempCtx = new AudioContext();
+                let buffer = await tempCtx.decodeAudioData(arrayBuffer);
+                tempCtx.close();
+
+                let defaultName = 'Track ' + (projectTracks.length + 1);
+                let trackName = prompt('ট্র্যাকের নাম লিখুন:', defaultName);
+                if (trackName === null) return;
+                trackName = (trackName || defaultName).trim() || defaultName;
+                projectTracks.push({
+                    id: Date.now(),
+                    name: trackName,
+                    blob: lastRecordingBlob,
+                    buffer: buffer,
+                    duration: buffer.duration
+                });
+                lastRecordingBlob = null;
+                document.getElementById('afterStopButtons').style.display = 'none';
+                updateProjectTracksUI();
+            } catch(e) {
+                alert('প্রজেক্টে যোগ করতে সমস্যা হয়েছে।');
+                console.error(e);
+            }
+        }
+
+        async function saveLastRecording() {
+            if (!lastRecordingBlob) {
+                alert('আগে রেকর্ড করে স্টপ করুন।');
+                return;
+            }
+            let defaultName = 'Recording_' + new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
+            let name = prompt('ফাইলের নাম লিখুন (WAV অডিও):', defaultName);
+            if (name === null) return; // cancelled
+            name = (name || defaultName).trim().replace(/[\\/:*?"<>|]/g, '_');
+            if (!name) name = defaultName;
+            try {
+                // Decode recording → high quality WAV (real audio, not video-like webm)
+                let arrayBuffer = await lastRecordingBlob.arrayBuffer();
+                let tempCtx = new AudioContext();
+                let buffer = await tempCtx.decodeAudioData(arrayBuffer.slice(0));
+                tempCtx.close();
+                downloadBlob(audioBufferToWav(buffer), name);
+            } catch(e) {
+                console.error(e);
+                // Fallback: original blob
+                let url = URL.createObjectURL(lastRecordingBlob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = name + '.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('WAV এ রূপান্তর হয়নি, মূল ফরম্যাটে সেভ হয়েছে।');
+            }
+        }
+
+        function playProjectTrack(idx) {
+            let t = projectTracks[idx];
+            if (!t || !t.buffer) return;
+            stopAllPreviews();
+            let ctx = new AudioContext();
+            let src = ctx.createBufferSource();
+            src.buffer = t.buffer;
+            src.connect(ctx.destination);
+            src.start(0);
+            currentMasterSource = src;
+            src.onended = () => { try { ctx.close(); } catch(e){} };
+        }
+
+        function removeProjectTrack(idx) {
+            projectTracks.splice(idx, 1);
+            updateProjectTracksUI();
+        }
+
+        function clearProject() {
+            if (!confirm('সব প্রজেক্ট ট্র্যাক মুছে ফেলবেন?')) return;
+            projectTracks = [];
+            updateProjectTracksUI();
+        }
+
+        async function mixAndSaveAll() {
+            if (projectTracks.length === 0) {
+                alert('প্রজেক্টে কোনো ট্র্যাক নেই।');
+                return;
+            }
+            try {
+                let maxDuration = Math.max(...projectTracks.map(t => t.duration));
+                let sampleRate = projectTracks[0].buffer.sampleRate;
+                let offlineCtx = new OfflineAudioContext(2, Math.ceil(maxDuration * sampleRate), sampleRate);
+
+                for (let t of projectTracks) {
+                    let src = offlineCtx.createBufferSource();
+                    src.buffer = t.buffer;
+                    src.connect(offlineCtx.destination);
+                    src.start(0); // all start at the same time for overdub mix
+                }
+
+                let rendered = await offlineCtx.startRendering();
+                downloadBlob(audioBufferToWav(rendered), 'Mixed_Project_' + Date.now());
+                alert('মিক্সড ফাইল সেভ হয়েছে।');
+            } catch(e) {
+                alert('মিক্স করতে সমস্যা হয়েছে।');
+                console.error(e);
+            }
+        }
+
+        // --- INDEXEDDB PLAYLIST LOGIC ---
+        function addToPlaylist() {
+            if (!isDbReady) return alert("Database is not ready!");
+            if (files.length === 0 || !files[currentTrackIndex]) return alert("No song selected!");
+            let fileToSave = files[currentTrackIndex]; 
+            let tx = db.transaction(["playlist"], "readwrite");
+            let store = tx.objectStore("playlist");
+            let request = store.add({ name: fileToSave.name, blob: fileToSave });
+            request.onsuccess = () => {
+                let msg = document.getElementById('playlistMsg');
+                msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000);
+            };
+            request.onerror = (e) => { alert("Error saving! Memory full."); };
+        }
+
+        function loadDbPlaylist() {
+            if (!isDbReady) return alert("Database is not ready!");
+            isDbPlaylistView = true;
+            let tx = db.transaction(["playlist"], "readonly");
+            let store = tx.objectStore("playlist");
+            let request = store.getAll();
+            request.onsuccess = (e) => {
+                let items = e.target.result;
+                files = []; 
+                let trackList = document.getElementById('trackList');
+                trackList.innerHTML = '<h4 style="margin-top:0; color:var(--accent);">📑 Database Playlist</h4>';
+                if(items.length === 0) { trackList.innerHTML += '<p style="color:#aaa; font-size:12px;">Playlist is empty.</p>'; return; }
+                items.forEach((item, index) => {
+                    item.blob.name = item.name; 
+                    files.push(item.blob);
+                    let div = document.createElement('div'); div.className = 'track-item'; div.dataset.index = index;
+                    div.innerHTML = `<span role="button" tabindex="0" aria-label="Play ${item.name}" style="flex:1; overflow:hidden; text-overflow:ellipsis;">${item.name}</span>
+                        <button class="del-btn" onclick="deleteFromDb(${item.id}, event)" aria-label="Delete ${item.name}">Delete</button>`;
+                    trackList.appendChild(div);
+                });
+            };
+        }
+
+        function deleteFromDb(id, event) {
+            event.stopPropagation();
+            if(!confirm("Remove from Playlist?")) return;
+            let tx = db.transaction(["playlist"], "readwrite");
+            let store = tx.objectStore("playlist");
+            store.delete(id);
+            tx.oncomplete = () => { loadDbPlaylist(); };
+        }
+
+        // --- PLAYER LOGIC ---
+        // Remember last position per track name (session + localStorage)
+        let trackPositions = {};
+        try {
+            trackPositions = JSON.parse(localStorage.getItem('am_track_positions') || '{}');
+        } catch(e) { trackPositions = {}; }
+
+        function saveTrackPosition() {
+            if (!files[currentTrackIndex] || !audio.src) return;
+            let key = files[currentTrackIndex].name;
+            trackPositions[key] = audio.currentTime;
+            try { localStorage.setItem('am_track_positions', JSON.stringify(trackPositions)); } catch(e) {}
+        }
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            isDbPlaylistView = false;
+            files = Array.from(e.target.files);
+            renderTrackList('📁 Selected Files');
+            if(files.length > 0) playTrack(0);
+        });
+
+        const AUDIO_EXT_RE = /\.(mp3|wav|ogg|m4a|flac|aac|wma|opus|amr)$/i;
+        document.getElementById('folderInput').addEventListener('change', (e) => {
+            isDbPlaylistView = false;
+            let trackList = document.getElementById('trackList');
+            // Show a loading message immediately (scanning a big folder can take a moment,
+            // and without this the screen looks "frozen"/unresponsive while it works).
+            trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">⏳ ফোল্ডার স্ক্যান করা হচ্ছে, একটু অপেক্ষা করো...</p>';
+            let allFiles = Array.from(e.target.files);
+            // Defer the heavy filtering/sorting so the "loading" message actually paints first
+            setTimeout(() => {
+                files = allFiles.filter(f => (f.type && f.type.startsWith('audio')) || AUDIO_EXT_RE.test(f.name));
+                if (files.length === 0) {
+                    trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">এই ফোল্ডারে কোনো অডিও ফাইল পাওয়া যায়নি।</p>';
+                    return;
+                }
+                // Sort so files are grouped folder-by-folder, then alphabetically within each folder
+                files.sort((a, b) => {
+                    let pa = (a.webkitRelativePath || a.name), pb = (b.webkitRelativePath || b.name);
+                    return pa.localeCompare(pb, undefined, { numeric: true, sensitivity: 'base' });
+                });
+                renderTrackList('📁 ফোল্ডার থেকে যোগ হয়েছে (' + files.length + 'টি গান)', true);
+                playTrack(0);
+            }, 30);
+        });
+
+        function renderTrackList(headerText, groupByFolder) {
+            let trackList = document.getElementById('trackList');
+            let frag = document.createDocumentFragment();
+            let headerEl = document.createElement('h4');
+            headerEl.style.cssText = 'margin-top:0; color:#aaa;';
+            headerEl.innerText = headerText;
+            frag.appendChild(headerEl);
+
+            // Search box to quickly filter a long combined list (e.g. after adding a whole folder)
+            if (files.length > 8) {
+                let searchWrap = document.createElement('div');
+                searchWrap.style.cssText = 'padding:0 0 8px 0;';
+                let searchBox = document.createElement('input');
+                searchBox.type = 'text';
+                searchBox.id = 'trackSearchBox';
+                searchBox.placeholder = '🔍 গান খুঁজুন...';
+                searchBox.setAttribute('aria-label', 'Search tracks');
+                searchBox.style.cssText = 'width:100%; box-sizing:border-box; padding:8px 10px; font-size:14px;';
+                searchBox.addEventListener('input', () => {
+                    let q = searchBox.value.trim().toLowerCase();
+                    trackList.querySelectorAll('.track-item[data-index]').forEach(el => {
+                        let name = files[parseInt(el.dataset.index, 10)].name.toLowerCase();
+                        el.style.display = name.includes(q) ? '' : 'none';
+                    });
+                    trackList.querySelectorAll('.folder-header').forEach(el => { el.style.display = q ? 'none' : ''; });
+                });
+                searchWrap.appendChild(searchBox);
+                frag.appendChild(searchWrap);
+            }
+
+            let lastFolder = null;
+            files.forEach((file, index) => {
+                if (groupByFolder) {
+                    let relPath = file.webkitRelativePath || file.name;
+                    let parts = relPath.split('/');
+                    let folder = parts.length > 1 ? parts.slice(0, -1).join(' / ') : 'Root';
+                    if (folder !== lastFolder) {
+                        let folderDiv = document.createElement('div');
+                        folderDiv.className = 'folder-header';
+                        folderDiv.innerText = '📂 ' + folder;
+                        folderDiv.style.cssText = 'padding:8px 12px; font-size:12px; font-weight:bold; color:var(--accent); background:#1c1c2e; border-top:1px solid #333; pointer-events:none;';
+                        frag.appendChild(folderDiv);
+                        lastFolder = folder;
+                    }
+                }
+                let div = document.createElement('div'); div.className = 'track-item'; div.dataset.index = index;
+                div.setAttribute('role', 'button');
+                div.setAttribute('tabindex', '0');
+                div.setAttribute('aria-label', 'Play ' + file.name);
+                div.innerText = file.name;
+                frag.appendChild(div);
+            });
+
+            trackList.innerHTML = '';
+            trackList.appendChild(frag);
+        }
+
+        // Delegated click/keyboard handler so track items always work reliably,
+        // no matter how the list was populated (regular select, folder select, or DB playlist).
+        document.getElementById('trackList').addEventListener('click', (e) => {
+            let item = e.target.closest('.track-item[data-index]');
+            if (!item) return;
+            playTrack(parseInt(item.dataset.index, 10));
+        });
+        document.getElementById('trackList').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            let item = e.target.closest('.track-item[data-index]');
+            if (!item) return;
+            e.preventDefault();
+            playTrack(parseInt(item.dataset.index, 10));
+        });
+
+        function playTrack(index, forceStart) {
+            if (!files || !files.length || index < 0 || index >= files.length) return;
+            // Save previous position before switching
+            saveTrackPosition();
+
+            currentTrackIndex = index;
+            let file = files[index];
+            if (!file) return;
+            audio.src = URL.createObjectURL(file);
+
+            // Resume from last position if available
+            let key = file.name;
+            let lastPos = trackPositions[key] || 0;
+
+            audio.onloadedmetadata = () => {
+                if (!forceStart && lastPos > 0 && lastPos < audio.duration - 1) {
+                    audio.currentTime = lastPos;
+                }
+                audio.play();
+            };
+
+            setPlayPauseBtnState(true);
+            document.getElementById('currentTrackName').innerText = file.name;
+            updateTrackListUI();
+        }
+
+        function setPlayPauseBtnState(isPlaying) {
+            let btn = document.getElementById('playPauseBtn');
+            if (isPlaying) {
+                btn.innerHTML = '<span>⏸</span>Pause';
+                btn.setAttribute('aria-label', 'Pause');
+            } else {
+                btn.innerHTML = '<span>▶</span>Play';
+                btn.setAttribute('aria-label', 'Play');
+            }
+        }
+
+        function togglePlay() {
+            if (!audio.src) return alert('Select a file first!');
+            if (audio.paused) {
+                audio.play();
+                setPlayPauseBtnState(true);
+            } else {
+                audio.pause();
+                saveTrackPosition();
+                setPlayPauseBtnState(false);
+            }
+        }
+        function nextTrack() {
+            saveTrackPosition();
+            if (currentTrackIndex < files.length - 1) {
+                playTrack(currentTrackIndex + 1, true); // next track starts from beginning
+            }
+        }
+        function prevTrack() {
+            saveTrackPosition();
+            if (currentTrackIndex > 0) {
+                playTrack(currentTrackIndex - 1, true);
+            }
+        }
+        function fastForward() { audio.currentTime += skipTime; }
+        function rewind() { audio.currentTime -= skipTime; }
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                let progressBar = document.getElementById('progressBar');
+                progressBar.value = (audio.currentTime / audio.duration) * 100;
+                progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + ' of ' + formatTime(audio.duration));
+                document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
+                document.getElementById('totalTime').innerText = formatTime(audio.duration);
+                // Save position every ~3 seconds
+                if (Math.floor(audio.currentTime) % 3 === 0) saveTrackPosition();
+            }
+        });
+        document.getElementById('progressBar').addEventListener('input', (e) => { audio.currentTime = (e.target.value / 100) * audio.duration; });
+        audio.addEventListener('ended', () => {
+            // Clear saved position when track finishes
+            if (files[currentTrackIndex]) {
+                delete trackPositions[files[currentTrackIndex].name];
+                try { localStorage.setItem('am_track_positions', JSON.stringify(trackPositions)); } catch(e) {}
+            }
+            nextTrack(); // Auto play next track
+        });
+        audio.addEventListener('pause', saveTrackPosition);
+
+        function formatTime(sec) {
+            let m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        function updateTrackListUI() {
+            let items = document.querySelectorAll('.track-list .track-item[data-index]');
+            items.forEach((el) => {
+                let isCurrent = (parseInt(el.dataset.index, 10) === currentTrackIndex);
+                el.classList.toggle('playing', isCurrent);
+                el.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+            });
+        }
+
+        // --- AUDIO HELPERS ---
+        function audioBufferToWav(buffer) {
+            let numOfChan = buffer.numberOfChannels, length = buffer.length * numOfChan * 2 + 44;
+            let bufferWav = new ArrayBuffer(length), view = new DataView(bufferWav);
+            let channels = [], i, sample, offset = 0, pos = 0;
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+            
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157); setUint32(0x20746d66);
+            setUint32(16); setUint16(1); setUint16(numOfChan); setUint32(buffer.sampleRate);
+            setUint32(buffer.sampleRate * 2 * numOfChan); setUint16(numOfChan * 2); setUint16(16);
+            setUint32(0x61746164); setUint32(length - pos - 4);
+            
+            for(i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+            
+            while(pos < length) {
+                for(i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                    view.setInt16(pos, sample, true); pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([bufferWav], {type: "audio/wav"});
+        }
+
+        function downloadBlob(blob, filename) {
+            let name = (filename || 'audio').replace(/\.wav$/i, '') + '.wav';
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = name;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 100);
+        }
+
+        async function readAudioData(file) {
+            let arrayBuffer = await file.arrayBuffer();
+            let tempCtx = new AudioContext();
+            let buffer = await tempCtx.decodeAudioData(arrayBuffer);
+            tempCtx.close();
+            return buffer;
+        }
+
+        // ========== IMPROVED REVERB IMPULSE GENERATOR ==========
+        // Categories: room, hall, plate, cathedral
+        function getImpulseBuffer(ctx, amountPercent, type) {
+            let rate = ctx.sampleRate;
+            let duration, decayPower, earlyReflections, density;
+
+            switch(type) {
+                case 'room':
+                    duration = 0.4 + (amountPercent / 100) * 1.6; // 0.4 - 2.0s
+                    decayPower = 2.8;
+                    earlyReflections = 4;
+                    density = 0.6;
+                    break;
+                case 'hall':
+                    duration = 1.2 + (amountPercent / 100) * 2.8; // 1.2 - 4.0s
+                    decayPower = 2.2;
+                    earlyReflections = 8;
+                    density = 0.85;
+                    break;
+                case 'plate':
+                    duration = 0.8 + (amountPercent / 100) * 2.2; // 0.8 - 3.0s
+                    decayPower = 1.9;
+                    earlyReflections = 6;
+                    density = 0.95;
+                    break;
+                case 'cathedral':
+                    duration = 2.0 + (amountPercent / 100) * 4.5; // 2.0 - 6.5s
+                    decayPower = 1.6;
+                    earlyReflections = 12;
+                    density = 0.75;
+                    break;
+                default:
+                    duration = 1.5;
+                    decayPower = 2.2;
+                    earlyReflections = 6;
+                    density = 0.8;
+            }
+
+            let length = Math.floor(rate * duration);
+            let impulse = ctx.createBuffer(2, length, rate);
+            let left = impulse.getChannelData(0);
+            let right = impulse.getChannelData(1);
+
+            // Early reflections (simple discrete echoes)
+            for (let r = 0; r < earlyReflections; r++) {
+                let delay = Math.floor((0.01 + r * 0.012 + Math.random() * 0.008) * rate);
+                if (delay >= length) continue;
+                let amp = (0.35 / (r + 1)) * (0.7 + Math.random() * 0.3);
+                left[delay] += (Math.random() * 2 - 1) * amp;
+                right[delay] += (Math.random() * 2 - 1) * amp * (0.8 + Math.random() * 0.4);
+            }
+
+            // Dense tail (noise with exponential decay)
+            for (let i = 0; i < length; i++) {
+                let t = i / length;
+                let decay = Math.pow(1 - t, decayPower);
+                // slight stereo difference + density control
+                let noiseL = (Math.random() * 2 - 1) * decay * density;
+                let noiseR = (Math.random() * 2 - 1) * decay * density;
+                left[i] += noiseL;
+                right[i] += noiseR;
+            }
+
+            // Soft normalize
+            let max = 0;
+            for (let i = 0; i < length; i++) {
+                max = Math.max(max, Math.abs(left[i]), Math.abs(right[i]));
+            }
+            if (max > 0.001) {
+                let norm = 0.85 / max;
+                for (let i = 0; i < length; i++) {
+                    left[i] *= norm;
+                    right[i] *= norm;
+                }
+            }
+            return impulse;
+        }
+
+        // Soft Noise Gate (applied offline on buffer)
+        // High quality multi-stage noise gate + spectral-ish cleanup
+        function applySoftNoiseGate(buffer, amount) {
+            if (amount <= 0) return buffer;
+            let strength = amount / 100;
+            // Adaptive threshold based on strength
+            let threshold = 0.008 + strength * 0.12;
+            let attack = 0.002;
+            let release = 0.06 + (1 - strength) * 0.06;
+            let sampleRate = buffer.sampleRate;
+            let attackSamples = Math.max(1, Math.floor(attack * sampleRate));
+            let releaseSamples = Math.max(1, Math.floor(release * sampleRate));
+
+            let channels = [];
+            for (let c = 0; c < buffer.numberOfChannels; c++) {
+                channels.push(buffer.getChannelData(c));
+            }
+
+            // First pass: estimate noise floor from quietest 5% of frames
+            let frameSize = Math.floor(sampleRate * 0.02); // 20ms
+            let framePeaks = [];
+            for (let i = 0; i < buffer.length; i += frameSize) {
+                let peak = 0;
+                let end = Math.min(i + frameSize, buffer.length);
+                for (let j = i; j < end; j++) {
+                    for (let c = 0; c < channels.length; c++) {
+                        peak = Math.max(peak, Math.abs(channels[c][j]));
+                    }
+                }
+                framePeaks.push(peak);
+            }
+            framePeaks.sort((a, b) => a - b);
+            let noiseFloor = framePeaks[Math.floor(framePeaks.length * 0.05)] || 0.001;
+            threshold = Math.max(threshold, noiseFloor * (1.5 + strength * 3));
+
+            let envelope = 0;
+            for (let i = 0; i < buffer.length; i++) {
+                let peak = 0;
+                for (let c = 0; c < channels.length; c++) {
+                    peak = Math.max(peak, Math.abs(channels[c][i]));
+                }
+
+                if (peak > envelope) {
+                    envelope += (peak - envelope) / attackSamples;
+                } else {
+                    envelope += (peak - envelope) / releaseSamples;
+                }
+
+                let gain = 1;
+                if (envelope < threshold) {
+                    let ratio = Math.max(0, envelope / threshold);
+                    // Smooth cubic curve for natural sounding gate
+                    gain = ratio * ratio * (3 - 2 * ratio);
+                    // Stronger reduction at high strength
+                    gain = Math.pow(gain, 1 + strength);
+                }
+
+                for (let c = 0; c < channels.length; c++) {
+                    channels[c][i] *= gain;
+                }
+            }
+            return buffer;
+        }
+
+        // ========== LIVE FX FUNCTIONS ==========
+        function updateLiveFxButtons() {
+            let echoBtn = document.getElementById('liveEchoBtn');
+            let reverbBtn = document.getElementById('liveReverbBtn');
+            let allBtn = document.getElementById('liveAllFxBtn');
+            let status = document.getElementById('liveFxStatus');
+
+            if (echoBtn) {
+                echoBtn.innerText = liveEchoOn ? 'Echo ON' : 'Echo OFF';
+                echoBtn.style.background = liveEchoOn ? 'var(--purple)' : '#383854';
+            }
+            if (reverbBtn) {
+                reverbBtn.innerText = liveReverbOn ? 'Reverb ON' : 'Reverb OFF';
+                reverbBtn.style.background = liveReverbOn ? 'var(--purple)' : '#383854';
+            }
+            if (allBtn) {
+                let both = liveEchoOn && liveReverbOn;
+                allBtn.innerText = both ? '⚡ All FX ON' : '⚡ All FX OFF';
+                allBtn.style.background = both ? 'var(--purple)' : '#383854';
+            }
+            if (status && liveIsPlaying) {
+                let parts = [];
+                if (liveEchoOn) parts.push('Echo');
+                if (liveReverbOn) parts.push('Reverb');
+                status.innerText = parts.length ? 'Live: ' + parts.join(' + ') : 'Playing (Dry)';
+                status.style.color = parts.length ? 'var(--purple)' : '#aaa';
+            }
+        }
+
+        function recordLiveAutomation() {
+            if (!liveIsPlaying || !liveCtx) return;
+            let t = liveCtx.currentTime - liveStartTime;
+            if (t < 0) t = 0;
+            liveAutomation.push({
+                t: t,
+                echo: liveEchoOn,
+                reverb: liveReverbOn
+            });
+            let info = document.getElementById('liveAutoInfo');
+            if (info) info.innerText = 'অটোমেশন পয়েন্ট: ' + liveAutomation.length;
+        }
+
+        function setLiveEcho(on) {
+            liveEchoOn = on;
+            if (liveEchoWet) {
+                let amount = (parseFloat(document.getElementById('fxEcho').value) || 0) / 100;
+                liveEchoWet.gain.value = on ? amount * 0.7 : 0;
+            }
+            recordLiveAutomation();
+            updateLiveFxButtons();
+        }
+
+        function setLiveReverb(on) {
+            liveReverbOn = on;
+            if (liveReverbWet) {
+                let amount = (parseFloat(document.getElementById('fxReverb').value) || 0) / 100;
+                liveReverbWet.gain.value = on ? amount * 0.8 : 0;
+            }
+            recordLiveAutomation();
+            updateLiveFxButtons();
+        }
+
+        function toggleLiveEcho() {
+            if (!liveIsPlaying) return;
+            setLiveEcho(!liveEchoOn);
+        }
+
+        function toggleLiveReverb() {
+            if (!liveIsPlaying) return;
+            setLiveReverb(!liveReverbOn);
+        }
+
+        function toggleLiveAllFx() {
+            if (!liveIsPlaying) return;
+            let turnOn = !(liveEchoOn && liveReverbOn);
+            setLiveEcho(turnOn);
+            setLiveReverb(turnOn);
+        }
+
+        async function createLiveImpulse(seconds, decay) {
+            let rate = liveCtx.sampleRate;
+            let length = rate * seconds;
+            let impulse = liveCtx.createBuffer(2, length, rate);
+            for (let c = 0; c < 2; c++) {
+                let channel = impulse.getChannelData(c);
+                for (let i = 0; i < length; i++) {
+                    channel[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+                }
+            }
+            return impulse;
+        }
+
+        async function toggleLivePlay() {
+            if (liveIsPlaying) {
+                stopLivePlay();
+                return;
+            }
+
+            let file = document.getElementById('fxFile').files[0];
+            if (!file) {
+                alert('আগে একটি অডিও ফাইল সিলেক্ট করুন।');
+                return;
+            }
+
+            try {
+                stopAllPreviews();
+                stopLivePlay();
+
+                liveOriginalFile = file;
+                liveAutomation = [];
+                let info = document.getElementById('liveAutoInfo');
+                if (info) info.innerText = '';
+
+                let arrayBuffer = await file.arrayBuffer();
+                liveCtx = new AudioContext();
+                liveBuffer = await liveCtx.decodeAudioData(arrayBuffer.slice(0));
+
+                // Source
+                liveSource = liveCtx.createBufferSource();
+                liveSource.buffer = liveBuffer;
+
+                // Dry path
+                liveDryGain = liveCtx.createGain();
+                liveDryGain.gain.value = 1;
+
+                // Echo chain
+                liveEchoDelay = liveCtx.createDelay(2.0);
+                liveEchoDelay.delayTime.value = 0.35;
+                liveEchoFeedback = liveCtx.createGain();
+                liveEchoFeedback.gain.value = 0.35;
+                liveEchoWet = liveCtx.createGain();
+                liveEchoWet.gain.value = 0;
+
+                let echoFilter = liveCtx.createBiquadFilter();
+                echoFilter.type = 'lowpass';
+                echoFilter.frequency.value = 2500;
+
+                liveEchoDelay.connect(echoFilter);
+                echoFilter.connect(liveEchoFeedback);
+                liveEchoFeedback.connect(liveEchoDelay);
+                liveEchoDelay.connect(liveEchoWet);
+
+                // Reverb chain
+                liveConvolver = liveCtx.createConvolver();
+                let reverbType = document.getElementById('fxReverbType').value || 'hall';
+                let impulseSettings = {
+                    room: [1.2, 2.5],
+                    hall: [2.5, 2.0],
+                    plate: [1.5, 3.5],
+                    cathedral: [4.0, 1.8]
+                };
+                let [sec, decay] = impulseSettings[reverbType] || [2.5, 2.0];
+                liveConvolver.buffer = await createLiveImpulse(sec, decay);
+
+                liveReverbWet = liveCtx.createGain();
+                liveReverbWet.gain.value = 0;
+
+                // Connect graph
+                liveSource.connect(liveDryGain);
+                liveDryGain.connect(liveCtx.destination);
+
+                liveSource.connect(liveEchoDelay);
+                liveEchoWet.connect(liveCtx.destination);
+
+                liveSource.connect(liveConvolver);
+                liveConvolver.connect(liveReverbWet);
+                liveReverbWet.connect(liveCtx.destination);
+
+                liveSource.onended = () => {
+                    liveIsPlaying = false;
+                    document.getElementById('livePlayBtn').innerText = '▶ প্লে';
+                    document.getElementById('liveStopBtn').disabled = true;
+                    document.getElementById('liveEchoBtn').disabled = true;
+                    document.getElementById('liveReverbBtn').disabled = true;
+                    document.getElementById('liveAllFxBtn').disabled = true;
+                    document.getElementById('liveFxStatus').innerText = 'শেষ হয়েছে';
+                    // Keep save button enabled if automation exists
+                    let saveBtn = document.getElementById('liveSaveAutoBtn');
+                    if (saveBtn) saveBtn.disabled = liveAutomation.length === 0;
+                    liveEchoOn = false;
+                    liveReverbOn = false;
+                    updateLiveFxButtons();
+                };
+
+                liveSource.start(0);
+                liveStartTime = liveCtx.currentTime;
+                liveIsPlaying = true;
+                liveEchoOn = false;
+                liveReverbOn = false;
+                // Initial state
+                liveAutomation = [{ t: 0, echo: false, reverb: false }];
+
+                document.getElementById('livePlayBtn').innerText = '⏸ পজ';
+                document.getElementById('liveStopBtn').disabled = false;
+                document.getElementById('liveEchoBtn').disabled = false;
+                document.getElementById('liveReverbBtn').disabled = false;
+                document.getElementById('liveAllFxBtn').disabled = false;
+                document.getElementById('liveSaveAutoBtn').disabled = false;
+                document.getElementById('liveFxStatus').innerText = 'Playing (Dry)';
+                updateLiveFxButtons();
+
+            } catch (err) {
+                console.error(err);
+                alert('লাইভ প্লে করতে সমস্যা হয়েছে।');
+                stopLivePlay();
+            }
+        }
+
+        function stopLivePlay() {
+            try {
+                if (liveSource) {
+                    liveSource.stop();
+                    liveSource.disconnect();
+                }
+            } catch(e) {}
+            liveSource = null;
+            liveIsPlaying = false;
+            liveEchoOn = false;
+            liveReverbOn = false;
+
+            if (liveCtx) {
+                try { liveCtx.close(); } catch(e) {}
+                liveCtx = null;
+            }
+
+            let playBtn = document.getElementById('livePlayBtn');
+            if (playBtn) playBtn.innerText = '▶ প্লে';
+            let stopBtn = document.getElementById('liveStopBtn');
+            if (stopBtn) stopBtn.disabled = true;
+            ['liveEchoBtn','liveReverbBtn','liveAllFxBtn'].forEach(id => {
+                let b = document.getElementById(id);
+                if (b) b.disabled = true;
+            });
+            // Keep save button if we have automation
+            let saveBtn = document.getElementById('liveSaveAutoBtn');
+            if (saveBtn) saveBtn.disabled = liveAutomation.length < 2;
+
+            let status = document.getElementById('liveFxStatus');
+            if (status) {
+                status.innerText = liveAutomation.length > 1 ? 'অটোমেশন রেডি। সেভ করতে পারো।' : 'ফাইল সিলেক্ট করে প্লে চাপুন';
+                status.style.color = liveAutomation.length > 1 ? 'var(--success)' : '#aaa';
+            }
+            updateLiveFxButtons();
+        }
+
+        // Build continuous state timeline from discrete events
+        function buildAutomationTimeline(duration) {
+            if (liveAutomation.length === 0) return [{ t: 0, echo: false, reverb: false }];
+            let events = liveAutomation.slice().sort((a, b) => a.t - b.t);
+            // Ensure ends at duration
+            let last = events[events.length - 1];
+            if (last.t < duration - 0.05) {
+                events.push({ t: duration, echo: last.echo, reverb: last.reverb });
+            }
+            return events;
+        }
+
+        async function renderWithFx(buffer, useEcho, useReverb) {
+            let rate = buffer.sampleRate;
+            let channels = buffer.numberOfChannels;
+            let length = buffer.length;
+            // Extra tail for reverb/echo
+            let tail = Math.ceil(rate * 3);
+            let offline = new OfflineAudioContext(channels, length + tail, rate);
+
+            let src = offline.createBufferSource();
+            src.buffer = buffer;
+
+            let dry = offline.createGain();
+            dry.gain.value = 1;
+            src.connect(dry);
+            dry.connect(offline.destination);
+
+            if (useEcho) {
+                let amount = (parseFloat(document.getElementById('fxEcho').value) || 40) / 100;
+                let delay = offline.createDelay(2.0);
+                delay.delayTime.value = 0.35;
+                let feedback = offline.createGain();
+                feedback.gain.value = 0.35;
+                let wet = offline.createGain();
+                wet.gain.value = amount * 0.7;
+                let filter = offline.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 2500;
+
+                src.connect(delay);
+                delay.connect(filter);
+                filter.connect(feedback);
+                feedback.connect(delay);
+                delay.connect(wet);
+                wet.connect(offline.destination);
+            }
+
+            if (useReverb) {
+                let amount = (parseFloat(document.getElementById('fxReverb').value) || 40) / 100;
+                let conv = offline.createConvolver();
+                let reverbType = document.getElementById('fxReverbType').value || 'hall';
+                let settings = { room: [1.2, 2.5], hall: [2.5, 2.0], plate: [1.5, 3.5], cathedral: [4.0, 1.8] };
+                let [sec, decay] = settings[reverbType] || [2.5, 2.0];
+                let impulseLen = Math.floor(rate * sec);
+                let impulse = offline.createBuffer(2, impulseLen, rate);
+                for (let c = 0; c < 2; c++) {
+                    let ch = impulse.getChannelData(c);
+                    for (let i = 0; i < impulseLen; i++) {
+                        ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impulseLen, decay);
+                    }
+                }
+                conv.buffer = impulse;
+                let wet = offline.createGain();
+                wet.gain.value = amount * 0.8;
+                src.connect(conv);
+                conv.connect(wet);
+                wet.connect(offline.destination);
+            }
+
+            src.start(0);
+            return await offline.startRendering();
+        }
+
+        async function saveLiveAutomation() {
+            if (!liveBuffer && !liveOriginalFile) {
+                alert('আগে Live প্লে করে অটোমেশন রেকর্ড করুন।');
+                return;
+            }
+            if (liveAutomation.length < 2) {
+                alert('কোনো ইফেক্ট চালু/বন্ধ করা হয়নি। আগে Live প্লে করে Echo/Reverb টগল করুন।');
+                return;
+            }
+
+            let loading = document.getElementById('fxLoading');
+            if (loading) {
+                loading.style.display = 'block';
+                loading.innerText = 'অটোমেশন প্রসেস হচ্ছে... অপেক্ষা করুন';
+            }
+
+            try {
+                // Make sure we have the buffer
+                let buffer = liveBuffer;
+                if (!buffer && liveOriginalFile) {
+                    let ab = await liveOriginalFile.arrayBuffer();
+                    let ctx = new AudioContext();
+                    buffer = await ctx.decodeAudioData(ab);
+                    ctx.close();
+                }
+
+                let duration = buffer.duration;
+                let timeline = buildAutomationTimeline(duration);
+
+                // Pre-render versions
+                let dryBuf = buffer;
+                let echoBuf = await renderWithFx(buffer, true, false);
+                let reverbBuf = await renderWithFx(buffer, false, true);
+                let bothBuf = await renderWithFx(buffer, true, true);
+
+                let rate = buffer.sampleRate;
+                let outLen = Math.max(dryBuf.length, echoBuf.length, reverbBuf.length, bothBuf.length);
+                let offline = new OfflineAudioContext(2, outLen, rate);
+
+                // Helper to schedule a buffer with gain envelope
+                function scheduleSegment(srcBuffer, startT, endT, gainValue) {
+                    if (endT <= startT) return;
+                    let src = offline.createBufferSource();
+                    src.buffer = srcBuffer;
+                    let g = offline.createGain();
+                    g.gain.value = 0;
+                    // Fade very short to avoid clicks
+                    let fade = 0.01;
+                    g.gain.setValueAtTime(0, startT);
+                    g.gain.linearRampToValueAtTime(gainValue, startT + fade);
+                    g.gain.setValueAtTime(gainValue, Math.max(startT + fade, endT - fade));
+                    g.gain.linearRampToValueAtTime(0, endT);
+                    src.connect(g);
+                    g.connect(offline.destination);
+                    src.start(startT, startT, endT - startT);
+                }
+
+                for (let i = 0; i < timeline.length - 1; i++) {
+                    let cur = timeline[i];
+                    let next = timeline[i + 1];
+                    let startT = cur.t;
+                    let endT = next.t;
+
+                    if (cur.echo && cur.reverb) {
+                        scheduleSegment(bothBuf, startT, endT, 1);
+                    } else if (cur.echo) {
+                        scheduleSegment(echoBuf, startT, endT, 1);
+                    } else if (cur.reverb) {
+                        scheduleSegment(reverbBuf, startT, endT, 1);
+                    } else {
+                        scheduleSegment(dryBuf, startT, endT, 1);
+                    }
+                }
+
+                let rendered = await offline.startRendering();
+                let name = (document.getElementById('fxName').value || 'LiveFX') + '_Automated';
+                downloadBlob(audioBufferToWav(rendered), name);
+
+                if (loading) {
+                    loading.innerText = 'সেভ সম্পন্ন!';
+                    setTimeout(() => { loading.style.display = 'none'; }, 2000);
+                }
+                alert('অটোমেশনসহ ফাইল সেভ হয়েছে!');
+            } catch (err) {
+                console.error(err);
+                alert('সেভ করতে সমস্যা হয়েছে: ' + err.message);
+                if (loading) loading.style.display = 'none';
+            }
+        }
+
+        function stopAllPreviews() {
+            stopLivePlay();
+            if (currentMasterSource) { 
+                try { currentMasterSource.stop(); } catch(e){} 
+                try { currentMasterSource.disconnect(); } catch(e){}
+                currentMasterSource = null; 
+            }
+            if (rowAudioPlayer && !rowAudioPlayer.paused) { 
+                rowAudioPlayer.pause(); 
+                if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); }
+            }
+            if (cutterPlayer && !cutterPlayer.paused) { 
+                cutterPlayer.pause(); 
+                clearInterval(previewCutInterval); 
+                isPreviewingCut = false; 
+                document.getElementById('previewCutBtn').innerHTML = '▶ Preview Cut'; 
+                document.getElementById('previewCutBtn').style.background = 'var(--warning)';
+            }
+            if (audio && !audio.paused) { 
+                audio.pause(); 
+                setPlayPauseBtnState(false);
+            }
+            
+            // Reset preview buttons cleanly
+            let btnMap = {
+                'previewMergeBtn': '▶ Preview Merge',
+                'previewMixBtn': '▶ Preview Mix',
+                'previewBoostBtn': '▶ Preview Boost',
+                'previewPitchBtn': '▶ Preview',
+                'previewFxBtn': '▶ Preview FX'
+            };
+            for (let id in btnMap) {
+                let b = document.getElementById(id);
+                if (b) {
+                    b.innerHTML = btnMap[id];
+                    b.style.background = 'var(--warning)';
+                }
+            }
+            isPreviewingMaster = false;
+            currentPreviewType = '';
+        }
+
+        // --- CUTTER ---
+        // Convert total seconds (float) -> {min, sec, ms} and fill the 3 boxes for a given prefix ('cutStart' / 'cutEnd')
+        function secondsToBoxes(prefix, totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+            let min = Math.floor(totalSeconds / 60);
+            let sec = Math.floor(totalSeconds % 60);
+            let ms = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
+            if (ms >= 1000) { ms -= 1000; sec += 1; }
+            if (sec >= 60) { sec -= 60; min += 1; }
+            document.getElementById(prefix + 'Min').value = min;
+            document.getElementById(prefix + 'Sec').value = sec;
+            document.getElementById(prefix + 'Ms').value = ms;
+        }
+        // Read the 3 boxes for a given prefix and return total seconds (float), also syncing the hidden field
+        function boxesToSeconds(prefix) {
+            let min = parseFloat(document.getElementById(prefix + 'Min').value) || 0;
+            let sec = parseFloat(document.getElementById(prefix + 'Sec').value) || 0;
+            let ms = parseFloat(document.getElementById(prefix + 'Ms').value) || 0;
+            let total = (min * 60) + sec + (ms / 1000);
+            document.getElementById(prefix).value = total.toFixed(3);
+            return total;
+        }
+        ['cutStartMin','cutStartSec','cutStartMs'].forEach(id => document.getElementById(id).addEventListener('input', () => boxesToSeconds('cutStart')));
+        ['cutEndMin','cutEndSec','cutEndMs'].forEach(id => document.getElementById(id).addEventListener('input', () => boxesToSeconds('cutEnd')));
+
+        // +/- steppers for the min/sec/ms time boxes (Cutter)
+        function stepTimeBox(id, delta, min, max) {
+            let el = document.getElementById(id);
+            let val = (parseInt(el.value, 10) || 0) + delta;
+            if (min !== undefined && val < min) val = min;
+            if (max !== undefined && val > max) val = max;
+            el.value = val;
+            let prefix = id.startsWith('cutStart') ? 'cutStart' : 'cutEnd';
+            boxesToSeconds(prefix);
+        }
+        // Clear/delete a single time box back to 0 (e.g. after a mistyped value)
+        function clearTimeBox(id) {
+            document.getElementById(id).value = 0;
+            let prefix = id.startsWith('cutStart') ? 'cutStart' : 'cutEnd';
+            boxesToSeconds(prefix);
+        }
+        function toggleCutterPlayback() {
+            if (!cutterPlayer.src) return alert('Select a file first!');
+            let btn = document.getElementById('cutPlayPauseBtn');
+            if (cutterPlayer.paused) { cutterPlayer.play(); btn.innerText = '⏸'; }
+            else { cutterPlayer.pause(); btn.innerText = '▶'; }
+        }
+        cutterPlayer.addEventListener('play', () => { document.getElementById('cutPlayPauseBtn').innerText = '⏸'; });
+        cutterPlayer.addEventListener('pause', () => { document.getElementById('cutPlayPauseBtn').innerText = '▶'; });
+
+        document.getElementById('cutFile').addEventListener('change', (e) => {
+            let file = e.target.files[0];
+            if(file) {
+                cutterPlayer.src = URL.createObjectURL(file);
+                cutterPlayer.style.display = 'block';
+                document.getElementById('cutStart').value = 0;
+                secondsToBoxes('cutStart', 0);
+                // Auto set End = full duration when metadata loads
+                cutterPlayer.onloadedmetadata = () => {
+                    document.getElementById('cutEnd').value = cutterPlayer.duration.toFixed(3);
+                    secondsToBoxes('cutEnd', cutterPlayer.duration);
+                };
+            }
+        });
+        function setCutStart() { if(cutterPlayer.src) { document.getElementById('cutStart').value = cutterPlayer.currentTime.toFixed(3); secondsToBoxes('cutStart', cutterPlayer.currentTime); } else alert('Select a file first!'); }
+        function setCutEnd() {
+            if(!cutterPlayer.src) return alert('Select a file first!');
+            document.getElementById('cutEnd').value = cutterPlayer.currentTime.toFixed(3);
+            secondsToBoxes('cutEnd', cutterPlayer.currentTime);
+            cutterPlayer.pause(); // auto-stop playback once the End point is marked
+        }
+
+        function togglePreviewCut() {
+            let btn = document.getElementById('previewCutBtn');
+            let start = boxesToSeconds('cutStart');
+            let end = boxesToSeconds('cutEnd');
+            if (!cutterPlayer.src) return alert('Select file!');
+            if (start >= end) return alert('End > Start!');
+
+            if (isPreviewingCut) {
+                stopAllPreviews();
+            } else {
+                stopAllPreviews();
+                cutterPlayer.currentTime = start; cutterPlayer.play(); isPreviewingCut = true;
+                btn.innerHTML = '⏸ Stop Cut'; btn.style.background = '#ff4757';
+                previewCutInterval = setInterval(() => { if (cutterPlayer.currentTime >= end) { stopAllPreviews(); } }, 50);
+            }
+        }
+
+        async function processCut() {
+            let fileInput = document.getElementById('cutFile');
+            if(!fileInput.files.length) return alert('Select a file!');
+            let start = boxesToSeconds('cutStart') || 0;
+            let end = boxesToSeconds('cutEnd') || 0;
+            let filename = document.getElementById('cutName').value || 'cut_audio';
+            if(start < 0) start = 0;
+            if(start >= end) return alert('End must be greater than Start!');
+            
+            let loading = document.getElementById('cutLoading'); loading.innerText = "Processing..."; loading.style.display = "block";
+            try {
+                let buffer = await readAudioData(fileInput.files[0]);
+                let startOffset = Math.floor(buffer.sampleRate * start);
+                let endOffset = Math.floor(buffer.sampleRate * end);
+                if (endOffset > buffer.length) endOffset = buffer.length;
+                if (startOffset >= endOffset) { alert('Invalid time range!'); loading.style.display = "none"; return; }
+                let frameCount = endOffset - startOffset;
+                let cutBuffer = new AudioContext().createBuffer(buffer.numberOfChannels, frameCount, buffer.sampleRate);
+                for (let i = 0; i < buffer.numberOfChannels; i++) {
+                    cutBuffer.getChannelData(i).set(buffer.getChannelData(i).subarray(startOffset, endOffset));
+                }
+                downloadBlob(audioBufferToWav(cutBuffer), filename);
+                loading.innerText = "Saved!";
+            } catch(e) { alert("Error cutting audio!"); console.error(e); }
+            setTimeout(() => loading.style.display = "none", 3000);
+        }
+
+        // --- DYNAMIC TRACKS (MERGE & MIX) ---
+        function addTrackRow(type) {
+            let container = document.getElementById(type + 'TrackContainer');
+            let div = document.createElement('div'); div.className = 'track-row';
+            
+            let panHtml = '';
+            if (type === 'mix') {
+                panHtml = `
+                <div class="stepper-group" style="margin-top:8px; justify-content: space-between;">
+                    <label style="font-size:12px; color:#ccc;">Pan (L/R)</label>
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, -1)" aria-label="Pan Left">➖</button>
+                        <input type="number" class="pan-input" value="0" min="-100" max="100" style="width:60px;" aria-label="Pan value, minus is left, plus is right">
+                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, 1)" aria-label="Pan Right">➕</button>
+                    </div>
+                </div>
+                <p style="font-size:10px; color:#888; margin:2px 0 0 0;">-100 = Left, 0 = Center, +100 = Right</p>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="track-row-header">
+                    <input type="file" class="file-input" accept="audio/*" aria-label="Select track file">
+                    <button class="mini-btn" onclick="playIndividualTrack(this)" aria-label="Play this track" style="background: var(--accent);">▶</button>
+                    <button class="mini-btn" onclick="this.parentElement.parentElement.remove()" aria-label="Remove this track" style="background: var(--danger);">❌</button>
+                </div>
+                <div class="stepper-group" style="margin-top:10px; justify-content: space-between;">
+                    <label style="font-size:12px; color:#ccc;">Volume (%)</label>
+                    <div style="display:flex; gap:5px;">
+                        <button class="stepper-btn secondary" onclick="adjustRowVol(this, -1)" aria-label="Decrease volume">➖</button>
+                        <input type="number" class="vol-input" value="100" min="0" max="300" style="width:60px;" aria-label="Track volume">
+                        <button class="stepper-btn secondary" onclick="adjustRowVol(this, 1)" aria-label="Increase volume">➕</button>
+                    </div>
+                </div>
+                ${panHtml}
+            `;
+            container.appendChild(div);
+        }
+
+        function adjustRowPan(btn, direction) {
+            let input = btn.parentElement.querySelector('.pan-input');
+            let val = parseInt(input.value) || 0;
+            let newVal = val + (10 * direction);
+            if (newVal < -100) newVal = -100;
+            if (newVal > 100) newVal = 100;
+            input.value = newVal;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            addTrackRow('merge'); addTrackRow('merge');
+            addTrackRow('mix'); addTrackRow('mix');
+            rowAudioPlayer.addEventListener('ended', () => { if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); } currentRowBtn = null; });
+        });
+
+        function playIndividualTrack(btn) {
+            let row = btn.parentElement.parentElement;
+            let fileInput = row.querySelector('.file-input');
+            if(!fileInput.files.length) return alert("Select file!");
+            if(currentRowBtn === btn && !rowAudioPlayer.paused) { rowAudioPlayer.pause(); btn.innerText = '▶'; btn.setAttribute('aria-label', 'Play this track'); return; }
+            stopAllPreviews();
+            rowAudioPlayer.src = URL.createObjectURL(fileInput.files[0]);
+            let vol = row.querySelector('.vol-input').value / 100;
+            rowAudioPlayer.volume = Math.max(0, Math.min(vol, 1));
+            rowAudioPlayer.play();
+            btn.innerText = '⏸'; btn.setAttribute('aria-label', 'Pause this track'); currentRowBtn = btn;
+        }
+
+        async function generateMasterBuffer(type) {
+            let container = document.getElementById(type + 'TrackContainer');
+            let tracks = [];
+            for (let row of container.querySelectorAll('.track-row')) {
+                let fileInput = row.querySelector('.file-input');
+                let vol = parseFloat(row.querySelector('.vol-input').value) / 100 || 1;
+                let panInput = row.querySelector('.pan-input');
+                let pan = panInput ? (parseFloat(panInput.value) || 0) / 100 : 0; // -1 to +1
+                if (fileInput.files.length > 0) tracks.push({ file: fileInput.files[0], vol: vol, pan: pan });
+            }
+            if (tracks.length < 2) throw new Error("Add at least 2 tracks!");
+            
+            let buffers = [];
+            for (let track of tracks) {
+                buffers.push({ 
+                    buffer: await readAudioData(track.file), 
+                    vol: track.vol, 
+                    pan: track.pan 
+                });
+            }
+            
+            let targetRate = buffers[0].buffer.sampleRate;
+            let tempCtx = new AudioContext({ sampleRate: targetRate });
+            let finalBuffer;
+
+            if (type === 'merge') {
+                let totalLength = buffers.reduce((acc, curr) => acc + curr.buffer.length, 0);
+                let maxChannels = Math.max(...buffers.map(b => b.buffer.numberOfChannels));
+                finalBuffer = tempCtx.createBuffer(maxChannels, totalLength, targetRate);
+                let offset = 0;
+                for (let item of buffers) {
+                    for (let i = 0; i < finalBuffer.numberOfChannels; i++) {
+                        let finalChannel = finalBuffer.getChannelData(i);
+                        let sourceChannelData = item.buffer.getChannelData(i < item.buffer.numberOfChannels ? i : 0);
+                        for (let j = 0; j < item.buffer.length; j++) {
+                            if (offset + j < finalBuffer.length) {
+                                finalChannel[offset + j] = sourceChannelData[j] * item.vol;
+                            }
+                        }
+                    }
+                    offset += item.buffer.length;
+                }
+            } else if (type === 'mix') {
+                // Always create stereo for pan support
+                let maxLength = Math.max(...buffers.map(b => b.buffer.length));
+                finalBuffer = tempCtx.createBuffer(2, maxLength, targetRate);
+                let leftOut = finalBuffer.getChannelData(0);
+                let rightOut = finalBuffer.getChannelData(1);
+
+                for (let item of buffers) {
+                    let srcBuf = item.buffer;
+                    let vol = item.vol;
+                    let pan = item.pan; // -1 (left) to +1 (right)
+
+                    // Simple equal-power pan
+                    let leftGain = Math.cos((pan + 1) * 0.25 * Math.PI) * vol;
+                    let rightGain = Math.sin((pan + 1) * 0.25 * Math.PI) * vol;
+
+                    let srcLeft = srcBuf.getChannelData(0);
+                    let srcRight = srcBuf.numberOfChannels > 1 ? srcBuf.getChannelData(1) : srcLeft;
+
+                    for (let j = 0; j < srcBuf.length; j++) {
+                        leftOut[j] += srcLeft[j] * leftGain;
+                        rightOut[j] += srcRight[j] * rightGain;
+                    }
+                }
+            }
+            tempCtx.close();
+            return finalBuffer;
+        }
+
+        async function previewGeneratedAudio(type) {
+            let btn = document.getElementById(type === 'merge' ? 'previewMergeBtn' : (type === 'mix' ? 'previewMixBtn' : 'previewBoostBtn'));
+            let loading = document.getElementById(type + 'Loading');
+            if (isPreviewingMaster && currentPreviewType === type) { stopAllPreviews(); return; }
+            stopAllPreviews();
+
+            try {
+                loading.innerText = "Generating Preview..."; loading.style.display = "block";
+                let finalBuffer;
+                if(type === 'merge' || type === 'mix') { 
+                    finalBuffer = await generateMasterBuffer(type); 
+                } else if(type === 'boost') {
+                    let f1 = document.getElementById('boostFile').files[0];
+                    if(!f1) throw new Error("Select Track!");
+                    let volMulti = document.getElementById('boostExportIntensity').value / 100;
+                    let sourceBuf = await readAudioData(f1);
+                    finalBuffer = new AudioContext().createBuffer(sourceBuf.numberOfChannels, sourceBuf.length, sourceBuf.sampleRate);
+                    for(let i=0; i<sourceBuf.numberOfChannels; i++) {
+                        let fC = finalBuffer.getChannelData(i), sC = sourceBuf.getChannelData(i);
+                        for(let j=0; j<sourceBuf.length; j++) fC[j] = sC[j] * volMulti;
+                    }
+                }
+
+                let playCtx = new AudioContext();
+                currentMasterSource = playCtx.createBufferSource(); 
+                currentMasterSource.buffer = finalBuffer;
+                currentMasterSource.connect(playCtx.destination); 
+                currentMasterSource.start();
+                
+                isPreviewingMaster = true; 
+                currentPreviewType = type;
+                btn.innerHTML = '⏸ Stop ' + (type.charAt(0).toUpperCase() + type.slice(1)); 
+                btn.style.background = '#ff4757';
+                loading.style.display = "none";
+                currentMasterSource.onended = () => { stopAllPreviews(); };
+            } catch(e) { alert(e.message); loading.style.display = "none"; }
+        }
+
+        async function saveGeneratedAudio(type) {
+            let filename = document.getElementById(type + 'Name').value || (type + '_audio');
+            let loading = document.getElementById(type + 'Loading');
+            try {
+                loading.innerText = "Saving..."; loading.style.display = "block";
+                let finalBuffer = await generateMasterBuffer(type);
+                downloadBlob(audioBufferToWav(finalBuffer), filename);
+                loading.innerText = "Saved!";
+            } catch(e) { alert(e.message); }
+            setTimeout(() => loading.style.display = "none", 3000);
+        }
+
+        // --- BOOSTER EXPORT ---
+        function previewBoost() { previewGeneratedAudio('boost'); }
+
+        async function processBoost() {
+            let f1 = document.getElementById('boostFile').files[0];
+            if(!f1) return alert('Select Track!');
+            let volMulti = document.getElementById('boostExportIntensity').value / 100;
+            let filename = document.getElementById('boostName').value || 'boosted_audio';
+            let loading = document.getElementById('boostLoading');
+            try {
+                loading.innerText = "Boosting & Saving..."; loading.style.display = "block";
+                let sourceBuf = await readAudioData(f1);
+                let boostedBuffer = new AudioContext().createBuffer(sourceBuf.numberOfChannels, sourceBuf.length, sourceBuf.sampleRate);
+                for(let i=0; i<sourceBuf.numberOfChannels; i++) {
+                    let channel = boostedBuffer.getChannelData(i), data1 = sourceBuf.getChannelData(i);
+                    for(let j=0; j<sourceBuf.length; j++) channel[j] = data1[j] * volMulti;
+                }
+                downloadBlob(audioBufferToWav(boostedBuffer), filename);
+                loading.innerText = "Saved!";
+            } catch(e) { alert("Error!"); console.error(e); }
+            setTimeout(() => loading.style.display = "none", 3000);
+        }
+
+        // ========== PITCH + TEMPO + KEY DETECT ==========
+        const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        let detectedKeyIndex = 0; // 0–11
+
+        // Krumhansl-Schmuckler major profile
+        const KEY_PROFILE = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+
+        function detectKeyFromBuffer(buffer) {
+            try {
+                let ch = buffer.getChannelData(0);
+                let sr = buffer.sampleRate;
+                // Sample ~20 seconds from middle for speed
+                let start = Math.floor(ch.length * 0.1);
+                let end = Math.min(ch.length, start + sr * 20);
+                let chroma = new Float32Array(12);
+                // Simple chromagram via zero-crossing + autocorrelation-ish pitch bins
+                // Use FFT-free approach: downsample and energy per pitch class via Goertzel-like
+                let step = Math.floor(sr / 200); // coarse
+                for (let i = start; i < end - 1024; i += step * 8) {
+                    // Estimate dominant period via autocorrelation on small window
+                    let win = 1024;
+                    let bestLag = 0, bestVal = -1;
+                    for (let lag = 20; lag < 400; lag++) {
+                        let sum = 0;
+                        for (let j = 0; j < win - lag; j += 4) {
+                            sum += ch[i + j] * ch[i + j + lag];
+                        }
+                        if (sum > bestVal) { bestVal = sum; bestLag = lag; }
+                    }
+                    if (bestLag > 0 && bestVal > 0) {
+                        let freq = sr / bestLag;
+                        if (freq > 60 && freq < 1000) {
+                            let midi = 69 + 12 * Math.log2(freq / 440);
+                            let pc = ((Math.round(midi) % 12) + 12) % 12;
+                            chroma[pc] += bestVal;
+                        }
+                    }
+                }
+                // Correlate with key profiles
+                let bestKey = 0, bestScore = -1e9;
+                for (let key = 0; key < 12; key++) {
+                    let score = 0;
+                    for (let i = 0; i < 12; i++) {
+                        score += chroma[i] * KEY_PROFILE[(i - key + 12) % 12];
+                    }
+                    if (score > bestScore) { bestScore = score; bestKey = key; }
+                }
+                return bestKey;
+            } catch(e) {
+                console.error(e);
+                return 0;
+            }
+        }
+
+        async function onPitchFileSelected() {
+            let f = document.getElementById('pitchFile').files[0];
+            if (!f) return;
+            let loading = document.getElementById('pitchLoading');
+            try {
+                loading.innerText = "Detecting key..."; loading.style.display = "block";
+                let buffer = await readAudioData(f);
+                detectedKeyIndex = detectKeyFromBuffer(buffer);
+                let bpm = detectBpmFromBuffer(buffer);
+                let box = document.getElementById('detectedKeyBox');
+                let label = document.getElementById('detectedKeyLabel');
+                let bpmLabel = document.getElementById('detectedBpmLabel');
+                if (box) box.style.display = 'block';
+                if (label) label.innerText = NOTE_NAMES[detectedKeyIndex];
+                if (bpmLabel) bpmLabel.innerText = bpm ? (bpm + ' BPM') : '—';
+                document.getElementById('fxTargetKey').value = 'same';
+                document.getElementById('fxPitch').value = 0;
+                document.getElementById('pitchShiftInfo').innerText = 'Shift: 0 semitones';
+                loading.style.display = "none";
+            } catch(e) {
+                loading.style.display = "none";
+                console.error(e);
+            }
+        }
+
+        function onTargetKeyChange() {
+            let val = document.getElementById('fxTargetKey').value;
+            let shift = 0;
+            if (val !== 'same') {
+                let target = parseInt(val, 10);
+                shift = target - detectedKeyIndex;
+                // shortest path -6..+6
+                if (shift > 6) shift -= 12;
+                if (shift < -6) shift += 12;
+            }
+            document.getElementById('fxPitch').value = String(shift);
+            let pd = document.getElementById('fxPitchDirect');
+            if (pd) pd.value = shift;
+            let info = document.getElementById('pitchShiftInfo');
+            let from = NOTE_NAMES[detectedKeyIndex] || 'C';
+            if (val === 'same' || shift === 0) {
+                info.innerText = 'Shift: 0 (original pitch, BPM same)';
+            } else {
+                info.innerText = from + ' → ' + NOTE_NAMES[parseInt(val, 10)] + '  (' + (shift > 0 ? '+' : '') + shift + ' st) · BPM same';
+            }
+        }
+
+
+        function adjustPitchDirect(dir) {
+            let input = document.getElementById('fxPitchDirect');
+            let v = parseInt(input.value, 10) || 0;
+            v = Math.max(-12, Math.min(12, v + dir));
+            input.value = v;
+            document.getElementById('fxPitch').value = String(v);
+            document.getElementById('fxTargetKey').value = 'same';
+            document.getElementById('pitchShiftInfo').innerText = 'Shift: ' + (v > 0 ? '+' : '') + v + ' st · BPM same';
+        }
+        function syncPitchDirect() {
+            let v = parseInt(document.getElementById('fxPitchDirect').value, 10) || 0;
+            v = Math.max(-12, Math.min(12, v));
+            document.getElementById('fxPitchDirect').value = v;
+            document.getElementById('fxPitch').value = String(v);
+            document.getElementById('fxTargetKey').value = 'same';
+            document.getElementById('pitchShiftInfo').innerText = 'Shift: ' + (v > 0 ? '+' : '') + v + ' st · BPM same';
+        }
+
+        // --- BPM detection (onset envelope autocorrelation) ---
+        function detectBpmFromBuffer(buffer) {
+            try {
+                let ch = buffer.getChannelData(0);
+                let sr = buffer.sampleRate;
+                let start = Math.floor(ch.length * 0.05);
+                let end = Math.min(ch.length, start + sr * 30);
+                // Energy envelope ~ 100 Hz
+                let hop = Math.floor(sr / 100);
+                let env = [];
+                for (let i = start; i + hop < end; i += hop) {
+                    let sum = 0;
+                    for (let j = 0; j < hop; j++) sum += ch[i + j] * ch[i + j];
+                    env.push(Math.sqrt(sum / hop));
+                }
+                // Onset strength
+                let onset = new Float32Array(env.length);
+                for (let i = 1; i < env.length; i++) {
+                    let d = env[i] - env[i - 1];
+                    onset[i] = d > 0 ? d : 0;
+                }
+                // Autocorrelation for tempo (BPM 60–180)
+                let minLag = Math.floor(60 * 100 / 180);  // samples of envelope
+                let maxLag = Math.floor(60 * 100 / 60);
+                let bestLag = minLag, best = -1;
+                for (let lag = minLag; lag <= maxLag; lag++) {
+                    let corr = 0;
+                    for (let i = 0; i + lag < onset.length; i++) corr += onset[i] * onset[i + lag];
+                    if (corr > best) { best = corr; bestLag = lag; }
+                }
+                let bpm = Math.round(60 * 100 / bestLag);
+                // Prefer double/half if more common range
+                if (bpm < 70) bpm *= 2;
+                if (bpm > 180) bpm = Math.round(bpm / 2);
+                return Math.max(60, Math.min(200, bpm));
+            } catch(e) {
+                console.error(e);
+                return 0;
+            }
+        }
+
+        // Grain-based pitch shift — changes KEY, keeps duration/BPM
+        function pitchShiftPreserveDuration(buffer, semitones) {
+            if (!semitones || semitones === 0) return buffer;
+            let ratio = Math.pow(2, semitones / 12);
+            let channels = buffer.numberOfChannels;
+            let sr = buffer.sampleRate;
+            let len = buffer.length;
+            let frameSize = 2048;
+            let hop = 512;
+
+            let window = new Float32Array(frameSize);
+            for (let i = 0; i < frameSize; i++) {
+                window[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (frameSize - 1));
+            }
+
+            let out = [];
+            let norm = new Float32Array(len);
+            for (let c = 0; c < channels; c++) out.push(new Float32Array(len));
+
+            for (let outPos = 0; outPos < len; outPos += hop) {
+                for (let c = 0; c < channels; c++) {
+                    let src = buffer.getChannelData(c);
+                    let dst = out[c];
+                    for (let j = 0; j < frameSize; j++) {
+                        let oi = outPos + j;
+                        if (oi >= len) break;
+                        // Read input at pitch-scaled position within grain (changes pitch)
+                        let srcPos = outPos + j * ratio;
+                        if (srcPos < 0 || srcPos >= len - 1) continue;
+                        let i0 = Math.floor(srcPos);
+                        let i1 = i0 + 1;
+                        let t = srcPos - i0;
+                        let sample = src[i0] * (1 - t) + src[i1] * t;
+                        let w = window[j];
+                        dst[oi] += sample * w;
+                        if (c === 0) norm[oi] += w;
+                    }
+                }
+            }
+
+            // Normalize
+            for (let c = 0; c < channels; c++) {
+                let dst = out[c];
+                for (let i = 0; i < len; i++) {
+                    if (norm[i] > 0.001) dst[i] /= norm[i];
+                    if (dst[i] > 0.99) dst[i] = 0.99;
+                    if (dst[i] < -0.99) dst[i] = -0.99;
+                }
+            }
+
+            let ctx = new OfflineAudioContext(channels, len, sr);
+            let result = ctx.createBuffer(channels, len, sr);
+            for (let c = 0; c < channels; c++) result.copyToChannel(out[c], c);
+            return result;
+        }
+
+        async function rateProcess(buffer, rate) {
+            if (Math.abs(rate - 1) < 0.0005) return buffer;
+            let newLength = Math.max(1, Math.floor(buffer.length / rate));
+            let offline = new OfflineAudioContext(buffer.numberOfChannels, newLength, buffer.sampleRate);
+            let src = offline.createBufferSource();
+            src.buffer = buffer;
+            src.playbackRate.value = rate;
+            src.connect(offline.destination);
+            src.start(0);
+            return await offline.startRendering();
+        }
+
+        // Pitch = key change, BPM stays
+        // Speed = BPM change
+        async function applyPitchAndTempo(buffer) {
+            let semitones = parseInt(document.getElementById('fxPitch').value, 10);
+            if (isNaN(semitones)) semitones = 0;
+            let speedPct = parseInt(document.getElementById('fxSpeed').value, 10);
+            if (isNaN(speedPct)) speedPct = 100;
+            speedPct = Math.max(50, Math.min(150, speedPct));
+            let tempoRatio = speedPct / 100;
+            let result = buffer;
+
+            // 1) Scale/Key change — BPM preserved
+            if (semitones !== 0) {
+                result = pitchShiftPreserveDuration(result, semitones);
+            }
+
+            // 2) Speed — changes BPM (clean)
+            if (Math.abs(tempoRatio - 1) > 0.001) {
+                result = await rateProcess(result, tempoRatio);
+            }
+
+            return result;
+        }
+
+        // ========== IMPROVED FX GRAPH ==========
+        async function buildFxGraph(ctx, sourceBuffer, isOffline = false) {
+            let noiseReduc = parseInt(document.getElementById('fxNoise').value) || 0;
+            let bass = parseInt(document.getElementById('fxBass').value) || 0;
+            let treble = parseInt(document.getElementById('fxTreble').value) || 0;
+            let echo = parseInt(document.getElementById('fxEcho').value) / 100;
+            let echoDelayMs = parseInt(document.getElementById('fxEchoDelay').value) || 280;
+            let reverb = parseInt(document.getElementById('fxReverb').value) / 100;
+            let reverbType = document.getElementById('fxReverbType').value || 'room';
+
+            // Noise gate (pitch/tempo is in separate Pitch panel)
+            let processedBuffer = sourceBuffer;
+            if (noiseReduc > 0) {
+                processedBuffer = ctx.createBuffer(sourceBuffer.numberOfChannels, sourceBuffer.length, sourceBuffer.sampleRate);
+                for (let c = 0; c < sourceBuffer.numberOfChannels; c++) {
+                    processedBuffer.getChannelData(c).set(sourceBuffer.getChannelData(c));
+                }
+                applySoftNoiseGate(processedBuffer, noiseReduc);
+            }
+
+            let source = ctx.createBufferSource();
+            source.buffer = processedBuffer;
+
+            let lastNode = source;
+
+            // --- Multi-stage Noise Reduction filters ---
+            if (noiseReduc > 0) {
+                // Stage 1: Rumble / low-end noise cut
+                let rumbleFilter = ctx.createBiquadFilter();
+                rumbleFilter.type = "highpass";
+                rumbleFilter.frequency.value = 40 + (noiseReduc * 2.5);
+                rumbleFilter.Q.value = 0.85;
+
+                // Stage 2: Mid noise notch (gentle)
+                let midNotch = ctx.createBiquadFilter();
+                midNotch.type = "peaking";
+                midNotch.frequency.value = 3500;
+                midNotch.Q.value = 1.2;
+                midNotch.gain.value = -1.5 * (noiseReduc / 100);
+
+                // Stage 3: Hiss / high-end cut
+                let hissFilter = ctx.createBiquadFilter();
+                hissFilter.type = "lowpass";
+                hissFilter.frequency.value = 15500 - (noiseReduc * 70);
+                hissFilter.Q.value = 0.7;
+
+                // Stage 4: Extra high-shelf tame for strong reduction
+                let highShelf = ctx.createBiquadFilter();
+                highShelf.type = "highshelf";
+                highShelf.frequency.value = 7000;
+                highShelf.gain.value = -3 * (noiseReduc / 100);
+
+                lastNode.connect(rumbleFilter);
+                rumbleFilter.connect(midNotch);
+                midNotch.connect(hissFilter);
+                hissFilter.connect(highShelf);
+                lastNode = highShelf;
+            }
+
+            // --- EQ ---
+            let bassFilter = ctx.createBiquadFilter();
+            bassFilter.type = "lowshelf";
+            bassFilter.frequency.value = 180;
+            bassFilter.gain.value = (bass / 10); 
+
+            let trebleFilter = ctx.createBiquadFilter();
+            trebleFilter.type = "highshelf";
+            trebleFilter.frequency.value = 3500;
+            trebleFilter.gain.value = (treble / 10); 
+
+            lastNode.connect(bassFilter);
+            bassFilter.connect(trebleFilter);
+            
+            // Dry path
+            trebleFilter.connect(ctx.destination);
+
+            // --- Improved Echo (filtered feedback delay) ---
+            if (echo > 0.01) {
+                let delayNode = ctx.createDelay(1.0);
+                delayNode.delayTime.value = echoDelayMs / 1000;
+
+                let feedbackGain = ctx.createGain();
+                feedbackGain.gain.value = Math.min(0.65, 0.25 + echo * 0.4);
+
+                let wetGain = ctx.createGain();
+                wetGain.gain.value = echo * 0.9;
+
+                // Lowpass in feedback path for natural decay
+                let echoFilter = ctx.createBiquadFilter();
+                echoFilter.type = "lowpass";
+                echoFilter.frequency.value = 3500;
+
+                trebleFilter.connect(delayNode);
+                delayNode.connect(echoFilter);
+                echoFilter.connect(feedbackGain);
+                feedbackGain.connect(delayNode); // feedback loop
+                delayNode.connect(wetGain);
+                wetGain.connect(ctx.destination);
+            }
+
+            // --- Improved Reverb (category based) ---
+            if (reverb > 0.01) {
+                let convNode = ctx.createConvolver();
+                convNode.buffer = getImpulseBuffer(ctx, reverb * 100, reverbType);
+
+                let reverbGain = ctx.createGain();
+                // slightly higher wet for longer categories
+                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.6 : 1.35;
+                reverbGain.gain.value = reverb * wetBoost;
+
+                trebleFilter.connect(convNode);
+                convNode.connect(reverbGain);
+                reverbGain.connect(ctx.destination);
+            }
+
+            return source;
+        }
+
+        async function previewPitchEditor() {
+            let f1 = document.getElementById('pitchFile').files[0];
+            let btn = document.getElementById('previewPitchBtn');
+            let loading = document.getElementById('pitchLoading');
+            if (!f1) return alert('Select a file first!');
+            if (isPreviewingMaster && currentPreviewType === 'pitch') { stopAllPreviews(); return; }
+            stopAllPreviews();
+            try {
+                loading.innerText = "Processing..."; loading.style.display = "block";
+                let buffer = await readAudioData(f1);
+                buffer = await applyPitchAndTempo(buffer);
+                let playCtx = new AudioContext();
+                currentMasterSource = playCtx.createBufferSource();
+                currentMasterSource.buffer = buffer;
+                currentMasterSource.connect(playCtx.destination);
+                currentMasterSource.start(0);
+                isPreviewingMaster = true;
+                currentPreviewType = 'pitch';
+                btn.innerHTML = '⏸ Stop';
+                btn.style.background = '#ff4757';
+                loading.style.display = "none";
+                currentMasterSource.onended = () => { stopAllPreviews(); };
+            } catch(e) {
+                alert("Error!"); console.error(e);
+                loading.style.display = "none";
+            }
+        }
+
+        async function savePitchEditor() {
+            let f1 = document.getElementById('pitchFile').files[0];
+            if (!f1) return alert('Select a file first!');
+            let filename = document.getElementById('pitchName').value || 'pitched_audio';
+            let loading = document.getElementById('pitchLoading');
+            try {
+                loading.innerText = "Saving..."; loading.style.display = "block";
+                let buffer = await readAudioData(f1);
+                buffer = await applyPitchAndTempo(buffer);
+                downloadBlob(audioBufferToWav(buffer), filename);
+                loading.innerText = "Saved!";
+            } catch(e) {
+                alert("Error!"); console.error(e);
+            }
+            setTimeout(() => loading.style.display = "none", 2500);
+        }
+
+        async function previewFxEditor() {
+            let f1 = document.getElementById('fxFile').files[0];
+            let btn = document.getElementById('previewFxBtn');
+            let loading = document.getElementById('fxLoading');
+            if(!f1) return alert('Select or Record a Track first!');
+            
+            if (isPreviewingMaster && currentPreviewType === 'fx') { stopAllPreviews(); return; }
+            stopAllPreviews();
+
+            try {
+                loading.innerText = "Applying FX... Please wait."; loading.style.display = "block";
+                let buffer = await readAudioData(f1);
+                let playCtx = new AudioContext();
+                
+                currentMasterSource = await buildFxGraph(playCtx, buffer, false);
+                currentMasterSource.start();
+                
+                isPreviewingMaster = true; 
+                currentPreviewType = 'fx';
+                btn.innerHTML = '⏸ Stop FX'; 
+                btn.style.background = '#ff4757';
+                loading.style.display = "none";
+                
+                currentMasterSource.onended = () => { stopAllPreviews(); };
+            } catch(e) { 
+                alert("Error applying FX!"); 
+                console.error(e); 
+                loading.style.display = "none"; 
+            }
+        }
+
+        async function saveFxEditor() {
+            let f1 = document.getElementById('fxFile').files[0];
+            if(!f1) return alert('Select or Record a Track!');
+            let filename = document.getElementById('fxName').value || 'fx_audio';
+            let loading = document.getElementById('fxLoading');
+            let reverbAmount = parseInt(document.getElementById('fxReverb').value) || 0;
+            let reverbType = document.getElementById('fxReverbType').value;
+            
+            try {
+                loading.innerText = "Rendering High Quality FX..."; loading.style.display = "block";
+                let buffer = await readAudioData(f1);
+
+                // Dynamic tail based on reverb category & amount
+                let tailSeconds = 1.5;
+                if (reverbAmount > 0) {
+                    if (reverbType === 'room') tailSeconds = 2.0 + (reverbAmount / 100) * 1.5;
+                    else if (reverbType === 'plate') tailSeconds = 2.5 + (reverbAmount / 100) * 2.0;
+                    else if (reverbType === 'hall') tailSeconds = 3.5 + (reverbAmount / 100) * 2.5;
+                    else if (reverbType === 'cathedral') tailSeconds = 5.0 + (reverbAmount / 100) * 3.5;
+                }
+
+                let offlineCtx = new OfflineAudioContext(
+                    buffer.numberOfChannels, 
+                    buffer.length + Math.floor(buffer.sampleRate * tailSeconds), 
+                    buffer.sampleRate
+                );
+                let source = await buildFxGraph(offlineCtx, buffer, true);
+                source.start(0);
+                let renderedBuffer = await offlineCtx.startRendering();
+                downloadBlob(audioBufferToWav(renderedBuffer), filename);
+                loading.innerText = "Saved!";
+            } catch(e) { 
+                alert("Error rendering!"); 
+                console.error(e); 
+            }
+            setTimeout(() => loading.style.display = "none", 3000);
+        }
+
+
+        // ========== GLOBAL PLAY/PAUSE (TalkBack friendly) ==========
+        // Toggles whatever is currently playing: main player OR editor preview
+        function toggleAnyPlayback() {
+            // 1) Editor / FX / Pitch preview (Web Audio source)
+            if (isPreviewingMaster && currentMasterSource) {
+                stopAllPreviews();
+                return;
+            }
+            // 2) Cutter preview
+            if (cutterPlayer && !cutterPlayer.paused) {
+                stopAllPreviews();
+                return;
+            }
+            // 3) Row track preview
+            if (rowAudioPlayer && !rowAudioPlayer.paused) {
+                rowAudioPlayer.pause();
+                if (currentRowBtn) {
+                    currentRowBtn.innerText = '▶';
+                    currentRowBtn.setAttribute('aria-label', 'Play this track');
+                }
+                return;
+            }
+            // 4) Main music player
+            if (audio && audio.src) {
+                togglePlay();
+                return;
+            }
+        }
+
+        // Media Session API — headset / system media buttons / some TalkBack actions
+        if ('mediaSession' in navigator) {
+            try {
+                navigator.mediaSession.setActionHandler('play', () => {
+                    if (audio && audio.src && audio.paused) togglePlay();
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    if (audio && !audio.paused) togglePlay();
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => { prevTrack(); });
+                navigator.mediaSession.setActionHandler('nexttrack', () => { nextTrack(); });
+            } catch(e) {}
+        }
+
+        audio.addEventListener('play', () => {
+            setPlayPauseBtnState(true);
+            if ('mediaSession' in navigator) {
+                try {
+                    navigator.mediaSession.playbackState = 'playing';
+                    let name = (files[currentTrackIndex] && files[currentTrackIndex].name) || 'স্বরালয়';
+                    navigator.mediaSession.metadata = new MediaMetadata({ title: name, artist: 'স্বরালয়' });
+                } catch(e) {}
+            }
+        });
+        audio.addEventListener('pause', () => {
+            setPlayPauseBtnState(false);
+            if ('mediaSession' in navigator) {
+                try { navigator.mediaSession.playbackState = 'paused'; } catch(e) {}
+            }
+        });
+
+        // Two-finger double-tap → play/pause (custom accessibility gesture)
+        // Note: some TalkBack versions may capture this first
+        let lastTwoFingerTapAt = 0;
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length !== 2) return;
+            let now = Date.now();
+            if (now - lastTwoFingerTapAt < 450) {
+                // Ignore if user is typing in an input
+                let tag = (document.activeElement && document.activeElement.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+                e.preventDefault();
+                toggleAnyPlayback();
+                lastTwoFingerTapAt = 0;
+            } else {
+                lastTwoFingerTapAt = now;
+            }
+        }, { passive: false });
+
+        // Keyboard: Space = play/pause (when not in a text field)
+        document.addEventListener('keydown', function(e) {
+            if (e.code !== 'Space' && e.key !== ' ') return;
+            let tag = (document.activeElement && document.activeElement.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+            e.preventDefault();
+            toggleAnyPlayback();
+        });
+
+    </script>
+</body>
+</html>
