@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace 'com.sushil.swaralay'
-    compileSdk 33
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.sushil.swaralay"
         minSdk 24
-        targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        targetSdk 35
+        versionCode 2
+        versionName "1.1"
     }
 
     compileOptions {
