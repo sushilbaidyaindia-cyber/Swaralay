@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Swaralay" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#FF0000</item>
+    </style>
+</resources>
