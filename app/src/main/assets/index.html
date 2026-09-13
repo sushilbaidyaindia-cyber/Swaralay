@@ -5,32 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>স্বরালয় · Swaralay</title>
     <style>
-        :root { --bg: #121212; --panel: #1e1e2f; --accent: #00d2ff; --text: #ffffff; --danger: #ff4757; --success: #20bf6b; --warning: #ff9f43; --purple: #9b59b6; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 80px; }
-        .header { background: linear-gradient(180deg, #1a1a2e 0%, #161625 100%); padding: 16px 12px 14px; text-align: center; font-size: 24px; font-weight: 700; letter-spacing: 1px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.45); margin: 0; border-bottom: 1px solid #2a2a45; }
-        .header-sub { display:block; font-size:11px; font-weight:500; color:#888; letter-spacing:2px; margin-top:2px; }
-        
-        .tabs { display: flex; background: #1c1c2e; position: fixed; bottom: 0; width: 100%; box-shadow: 0 -4px 20px rgba(0,0,0,0.55); z-index: 100; border-top: 1px solid #2a2a40; }
-        .tab-btn { flex: 1; padding: 15px 2px; text-align: center; cursor: pointer; border: none; background: none; color: #888; font-size: 13px; font-weight: bold; transition: 0.3s; }
-        .tab-btn.active { color: var(--accent); border-top: 3px solid var(--accent); background: #2a2a40; }
-        
-        .content { padding: 20px; display: none; max-width: 600px; margin: auto; }
-        .content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        h2 { color: var(--accent); margin-top: 0; font-size: 18px; font-weight: 700; border-bottom: 1px solid #2e2e48; padding-bottom: 10px; letter-spacing: 0.3px; }
-        button { padding: 12px 15px; background: var(--accent); border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; margin-top: 10px; }
-        button:active { transform: scale(0.98); }
+        :root {
+            --bg: #0d0d14;
+            --panel: #161622;
+            --panel2: #1c1c2e;
+            --accent: #00d2ff;
+            --accent-dim: rgba(0, 210, 255, 0.15);
+            --text: #f0f0f5;
+            --muted: #8a8a9a;
+            --danger: #ff4757;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --purple: #a55eea;
+            --radius: 14px;
+            --radius-sm: 10px;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 88px;
+            line-height: 1.45;
+        }
+        .header {
+            background: linear-gradient(165deg, #1a1a2e 0%, #12121c 100%);
+            padding: 18px 14px 16px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            margin: 0;
+            border-bottom: 1px solid rgba(0,210,255,0.12);
+        }
+        .header-sub {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 3px;
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(18,18,28,0.96);
+            backdrop-filter: blur(12px);
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -6px 24px rgba(0,0,0,0.5);
+            z-index: 100;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 2px 14px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            transition: 0.2s;
+            border-radius: 0;
+        }
+        .tab-btn.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+            border-top: 2px solid var(--accent);
+        }
+
+        .content { padding: 16px 14px 24px; display: none; max-width: 560px; margin: auto; }
+        .content.active { display: block; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+        h2 {
+            color: var(--accent);
+            margin: 0 0 14px;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        button {
+            padding: 12px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #000;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:active { transform: scale(0.97); opacity: 0.9; }
         button.danger { background: var(--danger); color: #fff; }
-        button.secondary { background: #383854; color: #fff; }
-        
-        input[type=file] { width: 100%; padding: 10px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; }
-        input[type=range] { width: 100%; margin: 10px 0; accent-color: var(--accent); }
+        button.secondary { background: #2a2a40; color: #eee; }
+
+        input[type=file] {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a28;
+            border: 1px dashed #3a3a55;
+            border-radius: var(--radius-sm);
+            color: #ccc;
+            font-size: 13px;
+        }
+        input[type=range] {
+            width: 100%;
+            margin: 8px 0;
+            accent-color: var(--accent);
+            height: 6px;
+        }
         .input-group { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
         .input-group input[type=number], .input-group input[type=text], .input-group select { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; }
         
-        .card { background: var(--panel); padding: 18px; border-radius: 14px; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.28); border: 1px solid #2a2a40; }
+        .card {
+            background: var(--panel);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
         
         .stepper-group { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
         .stepper-group input[type=number] { width: 80px; text-align: center; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; font-weight: bold; font-size: 16px; margin: 0; }
@@ -56,14 +166,71 @@
 
         .loading-text { display: none; color: var(--accent); font-weight: bold; margin-top: 10px; text-align: center; }
         
-        .track-list { background: var(--panel); border-radius: 8px; max-height: 250px; overflow-y: auto; margin-top: 15px; }
-        .track-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center;}
-        .track-item.playing { color: var(--accent); font-weight: bold; background: #2a2a40; border-left: 4px solid var(--accent); }
-        .controls { display: flex; justify-content: space-between; gap: 4px; margin-top: 15px; }
-        .controls button { flex: 1; padding: 10px 0; font-size: 10px; border-radius: 5px; background: #2a2a40; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .controls button span { font-size: 14px; margin-bottom: 3px; }
-        .controls button:nth-child(3) { background: var(--accent); color: black; font-weight: bold; transform: scale(1.1); font-size: 11px;}
-        .time-display { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-top: -5px; }
+        .track-list {
+            background: var(--panel);
+            border-radius: var(--radius-sm);
+            max-height: 260px;
+            overflow-y: auto;
+            margin-top: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .track-item {
+            padding: 13px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .track-item:active { background: #222233; }
+        .track-item.playing {
+            color: var(--accent);
+            font-weight: 700;
+            background: var(--accent-dim);
+            border-left: 3px solid var(--accent);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            margin-top: 14px;
+        }
+        .controls button {
+            flex: 1;
+            padding: 11px 0;
+            font-size: 10px;
+            border-radius: 12px;
+            background: #252538;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .controls button span { font-size: 16px; margin-bottom: 2px; }
+        .controls button:nth-child(3) {
+            background: var(--accent);
+            color: #000;
+            font-weight: 800;
+            transform: scale(1.08);
+            font-size: 11px;
+            box-shadow: 0 0 16px rgba(0,210,255,0.35);
+        }
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: -2px;
+            font-variant-numeric: tabular-nums;
+        }
         
         .playlist-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px;}
         .del-btn { background: var(--danger); padding: 5px 8px; border-radius: 4px; color: white; font-size: 10px; margin: 0; width: auto;}
@@ -90,12 +257,16 @@
             <input type="file" id="fileInput" multiple accept="audio/*" aria-label="Select audio files">
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-label="Select folder of audio files">
             <button type="button" onclick="document.getElementById('folderInput').click()" style="background: var(--purple); color:#fff; margin-top:10px;">📁 পুরো ফোল্ডার অ্যাড করুন (সব গান একসাথে)</button>
-            <div id="nowPlayingSection" style="background: #2a2a40; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #00d2ff;">
+            <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
                 <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">কোনো গান নেই</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
                 <div class="time-display">
                     <span id="currentTime">0:00</span>
                     <span id="totalTime">0:00</span>
+                </div>
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
+                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 শাফল</button>
+                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 রিপিট বন্ধ</button>
                 </div>
                 <div class="controls">
                     <button onclick="prevTrack()" aria-label="Previous Track"><span>⏮</span>Prev</button>
@@ -104,6 +275,8 @@
                     <button onclick="fastForward()" aria-label="Fast Forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
                     <button onclick="nextTrack()" aria-label="Next Track"><span>⏭</span>Next</button>
                 </div>
+                <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 ভলিউম: <span id="volLabel">100</span>%</label>
+                <input type="range" id="playerVolume" value="100" min="0" max="100" aria-label="Player Volume" oninput="setPlayerVolume(this.value)">
                 <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:15px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
                 <p id="playlistMsg" style="color: var(--success); font-size:12px; text-align:center; display:none; margin-top:10px;" aria-live="polite">Added to DB Playlist!</p>
             </div>
@@ -111,7 +284,10 @@
 
         <div class="playlist-header">
             <h3 style="margin:0; font-size:16px;">📂 Selected Files</h3>
-            <button onclick="loadDbPlaylist()" style="margin:0; width:auto; padding:5px 10px; background:var(--warning); color:#000;">📑 View DB Playlist</button>
+            <div style="display:flex; gap:6px;">
+                <button onclick="clearSelectedFiles()" style="margin:0; width:auto; padding:5px 10px; background:var(--danger); color:#fff;" aria-label="Clear selected files">🗑 Clear</button>
+                <button onclick="loadDbPlaylist()" style="margin:0; width:auto; padding:5px 10px; background:var(--warning); color:#000;">📑 View DB Playlist</button>
+            </div>
         </div>
         <div class="track-list" id="trackList"></div>
     </div>
@@ -139,8 +315,8 @@
         <div id="panel-cut" class="editor-panel card">
             <h2>✂️ Audio Cutter</h2>
             <input type="file" id="cutFile" accept="audio/*" aria-label="Select file to cut">
-            <audio id="cutterAudioPlayer" controls preload="metadata" style="display: none; width:100%; border-radius:5px; margin-top:10px;"></audio>
-            <p id="cutDurationInfo" style="display:none; color:var(--accent); font-size:13px; margin:8px 0 0; text-align:center;" aria-live="polite"></p>
+            <audio id="cutterAudioPlayer" preload="metadata" style="display:none;"></audio>
+            <p id="cutDurationInfo" style="display:none; color:var(--accent); font-size:13px; margin:8px 0 0; text-align:center;" aria-live="off" role="status"></p>
 
             <div class="input-group" style="margin-top: 15px;">
                 <button class="secondary" onclick="setCutStart()" style="background: var(--success);">📍 Set Start</button>
@@ -518,6 +694,14 @@
         let files = [];
         let currentTrackIndex = 0;
         let isDbPlaylistView = false;
+        let currentAudioObjectUrl = null;   // BUGFIX: track so we can revoke it (was leaking on every track change)
+        let currentRowObjectUrl = null;     // BUGFIX: same leak, for the editor row preview player
+        let isShuffle = false;
+        let repeatMode = 'off'; // 'off' | 'all' | 'one'
+        let lastListGroupByFolder = false;  // remembers how the current "Selected Files" list was built
+        let sortMode = 'name';              // 'name' | 'date' — how the track list is ordered
+        let folderViewMode = 'combined';    // 'combined' | 'browse' — how a folder import is displayed
+        let currentBrowseFolder = null;     // which sub-folder we're viewing in 'browse' mode (null = folder list)
         
         // Editor Previews
         let rowAudioPlayer = new Audio();
@@ -1019,9 +1203,36 @@
             try { localStorage.setItem('am_track_positions', JSON.stringify(trackPositions)); } catch(e) {}
         }
 
+        // Which sub-folder (by full relative path) a file belongs to — 'Root' if it's not inside one.
+        function getFolderKey(file) {
+            let relPath = file.webkitRelativePath || file.name;
+            let parts = relPath.split('/');
+            return parts.length > 1 ? parts.slice(0, -1).join(' / ') : 'Root';
+        }
+
+        // Sort the current `files` array. When groupByFolder is true, folders stay grouped
+        // together (sorted by folder name) and the chosen sortMode only orders songs *within*
+        // each folder — otherwise sortMode orders the whole flat list.
+        function sortFilesArray(groupByFolder) {
+            let byNameOrDate = sortMode === 'date'
+                ? (a, b) => (a.lastModified || 0) - (b.lastModified || 0)
+                : (a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true, sensitivity: 'base' });
+
+            if (groupByFolder) {
+                files.sort((a, b) => {
+                    let fa = getFolderKey(a), fb = getFolderKey(b);
+                    if (fa !== fb) return fa.localeCompare(fb, undefined, { numeric: true, sensitivity: 'base' });
+                    return byNameOrDate(a, b);
+                });
+            } else {
+                files.sort(byNameOrDate);
+            }
+        }
+
         document.getElementById('fileInput').addEventListener('change', (e) => {
             isDbPlaylistView = false;
             files = Array.from(e.target.files);
+            sortFilesArray(false);
             renderTrackList('📁 Selected Files');
             if(files.length > 0) playTrack(0);
         });
@@ -1029,6 +1240,7 @@
         const AUDIO_EXT_RE = /\.(mp3|wav|ogg|m4a|flac|aac|wma|opus|amr)$/i;
         document.getElementById('folderInput').addEventListener('change', (e) => {
             isDbPlaylistView = false;
+            currentBrowseFolder = null; // start fresh at the top of the folder list, if in browse mode
             let trackList = document.getElementById('trackList');
             // Show a loading message immediately (scanning a big folder can take a moment,
             // and without this the screen looks "frozen"/unresponsive while it works).
@@ -1041,23 +1253,83 @@
                     trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">এই ফোল্ডারে কোনো অডিও ফাইল পাওয়া যায়নি।</p>';
                     return;
                 }
-                // Sort so files are grouped folder-by-folder, then alphabetically within each folder
-                files.sort((a, b) => {
-                    let pa = (a.webkitRelativePath || a.name), pb = (b.webkitRelativePath || b.name);
-                    return pa.localeCompare(pb, undefined, { numeric: true, sensitivity: 'base' });
-                });
+                // Sort so files are grouped folder-by-folder, then by the chosen sort mode within each folder
+                sortFilesArray(true);
                 renderTrackList('📁 ফোল্ডার থেকে যোগ হয়েছে (' + files.length + 'টি গান)', true);
                 playTrack(0);
             }, 30);
         });
 
+        // NEW: switch between "browse folders one at a time" and "everything combined" view
+        function setFolderViewMode(mode) {
+            folderViewMode = mode;
+            currentBrowseFolder = null;
+            refreshTrackListView();
+        }
+
+        // NEW: re-sort the list by name (A-Z) or by date, keeping the currently playing
+        // track correctly tracked even though its index in `files` changes.
+        function setSortMode(mode) {
+            if (sortMode === mode) return;
+            sortMode = mode;
+            let playingFile = files[currentTrackIndex];
+            sortFilesArray(lastListGroupByFolder);
+            if (playingFile) {
+                let idx = files.indexOf(playingFile);
+                if (idx >= 0) currentTrackIndex = idx;
+            }
+            refreshTrackListView();
+        }
+
         function renderTrackList(headerText, groupByFolder) {
+            lastListGroupByFolder = !!groupByFolder;
             let trackList = document.getElementById('trackList');
             let frag = document.createDocumentFragment();
+
+            // --- Sort toggle: available everywhere (plain list or folder import) ---
+            if (files.length > 1) {
+                let sortWrap = document.createElement('div');
+                sortWrap.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+                let nameBtn = document.createElement('button');
+                nameBtn.type = 'button'; nameBtn.className = 'mini-btn'; nameBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'name' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'name' ? '#000' : '#fff') + ';';
+                nameBtn.innerText = '🔤 নাম অনুযায়ী (A-Z)';
+                nameBtn.onclick = () => setSortMode('name');
+                let dateBtn = document.createElement('button');
+                dateBtn.type = 'button'; dateBtn.className = 'mini-btn'; dateBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'date' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'date' ? '#000' : '#fff') + ';';
+                dateBtn.innerText = '📅 তারিখ অনুযায়ী';
+                dateBtn.onclick = () => setSortMode('date');
+                sortWrap.appendChild(nameBtn); sortWrap.appendChild(dateBtn);
+                frag.appendChild(sortWrap);
+            }
+
+            // --- Folder view toggle: only shown when this list came from a folder import ---
+            if (groupByFolder) {
+                let viewWrap = document.createElement('div');
+                viewWrap.style.cssText = 'display:flex; gap:8px; margin-bottom:10px;';
+                let browseBtn = document.createElement('button');
+                browseBtn.type = 'button'; browseBtn.className = 'mini-btn'; browseBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (folderViewMode === 'browse' ? 'var(--accent)' : '#2a2a40') + '; color:' + (folderViewMode === 'browse' ? '#000' : '#fff') + ';';
+                browseBtn.innerText = '📂 ফোল্ডার আকারে দেখুন';
+                browseBtn.onclick = () => setFolderViewMode('browse');
+                let combinedBtn = document.createElement('button');
+                combinedBtn.type = 'button'; combinedBtn.className = 'mini-btn'; combinedBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (folderViewMode === 'combined' ? 'var(--accent)' : '#2a2a40') + '; color:' + (folderViewMode === 'combined' ? '#000' : '#fff') + ';';
+                combinedBtn.innerText = '📃 সব একসাথে';
+                combinedBtn.onclick = () => setFolderViewMode('combined');
+                viewWrap.appendChild(browseBtn); viewWrap.appendChild(combinedBtn);
+                frag.appendChild(viewWrap);
+            }
+
             let headerEl = document.createElement('h4');
             headerEl.style.cssText = 'margin-top:0; color:#aaa;';
             headerEl.innerText = headerText;
             frag.appendChild(headerEl);
+
+            // Folder "browse one at a time" mode has its own renderer
+            if (groupByFolder && folderViewMode === 'browse') {
+                renderFolderBrowseInto(frag);
+                trackList.innerHTML = '';
+                trackList.appendChild(frag);
+                return;
+            }
 
             // Search box to quickly filter a long combined list (e.g. after adding a whole folder)
             if (files.length > 8) {
@@ -1084,9 +1356,7 @@
             let lastFolder = null;
             files.forEach((file, index) => {
                 if (groupByFolder) {
-                    let relPath = file.webkitRelativePath || file.name;
-                    let parts = relPath.split('/');
-                    let folder = parts.length > 1 ? parts.slice(0, -1).join(' / ') : 'Root';
+                    let folder = getFolderKey(file);
                     if (folder !== lastFolder) {
                         let folderDiv = document.createElement('div');
                         folderDiv.className = 'folder-header';
@@ -1100,12 +1370,104 @@
                 div.setAttribute('role', 'button');
                 div.setAttribute('tabindex', '0');
                 div.setAttribute('aria-label', 'Play ' + file.name);
-                div.innerText = file.name;
+
+                let nameSpan = document.createElement('span');
+                nameSpan.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis;';
+                nameSpan.innerText = file.name;
+
+                // NEW: allow removing a single track from the current session list
+                let delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'del-btn';
+                delBtn.innerText = '✖';
+                delBtn.setAttribute('aria-label', 'Remove ' + file.name + ' from list');
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFromSelectedList(index);
+                });
+
+                div.appendChild(nameSpan);
+                div.appendChild(delBtn);
                 frag.appendChild(div);
             });
 
             trackList.innerHTML = '';
             trackList.appendChild(frag);
+        }
+
+        // NEW: "browse folders one at a time" view — shows the folders that contain audio
+        // first (tap one to open it), instead of one long combined list of every song.
+        function renderFolderBrowseInto(frag) {
+            if (currentBrowseFolder === null) {
+                let counts = {};
+                let order = [];
+                files.forEach(f => {
+                    let key = getFolderKey(f);
+                    if (!(key in counts)) { counts[key] = 0; order.push(key); }
+                    counts[key]++;
+                });
+                order.forEach(key => {
+                    let div = document.createElement('div');
+                    div.className = 'track-item';
+                    div.setAttribute('role', 'button');
+                    div.setAttribute('tabindex', '0');
+                    div.setAttribute('aria-label', 'ফোল্ডার খুলুন ' + key);
+                    let nameSpan = document.createElement('span');
+                    nameSpan.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis;';
+                    nameSpan.innerText = '📁 ' + key;
+                    let countSpan = document.createElement('span');
+                    countSpan.style.cssText = 'color:#888; font-size:12px; margin-left:8px;';
+                    countSpan.innerText = counts[key] + 'টি গান';
+                    div.appendChild(nameSpan);
+                    div.appendChild(countSpan);
+                    let openFolder = () => { currentBrowseFolder = key; refreshTrackListView(); };
+                    div.addEventListener('click', openFolder);
+                    div.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFolder(); } });
+                    frag.appendChild(div);
+                });
+            } else {
+                let backDiv = document.createElement('div');
+                backDiv.className = 'track-item';
+                backDiv.setAttribute('role', 'button');
+                backDiv.setAttribute('tabindex', '0');
+                backDiv.style.cssText = 'color: var(--accent); font-weight: bold;';
+                backDiv.innerText = '⬅ ফোল্ডার লিস্টে ফিরুন';
+                let goBack = () => { currentBrowseFolder = null; refreshTrackListView(); };
+                backDiv.addEventListener('click', goBack);
+                backDiv.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } });
+                frag.appendChild(backDiv);
+
+                let folderTitle = document.createElement('div');
+                folderTitle.style.cssText = 'padding:8px 4px; font-size:13px; font-weight:bold; color:var(--accent);';
+                folderTitle.innerText = '📂 ' + currentBrowseFolder;
+                frag.appendChild(folderTitle);
+
+                files.forEach((file, index) => {
+                    if (getFolderKey(file) !== currentBrowseFolder) return;
+                    let div = document.createElement('div'); div.className = 'track-item'; div.dataset.index = index;
+                    div.setAttribute('role', 'button');
+                    div.setAttribute('tabindex', '0');
+                    div.setAttribute('aria-label', 'Play ' + file.name);
+
+                    let nameSpan = document.createElement('span');
+                    nameSpan.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis;';
+                    nameSpan.innerText = file.name;
+
+                    let delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'del-btn';
+                    delBtn.innerText = '✖';
+                    delBtn.setAttribute('aria-label', 'Remove ' + file.name + ' from list');
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeFromSelectedList(index);
+                    });
+
+                    div.appendChild(nameSpan);
+                    div.appendChild(delBtn);
+                    frag.appendChild(div);
+                });
+            }
         }
 
         // Delegated click/keyboard handler so track items always work reliably,
@@ -1131,7 +1493,10 @@
             currentTrackIndex = index;
             let file = files[index];
             if (!file) return;
-            audio.src = URL.createObjectURL(file);
+            // BUGFIX: previous track's blob URL was never released — revoke it before making a new one
+            if (currentAudioObjectUrl) { try { URL.revokeObjectURL(currentAudioObjectUrl); } catch(e) {} }
+            currentAudioObjectUrl = URL.createObjectURL(file);
+            audio.src = currentAudioObjectUrl;
 
             // Resume from last position if available
             let key = file.name;
@@ -1173,24 +1538,62 @@
         }
         function nextTrack() {
             saveTrackPosition();
+            if (isShuffle && files.length > 0) {
+                playTrack(getRandomTrackIndex(currentTrackIndex), true);
+                return;
+            }
             if (currentTrackIndex < files.length - 1) {
                 playTrack(currentTrackIndex + 1, true); // next track starts from beginning
+            } else if (repeatMode === 'all' && files.length > 0) {
+                playTrack(0, true); // wrap back to the first track
             }
         }
         function prevTrack() {
             saveTrackPosition();
+            if (isShuffle && files.length > 0) {
+                playTrack(getRandomTrackIndex(currentTrackIndex), true);
+                return;
+            }
             if (currentTrackIndex > 0) {
                 playTrack(currentTrackIndex - 1, true);
+            } else if (repeatMode === 'all' && files.length > 0) {
+                playTrack(files.length - 1, true); // wrap to last track
             }
         }
         function fastForward() { audio.currentTime += skipTime; }
         function rewind() { audio.currentTime -= skipTime; }
+        function setPlayerVolume(val) {
+            let v = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+            audio.volume = v / 100;
+            let lbl = document.getElementById('volLabel');
+            if (lbl) lbl.textContent = v;
+        }
+        function clearSelectedFiles() {
+            if (!files.length) return;
+            if (!confirm('সব সিলেক্টেড গান মুছে ফেলবেন?')) return;
+            files = [];
+            currentTrackIndex = 0;
+            try { audio.pause(); audio.removeAttribute('src'); } catch(e) {}
+            let nameEl = document.getElementById('currentTrackName');
+            if (nameEl) nameEl.textContent = 'কোনো গান নেই';
+            document.getElementById('currentTime').textContent = '0:00';
+            document.getElementById('totalTime').textContent = '0:00';
+            document.getElementById('progressBar').value = 0;
+            setPlayPauseBtnState(false);
+            renderTrackList('📂 Selected Files', false);
+        }
 
+        let lastAriaTimeUpdate = 0;
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
                 let progressBar = document.getElementById('progressBar');
                 progressBar.value = (audio.currentTime / audio.duration) * 100;
-                progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + ' of ' + formatTime(audio.duration));
+                // Throttle aria updates so TalkBack does not spam
+                let now = Date.now();
+                if (now - lastAriaTimeUpdate > 2500) {
+                    progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + ' of ' + formatTime(audio.duration));
+                    lastAriaTimeUpdate = now;
+                }
                 document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
                 document.getElementById('totalTime').innerText = formatTime(audio.duration);
                 // Save position every ~3 seconds
@@ -1198,13 +1601,44 @@
             }
         });
         document.getElementById('progressBar').addEventListener('input', (e) => { audio.currentTime = (e.target.value / 100) * audio.duration; });
+
+        // --- SHUFFLE / REPEAT (new) ---
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            let btn = document.getElementById('shuffleBtn');
+            if (btn) {
+                btn.setAttribute('aria-pressed', isShuffle ? 'true' : 'false');
+                btn.style.background = isShuffle ? 'var(--accent)' : '#383854';
+                btn.style.color = isShuffle ? '#000' : '#fff';
+            }
+        }
+        function cycleRepeatMode() {
+            repeatMode = repeatMode === 'off' ? 'all' : (repeatMode === 'all' ? 'one' : 'off');
+            let btn = document.getElementById('repeatBtn');
+            if (btn) {
+                let labels = { off: '🔁 রিপিট বন্ধ', all: '🔁 সব রিপিট', one: '🔂 একটি রিপিট' };
+                btn.innerText = labels[repeatMode];
+                btn.style.background = repeatMode === 'off' ? '#383854' : 'var(--accent)';
+                btn.style.color = repeatMode === 'off' ? '#fff' : '#000';
+            }
+        }
+        function getRandomTrackIndex(excludeIndex) {
+            if (files.length <= 1) return 0;
+            let idx;
+            do { idx = Math.floor(Math.random() * files.length); } while (idx === excludeIndex);
+            return idx;
+        }
         audio.addEventListener('ended', () => {
             // Clear saved position when track finishes
             if (files[currentTrackIndex]) {
                 delete trackPositions[files[currentTrackIndex].name];
                 try { localStorage.setItem('am_track_positions', JSON.stringify(trackPositions)); } catch(e) {}
             }
-            nextTrack(); // Auto play next track
+            if (repeatMode === 'one') {
+                playTrack(currentTrackIndex, true);
+                return;
+            }
+            nextTrack(); // Auto play next track (respects shuffle / repeat-all)
         });
         audio.addEventListener('pause', saveTrackPosition);
 
@@ -1219,6 +1653,43 @@
                 el.classList.toggle('playing', isCurrent);
                 el.setAttribute('aria-current', isCurrent ? 'true' : 'false');
             });
+        }
+
+        // NEW: rebuild the "Selected Files" list (used after removing a track), keeping the
+        // same folder-grouping mode it was originally shown in.
+        function refreshTrackListView() {
+            let headerText = lastListGroupByFolder
+                ? '📁 ফোল্ডার থেকে যোগ হয়েছে (' + files.length + 'টি গান)'
+                : '📁 Selected Files';
+            renderTrackList(headerText, lastListGroupByFolder);
+        }
+
+        // NEW: remove one track from the current (non-DB) session list without
+        // needing to reselect every file again.
+        function removeFromSelectedList(index) {
+            if (isDbPlaylistView) return; // DB playlist has its own delete flow (deleteFromDb)
+            if (index < 0 || index >= files.length) return;
+            let removingCurrent = (index === currentTrackIndex);
+            files.splice(index, 1);
+
+            if (files.length === 0) {
+                currentTrackIndex = 0;
+                audio.pause();
+                audio.removeAttribute('src');
+                if (currentAudioObjectUrl) { try { URL.revokeObjectURL(currentAudioObjectUrl); } catch(e) {} }
+                currentAudioObjectUrl = null;
+                document.getElementById('currentTrackName').innerText = 'কোনো গান নেই';
+                document.getElementById('progressBar').value = 0;
+                document.getElementById('currentTime').innerText = '0:00';
+                document.getElementById('totalTime').innerText = '0:00';
+                setPlayPauseBtnState(false);
+            } else if (removingCurrent) {
+                let nextIdx = Math.min(index, files.length - 1);
+                playTrack(nextIdx, true);
+            } else if (index < currentTrackIndex) {
+                currentTrackIndex -= 1;
+            }
+            refreshTrackListView();
         }
 
         // --- AUDIO HELPERS ---
@@ -1934,17 +2405,20 @@
 
             let url = URL.createObjectURL(file);
             cutterPlayer.src = url;
-            cutterPlayer.style.display = 'block';
+            // Native audio controls hidden — we use custom Play / Set Start / Set End buttons only
 
             document.getElementById('cutStart').value = 0;
             secondsToBoxes('cutStart', 0);
             document.getElementById('cutEnd').value = 0;
             secondsToBoxes('cutEnd', 0);
 
-            // Show total length when metadata is ready (WebView often needs multiple events)
+            // Show total length once (avoid TalkBack spam from repeated duration events)
+            let durationApplied = false;
             function applyFullDuration() {
+                if (durationApplied) return true;
                 let d = cutterPlayer.duration;
                 if (!d || !isFinite(d) || d <= 0) return false;
+                durationApplied = true;
                 document.getElementById('cutEnd').value = d.toFixed(3);
                 secondsToBoxes('cutEnd', d);
                 let info = document.getElementById('cutDurationInfo');
@@ -1952,6 +2426,7 @@
                     let m = Math.floor(d / 60);
                     let s = Math.floor(d % 60);
                     let ms = Math.round((d - Math.floor(d)) * 1000);
+                    // aria-live is off — set text without repeated announcements
                     info.textContent = 'মোট দৈর্ঘ্য: ' + m + ' মিনিট ' + s + ' সেকেন্ড ' + ms + ' মিলি · End অটো সেট';
                     info.style.display = 'block';
                 }
@@ -1963,14 +2438,9 @@
             }
 
             cutterPlayer.onloadedmetadata = function () { applyFullDuration(); };
-            cutterPlayer.ondurationchange = function () { applyFullDuration(); };
-            cutterPlayer.onloadeddata = function () { applyFullDuration(); };
-            cutterPlayer.oncanplay = function () { applyFullDuration(); };
-
-            // Extra attempts for slow WebView / large files
-            setTimeout(function () { applyFullDuration(); }, 250);
-            setTimeout(function () { applyFullDuration(); }, 800);
-            setTimeout(function () { applyFullDuration(); }, 2000);
+            // Fallback only — do not keep firing on every durationchange
+            setTimeout(function () { applyFullDuration(); }, 400);
+            setTimeout(function () { applyFullDuration(); }, 1200);
 
             // If browser tries to auto-play, stop it (user must press Play)
             let blockAuto = function () {
@@ -2100,7 +2570,10 @@
             if(!fileInput.files.length) return alert("Select file!");
             if(currentRowBtn === btn && !rowAudioPlayer.paused) { rowAudioPlayer.pause(); btn.innerText = '▶'; btn.setAttribute('aria-label', 'Play this track'); return; }
             stopAllPreviews();
-            rowAudioPlayer.src = URL.createObjectURL(fileInput.files[0]);
+            // BUGFIX: previous row preview's blob URL was never released — revoke it before making a new one
+            if (currentRowObjectUrl) { try { URL.revokeObjectURL(currentRowObjectUrl); } catch(e) {} }
+            currentRowObjectUrl = URL.createObjectURL(fileInput.files[0]);
+            rowAudioPlayer.src = currentRowObjectUrl;
             let vol = row.querySelector('.vol-input').value / 100;
             rowAudioPlayer.volume = Math.max(0, Math.min(vol, 1));
             rowAudioPlayer.play();
@@ -2197,7 +2670,14 @@
                     finalBuffer = new AudioContext().createBuffer(sourceBuf.numberOfChannels, sourceBuf.length, sourceBuf.sampleRate);
                     for(let i=0; i<sourceBuf.numberOfChannels; i++) {
                         let fC = finalBuffer.getChannelData(i), sC = sourceBuf.getChannelData(i);
-                        for(let j=0; j<sourceBuf.length; j++) fC[j] = sC[j] * volMulti;
+                        for(let j=0; j<sourceBuf.length; j++) {
+                            let s = sC[j] * volMulti;
+                            if (s > 1) s = 1 - Math.exp(1 - s);
+                            else if (s < -1) s = -1 + Math.exp(1 + s);
+                            if (s > 0.99) s = 0.99;
+                            if (s < -0.99) s = -0.99;
+                            fC[j] = s;
+                        }
                     }
                 }
 
@@ -2243,7 +2723,15 @@
                 let boostedBuffer = new AudioContext().createBuffer(sourceBuf.numberOfChannels, sourceBuf.length, sourceBuf.sampleRate);
                 for(let i=0; i<sourceBuf.numberOfChannels; i++) {
                     let channel = boostedBuffer.getChannelData(i), data1 = sourceBuf.getChannelData(i);
-                    for(let j=0; j<sourceBuf.length; j++) channel[j] = data1[j] * volMulti;
+                    for(let j=0; j<sourceBuf.length; j++) {
+                        // Soft clip to reduce harsh digital clipping at high boost
+                        let s = data1[j] * volMulti;
+                        if (s > 1) s = 1 - Math.exp(1 - s);
+                        else if (s < -1) s = -1 + Math.exp(1 + s);
+                        if (s > 0.99) s = 0.99;
+                        if (s < -0.99) s = -0.99;
+                        channel[j] = s;
+                    }
                 }
                 downloadBlob(audioBufferToWav(boostedBuffer), filename);
                 loading.innerText = "Saved!";
@@ -2797,23 +3285,24 @@
             }
         });
 
-        // Two-finger double-tap → play/pause (custom accessibility gesture)
-        // Note: some TalkBack versions may capture this first
+        // Two-finger double-tap → play/pause (TalkBack-friendly gesture)
+        // Double-tap with 2 fingers = pause if playing, play if paused
         let lastTwoFingerTapAt = 0;
         document.addEventListener('touchstart', function(e) {
             if (e.touches.length !== 2) return;
             let now = Date.now();
-            if (now - lastTwoFingerTapAt < 450) {
+            if (now - lastTwoFingerTapAt < 500) {
                 // Ignore if user is typing in an input
                 let tag = (document.activeElement && document.activeElement.tagName) || '';
                 if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
                 e.preventDefault();
-                toggleAnyPlayback();
+                e.stopPropagation();
+                toggleAnyPlayback(); // play ↔ pause
                 lastTwoFingerTapAt = 0;
             } else {
                 lastTwoFingerTapAt = now;
             }
-        }, { passive: false });
+        }, { passive: false, capture: true });
 
         // Keyboard: Space = play/pause (when not in a text field)
         document.addEventListener('keydown', function(e) {
