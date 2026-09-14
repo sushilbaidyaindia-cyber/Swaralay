@@ -997,7 +997,11 @@
 
                 } catch (err) {
                     stopMonitorPlayback();
-                    alert('মাইক্রোফোনের অনুমতি পাওয়া যায়নি।');
+                    let msg = 'মাইক্রোফোনের অনুমতি পাওয়া যায়নি।\n\n';
+                    msg += '১) ফোন Settings → Apps → স্বরালয় → Permissions → Microphone → Allow\n';
+                    msg += '২) অ্যাপ আনইনস্টল করে নতুন APK ইনস্টল করুন (ম্যানিফেস্টে RECORD_AUDIO লাগবে)\n';
+                    msg += '৩) আবার রেকর্ড চাপুন';
+                    alert(msg);
                     console.error(err);
                     isRecording = false;
                 }
@@ -2558,11 +2562,234 @@
             input.value = newVal;
         }
 
+        // ========== ফোনের সব গান থেকে বেছে নেওয়া (নাম / তারিখ সর্ট) ==========
+        let nativePickerSort = 'name'; // 'name' | 'date'
+        let nativePickerTargetId = null;
+
+        function getNativeAudioList() {
+            // Prefer list already pushed by Android; fallback to bridge
+            if (window.__nativeAudioList && window.__nativeAudioList.length) {
+                return window.__nativeAudioList.slice();
+            }
+            try {
+                if (window.AndroidBridge && AndroidBridge.getAudioFilesList) {
+                    let raw = AndroidBridge.getAudioFilesList();
+                    let list = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (Array.isArray(list)) {
+                        window.__nativeAudioList = list;
+                        return list.slice();
+                    }
+                }
+            } catch (e) { console.error(e); }
+            return [];
+        }
+
+        function sortNativeList(list, mode) {
+            let arr = list.slice();
+            if (mode === 'date') {
+                arr.sort(function(a, b) {
+                    let da = a.dateAdded || a.date || a.lastModified || 0;
+                    let db = b.dateAdded || b.date || b.lastModified || 0;
+                    return db - da; // newest first
+                });
+            } else {
+                arr.sort(function(a, b) {
+                    let na = (a.title || a.name || '').toString();
+                    let nb = (b.title || b.name || '').toString();
+                    return na.localeCompare(nb, 'bn', { sensitivity: 'base' });
+                });
+            }
+            return arr;
+        }
+
+        function openPhoneMusicPicker(targetInputId) {
+            nativePickerTargetId = targetInputId;
+            let list = getNativeAudioList();
+            if (!list.length) {
+                try {
+                    if (window.AndroidBridge && AndroidBridge.requestRescan) AndroidBridge.requestRescan();
+                } catch (e) {}
+                alert('ফোনের গানের লিস্ট পাওয়া যায়নি।\n\n১) অ্যাপে স্টোরেজ/অডিও পারমিশন দিন\n২) আবার চেষ্টা করুন\n\nঅথবা নিচের সাধারণ ফাইল বাটন দিয়ে রিসেন্ট ফাইল নিতে পারেন।');
+                return;
+            }
+            renderNativePickerOverlay(list);
+        }
+
+        function renderNativePickerOverlay(list) {
+            let old = document.getElementById('__nativePickerOverlay');
+            if (old) old.remove();
+            let sorted = sortNativeList(list, nativePickerSort);
+
+            let ov = document.createElement('div');
+            ov.id = '__nativePickerOverlay';
+            ov.setAttribute('role', 'dialog');
+            ov.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;overflow:auto;padding:12px;';
+
+            let box = document.createElement('div');
+            box.style.cssText = 'max-width:560px;margin:12px auto;background:#161622;border-radius:14px;padding:14px;border:1px solid #333;';
+
+            let h = document.createElement('h3');
+            h.textContent = '📱 ফোনের সব গান (' + sorted.length + ')';
+            h.style.cssText = 'color:#00d2ff;margin:0 0 10px;font-size:16px;';
+            box.appendChild(h);
+
+            // Sort buttons
+            let sortRow = document.createElement('div');
+            sortRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+            let nameBtn = document.createElement('button');
+            nameBtn.type = 'button';
+            nameBtn.textContent = 'অক্ষর অনুযায়ী';
+            nameBtn.setAttribute('aria-label', 'নাম অনুযায়ী সাজান');
+            nameBtn.style.cssText = 'flex:1;margin:0;padding:10px;font-size:13px;background:' + (nativePickerSort === 'name' ? 'var(--accent)' : '#2a2a40') + ';color:' + (nativePickerSort === 'name' ? '#000' : '#fff') + ';border:none;border-radius:8px;font-weight:bold;';
+            nameBtn.onclick = function() { nativePickerSort = 'name'; renderNativePickerOverlay(list); };
+            let dateBtn = document.createElement('button');
+            dateBtn.type = 'button';
+            dateBtn.textContent = 'তারিখ অনুযায়ী';
+            dateBtn.setAttribute('aria-label', 'তারিখ অনুযায়ী সাজান');
+            dateBtn.style.cssText = 'flex:1;margin:0;padding:10px;font-size:13px;background:' + (nativePickerSort === 'date' ? 'var(--accent)' : '#2a2a40') + ';color:' + (nativePickerSort === 'date' ? '#000' : '#fff') + ';border:none;border-radius:8px;font-weight:bold;';
+            dateBtn.onclick = function() { nativePickerSort = 'date'; renderNativePickerOverlay(list); };
+            sortRow.appendChild(nameBtn);
+            sortRow.appendChild(dateBtn);
+            box.appendChild(sortRow);
+
+            let close = document.createElement('button');
+            close.type = 'button';
+            close.textContent = 'বন্ধ';
+            close.setAttribute('aria-label', 'পিকার বন্ধ');
+            close.style.cssText = 'background:#555;color:#fff;padding:10px 14px;border:none;border-radius:8px;margin-bottom:12px;width:100%;';
+            close.onclick = function() { ov.remove(); };
+            box.appendChild(close);
+
+            let search = document.createElement('input');
+            search.type = 'search';
+            search.placeholder = 'গান খুঁজুন...';
+            search.setAttribute('aria-label', 'গান খুঁজুন');
+            search.style.cssText = 'width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #444;background:#222;color:#fff;';
+            box.appendChild(search);
+
+            let listBox = document.createElement('div');
+            listBox.id = '__nativePickerList';
+            box.appendChild(listBox);
+
+            function fillList(filter) {
+                listBox.innerHTML = '';
+                let q = (filter || '').toLowerCase().trim();
+                let shown = 0;
+                sorted.forEach(function(item) {
+                    let name = item.title || item.name || 'গান';
+                    let artist = item.artist || '';
+                    if (q && (name + ' ' + artist).toLowerCase().indexOf(q) === -1) return;
+                    shown++;
+                    let btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.setAttribute('aria-label', name + ' নির্বাচন');
+                    btn.textContent = '🎵 ' + name + (artist ? (' — ' + artist) : '');
+                    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:12px;margin:5px 0;background:#2a2a40;color:#fff;border:1px solid #444;border-radius:8px;font-size:13px;';
+                    btn.onclick = function() {
+                        assignNativeFileToInput(nativePickerTargetId, item);
+                        ov.remove();
+                    };
+                    listBox.appendChild(btn);
+                });
+                if (!shown) {
+                    let p = document.createElement('p');
+                    p.style.color = '#aaa';
+                    p.textContent = 'কোনো গান পাওয়া যায়নি।';
+                    listBox.appendChild(p);
+                }
+            }
+            fillList('');
+            search.oninput = function() { fillList(search.value); };
+
+            ov.appendChild(box);
+            document.body.appendChild(ov);
+            close.focus();
+        }
+
+        function assignNativeFileToInput(inputId, item) {
+            try {
+                if (!window.AndroidBridge || !AndroidBridge.readUriAsBase64) {
+                    alert('নেটিভ ব্রিজ নেই। অ্যাপ আপডেট করুন।');
+                    return;
+                }
+                let uri = item.uri || item.path;
+                let name = item.title || item.name || 'song.mp3';
+                let b64 = AndroidBridge.readUriAsBase64(uri);
+                if (!b64 || b64.indexOf('ERROR:') === 0) {
+                    alert('ফাইল পড়া যায়নি: ' + b64);
+                    return;
+                }
+                let bin = atob(b64);
+                let arr = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                let mime = 'audio/mpeg';
+                if (/\.wav$/i.test(name)) mime = 'audio/wav';
+                else if (/\.ogg$/i.test(name)) mime = 'audio/ogg';
+                else if (/\.m4a$/i.test(name)) mime = 'audio/mp4';
+                else if (/\.flac$/i.test(name)) mime = 'audio/flac';
+                let file = new File([arr], name, { type: mime });
+                let dt = new DataTransfer();
+                dt.items.add(file);
+                let input = document.getElementById(inputId);
+                if (!input) {
+                    alert('ইনপুট পাওয়া যায়নি');
+                    return;
+                }
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof onPitchFileSelected === 'function' && inputId === 'pitchFile') onPitchFileSelected();
+            } catch (e) {
+                alert('লোড সমস্যা: ' + e);
+                console.error(e);
+            }
+        }
+
+        function attachPhoneMusicButtons() {
+            let ids = ['cutFile', 'boostFile', 'pitchFile', 'fxFile', 'fileInput'];
+            ids.forEach(function(id) {
+                let el = document.getElementById(id);
+                if (!el || el.dataset.phoneBtn) return;
+                el.dataset.phoneBtn = '1';
+                let b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = '📱 ফোনের সব গান থেকে বেছে নিন';
+                b.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
+                b.style.cssText = 'width:100%;margin-top:8px;padding:12px;background:#7c4dff;color:#fff;border:none;border-radius:10px;font-weight:bold;font-size:13px;';
+                b.onclick = function(e) {
+                    e.preventDefault();
+                    openPhoneMusicPicker(id);
+                };
+                el.parentNode.insertBefore(b, el.nextSibling);
+            });
+            // Merge / Mix dynamic rows
+            document.querySelectorAll('.track-row .file-input').forEach(function(inp) {
+                if (inp.dataset.phoneBtn) return;
+                inp.dataset.phoneBtn = '1';
+                if (!inp.id) inp.id = 'dynFile_' + Math.random().toString(36).slice(2);
+                let b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = '📱 ফোনের সব গান';
+                b.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
+                b.style.cssText = 'margin-top:6px;padding:10px;background:#7c4dff;color:#fff;border:none;border-radius:8px;width:100%;font-weight:bold;font-size:12px;';
+                b.onclick = function(ev) {
+                    ev.preventDefault();
+                    openPhoneMusicPicker(inp.id);
+                };
+                inp.parentNode.appendChild(b);
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             addTrackRow('merge'); addTrackRow('merge');
             addTrackRow('mix'); addTrackRow('mix');
             rowAudioPlayer.addEventListener('ended', () => { if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); } currentRowBtn = null; });
+            attachPhoneMusicButtons();
+            setInterval(attachPhoneMusicButtons, 1500);
         });
+        // Also expose for MainActivity inject compatibility
+        window.__openNativeSongPicker = openPhoneMusicPicker;
+        window.__assignNativeToInput = assignNativeFileToInput;
 
         function playIndividualTrack(btn) {
             let row = btn.parentElement.parentElement;
