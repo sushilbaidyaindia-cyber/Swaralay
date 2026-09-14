@@ -254,9 +254,10 @@
     <div id="player" class="content active">
         <div class="card">
             <h2>🎵 প্লেয়ার</h2>
-            <input type="file" id="fileInput" multiple accept="audio/*" aria-label="Select audio files">
-            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-label="Select folder of audio files">
-            <button type="button" onclick="document.getElementById('folderInput').click()" style="background: var(--purple); color:#fff; margin-top:10px;">📁 পুরো ফোল্ডার অ্যাড করুন (সব গান একসাথে)</button>
+            <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
+            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-hidden="true">
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">শুধু ফোনের অডিও থেকে বেছে নিন</p>
+            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 ফোনের সব গান থেকে বেছে নিন</button>
             <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
                 <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">কোনো গান নেই</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
@@ -314,7 +315,8 @@
         <!-- 1. CUTTER PANEL -->
         <div id="panel-cut" class="editor-panel card">
             <h2>✂️ Audio Cutter</h2>
-            <input type="file" id="cutFile" accept="audio/*" aria-label="Select file to cut">
+            <input type="file" id="cutFile" accept="audio/*" style="display:none;" aria-hidden="true">
+            <button type="button" onclick="openPhoneMusicPicker('cutFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
             <audio id="cutterAudioPlayer" preload="metadata" style="display:none;"></audio>
             <p id="cutDurationInfo" style="display:none; color:var(--accent); font-size:13px; margin:8px 0 0; text-align:center;" aria-live="off" role="status"></p>
 
@@ -420,7 +422,8 @@
         <!-- 4. BOOSTER EXPORT PANEL -->
         <div id="panel-boost" class="editor-panel card">
             <h2>🔊 Volume Booster</h2>
-            <input type="file" id="boostFile" accept="audio/*" aria-label="Select file to boost">
+            <input type="file" id="boostFile" accept="audio/*" style="display:none;" aria-hidden="true">
+            <button type="button" onclick="openPhoneMusicPicker('boostFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
             <label style="margin-top: 15px; display: block; font-size:12px; color:#ccc;">Boost Level (%)</label>
             <div class="stepper-group">
                 <button class="stepper-btn" onclick="adjustInputVal('boostExportIntensity', -1)" aria-label="Decrease Boost">➖</button>
@@ -440,7 +443,8 @@
         <!-- 5. PITCH & RHYTHM PANEL -->
         <div id="panel-pitch" class="editor-panel card">
             <h2>🎼 Pitch & Rhythm</h2>
-            <input type="file" id="pitchFile" accept="audio/*" aria-label="Select file for pitch and speed" onchange="onPitchFileSelected()">
+            <input type="file" id="pitchFile" accept="audio/*" style="display:none;" aria-hidden="true" onchange="onPitchFileSelected()">
+            <button type="button" onclick="openPhoneMusicPicker('pitchFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
 
             <div id="detectedKeyBox" style="display:none; background:#2a2a40; border-radius:8px; padding:12px; margin-top:12px;">
                 <div style="display:flex; gap:12px; text-align:center;">
@@ -553,7 +557,8 @@
                 </div>
             </div>
 
-            <input type="file" id="fxFile" accept="audio/*" aria-label="Select file for FX">
+            <input type="file" id="fxFile" accept="audio/*" style="display:none;" aria-hidden="true">
+            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
             
 
             
@@ -907,15 +912,23 @@
                     if (afterStop) afterStop.style.display = 'none';
                     lastRecordingBlob = null;
 
+                    // Android: request RECORD_AUDIO at runtime via native bridge
+                    try {
+                        if (window.AndroidBridge) {
+                            if (AndroidBridge.hasMicPermission && !AndroidBridge.hasMicPermission()) {
+                                if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
+                                alert('মাইক্রোফোন পারমিশন চালু করুন।\nAllow চাপার পর আবার রেকর্ড বাটন চাপুন।');
+                                return;
+                            }
+                            if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
+                        }
+                    } catch (pe) { console.warn(pe); }
+
                     if (projectTracks.length > 0) {
                         await startMonitorPlayback();
                     }
 
-                    // Best quality mic constraints
-                    // Note: Android Chrome's built-in echoCancellation / noiseSuppression / autoGainControl
-                    // often makes voice & music recordings sound muffled, robotic, or "underwater".
-                    // Turning these off gives a much cleaner raw capture (use the Noise Remover slider
-                    // in FX Studio afterward if background noise needs cleaning up).
+                    // Best quality mic constraints (raw capture; use FX Noise later if needed)
                     currentStream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
                             echoCancellation: false,
@@ -2534,11 +2547,15 @@
                 `;
             }
 
+            let dynId = 'dynFile_' + Math.random().toString(36).slice(2);
             div.innerHTML = `
-                <div class="track-row-header">
-                    <input type="file" class="file-input" accept="audio/*" aria-label="Select track file">
-                    <button class="mini-btn" onclick="playIndividualTrack(this)" aria-label="Play this track" style="background: var(--accent);">▶</button>
-                    <button class="mini-btn" onclick="this.parentElement.parentElement.remove()" aria-label="Remove this track" style="background: var(--danger);">❌</button>
+                <div class="track-row-header" style="flex-direction:column; align-items:stretch; gap:8px;">
+                    <input type="file" class="file-input" id="${dynId}" accept="audio/*" style="display:none;" aria-hidden="true">
+                    <button type="button" onclick="openPhoneMusicPicker('${dynId}')" style="margin:0; padding:10px; background:#7c4dff; color:#fff; border:none; border-radius:8px; font-weight:bold; width:100%;">📱 ফোনের সব গান</button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="mini-btn" onclick="playIndividualTrack(this)" aria-label="Play this track" style="background: var(--accent); flex:1;">▶</button>
+                        <button class="mini-btn" onclick="this.closest('.track-row').remove()" aria-label="Remove this track" style="background: var(--danger); flex:1;">❌</button>
+                    </div>
                 </div>
                 <div class="stepper-group" style="margin-top:10px; justify-content: space-between;">
                     <label style="font-size:12px; color:#ccc;">Volume (%)</label>
@@ -2746,37 +2763,10 @@
         }
 
         function attachPhoneMusicButtons() {
-            let ids = ['cutFile', 'boostFile', 'pitchFile', 'fxFile', 'fileInput'];
-            ids.forEach(function(id) {
-                let el = document.getElementById(id);
-                if (!el || el.dataset.phoneBtn) return;
-                el.dataset.phoneBtn = '1';
-                let b = document.createElement('button');
-                b.type = 'button';
-                b.textContent = '📱 ফোনের সব গান থেকে বেছে নিন';
-                b.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
-                b.style.cssText = 'width:100%;margin-top:8px;padding:12px;background:#7c4dff;color:#fff;border:none;border-radius:10px;font-weight:bold;font-size:13px;';
-                b.onclick = function(e) {
-                    e.preventDefault();
-                    openPhoneMusicPicker(id);
-                };
-                el.parentNode.insertBefore(b, el.nextSibling);
-            });
-            // Merge / Mix dynamic rows
+            // Static panels already have phone buttons in HTML.
+            // Only ensure dynamic merge/mix rows have id on hidden file input.
             document.querySelectorAll('.track-row .file-input').forEach(function(inp) {
-                if (inp.dataset.phoneBtn) return;
-                inp.dataset.phoneBtn = '1';
                 if (!inp.id) inp.id = 'dynFile_' + Math.random().toString(36).slice(2);
-                let b = document.createElement('button');
-                b.type = 'button';
-                b.textContent = '📱 ফোনের সব গান';
-                b.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
-                b.style.cssText = 'margin-top:6px;padding:10px;background:#7c4dff;color:#fff;border:none;border-radius:8px;width:100%;font-weight:bold;font-size:12px;';
-                b.onclick = function(ev) {
-                    ev.preventDefault();
-                    openPhoneMusicPicker(inp.id);
-                };
-                inp.parentNode.appendChild(b);
             });
         }
 
@@ -2792,12 +2782,12 @@
         window.__assignNativeToInput = assignNativeFileToInput;
 
         function playIndividualTrack(btn) {
-            let row = btn.parentElement.parentElement;
+            let row = btn.closest('.track-row');
+            if (!row) return;
             let fileInput = row.querySelector('.file-input');
-            if(!fileInput.files.length) return alert("Select file!");
+            if(!fileInput || !fileInput.files.length) return alert("আগে 📱 ফোনের সব গান থেকে বেছে নিন!");
             if(currentRowBtn === btn && !rowAudioPlayer.paused) { rowAudioPlayer.pause(); btn.innerText = '▶'; btn.setAttribute('aria-label', 'Play this track'); return; }
             stopAllPreviews();
-            // BUGFIX: previous row preview's blob URL was never released — revoke it before making a new one
             if (currentRowObjectUrl) { try { URL.revokeObjectURL(currentRowObjectUrl); } catch(e) {} }
             currentRowObjectUrl = URL.createObjectURL(fileInput.files[0]);
             rowAudioPlayer.src = currentRowObjectUrl;
