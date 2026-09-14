@@ -73,6 +73,29 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
             }
+
+            @Override
+            public void onPermissionRequest(final android.webkit.PermissionRequest request) {
+                // Without this override, the page's navigator.mediaDevices.getUserMedia()
+                // call always fails/rejects — even after RECORD_AUDIO is granted in
+                // Settings — because WebView blocks mic/camera access from web content
+                // by default until the app explicitly grants it here.
+                runOnUiThread(() -> {
+                    java.util.ArrayList<String> toGrant = new java.util.ArrayList<>();
+                    for (String resource : request.getResources()) {
+                        if (android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)
+                                && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                                    == PackageManager.PERMISSION_GRANTED) {
+                            toGrant.add(resource);
+                        }
+                    }
+                    if (!toGrant.isEmpty()) {
+                        request.grant(toGrant.toArray(new String[0]));
+                    } else {
+                        request.deny();
+                    }
+                });
+            }
         });
 
         webView.setWebViewClient(new WebViewClient() {
@@ -193,41 +216,6 @@ public class MainActivity extends AppCompatActivity {
           + "  }catch(e){alert('লোড সমস্যা: '+e);console.error(e);}"
           + "};"
 
-          + "function __addPickerButtons(){"
-          + "  var ids=['cutFile','boostFile','pitchFile','fxFile','fileInput'];"
-          + "  ids.forEach(function(id){"
-          + "    var el=document.getElementById(id);"
-          + "    if(!el||el.dataset.nativeBtn)return;"
-          + "    el.dataset.nativeBtn='1';"
-          + "    var b=document.createElement('button');"
-          + "    b.type='button';"
-          + "    b.textContent='📱 ফোনের সব গান থেকে বেছে নিন';"
-          + "    b.setAttribute('aria-label','ফোনের সব গান থেকে বেছে নিন');"
-          + "    b.style.cssText='width:100%;margin-top:8px;padding:12px;background:#7c4dff;color:#fff;border:none;border-radius:8px;font-weight:bold;';"
-          + "    b.onclick=function(e){e.preventDefault();window.__openNativeSongPicker(id);};"
-          + "    el.parentNode.insertBefore(b,el.nextSibling);"
-          + "  });"
-          + "  var addBtnObserver=function(){"
-          + "    document.querySelectorAll('.track-row .file-input').forEach(function(inp){"
-          + "      if(inp.dataset.nativeBtn)return;"
-          + "      inp.dataset.nativeBtn='1';"
-          + "      var b=document.createElement('button');"
-          + "      b.type='button';b.textContent='📱 ফোন থেকে';"
-          + "      b.setAttribute('aria-label','ফোনের গান থেকে বেছে নিন');"
-          + "      b.style.cssText='margin-top:6px;padding:8px;background:#7c4dff;color:#fff;border:none;border-radius:6px;width:100%;';"
-          + "      b.onclick=function(ev){"
-          + "        ev.preventDefault();"
-          + "        if(!inp.id){inp.id='dynFile_'+Math.random().toString(36).slice(2);}"
-          + "        window.__openNativeSongPicker(inp.id);"
-          + "      };"
-          + "      inp.parentNode.appendChild(b);"
-          + "    });"
-          + "  };"
-          + "  addBtnObserver();"
-          + "  setInterval(addBtnObserver,1500);"
-          + "}"
-          + "if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',__addPickerButtons);"
-          + "else __addPickerButtons();"
           + "})();";
         webView.evaluateJavascript(js, null);
     }
