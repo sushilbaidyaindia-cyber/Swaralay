@@ -233,13 +233,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkPermissionAndScan() {
-        String permission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        java.util.ArrayList<String> need = new java.util.ArrayList<>();
+        String storagePerm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 ? Manifest.permission.READ_MEDIA_AUDIO
                 : Manifest.permission.READ_EXTERNAL_STORAGE;
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, storagePerm) != PackageManager.PERMISSION_GRANTED) {
+            need.add(storagePerm);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            need.add(Manifest.permission.RECORD_AUDIO);
+        }
+        if (need.isEmpty()) {
             scanAndPush();
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{permission}, PERMISSION_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, need.toArray(new String[0]), PERMISSION_REQUEST_CODE);
         }
     }
 
@@ -247,11 +254,17 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                scanAndPush();
-            } else {
-                Toast.makeText(this, "গান দেখতে পারমিশন দিন", Toast.LENGTH_LONG).show();
+            boolean storageOk = true;
+            boolean micOk = true;
+            for (int i = 0; i < permissions.length; i++) {
+                boolean granted = grantResults.length > i && grantResults[i] == PackageManager.PERMISSION_GRANTED;
+                if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) micOk = granted;
+                if (Manifest.permission.READ_MEDIA_AUDIO.equals(permissions[i])
+                        || Manifest.permission.READ_EXTERNAL_STORAGE.equals(permissions[i])) storageOk = granted;
             }
+            if (storageOk) scanAndPush();
+            else Toast.makeText(this, "গান দেখতে স্টোরেজ পারমিশন দিন", Toast.LENGTH_LONG).show();
+            if (!micOk) Toast.makeText(this, "রেকর্ড করতে মাইক্রোফোন পারমিশন দিন", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -275,7 +288,8 @@ public class MainActivity extends AppCompatActivity {
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.DISPLAY_NAME,
                 MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.ARTIST
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DATE_ADDED
         };
         String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0";
         String sort = MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC";
@@ -285,6 +299,7 @@ public class MainActivity extends AppCompatActivity {
             int nameCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME);
             int titleCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
             int artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+            int dateCol = c.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED);
             while (c.moveToNext()) {
                 long id = c.getLong(idCol);
                 Uri contentUri = ContentUris.withAppendedId(
@@ -299,6 +314,9 @@ public class MainActivity extends AppCompatActivity {
                     o.put("artist", c.getString(artistCol) != null ? c.getString(artistCol) : "");
                     o.put("uri", contentUri.toString());
                     o.put("path", contentUri.toString());
+                    long dateAdded = (dateCol >= 0) ? c.getLong(dateCol) : 0L;
+                    o.put("dateAdded", dateAdded);
+                    o.put("date", dateAdded);
                     list.put(o);
                 } catch (Exception ignored) {}
             }
@@ -312,6 +330,23 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void requestRescan() {
             runOnUiThread(() -> checkPermissionAndScan());
+        }
+
+        @JavascriptInterface
+        public void requestMicPermission() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean hasMicPermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED;
         }
 
         @JavascriptInterface
