@@ -303,13 +303,14 @@
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-boost" onclick="openEditorPanel('panel-boost', this)">🔊 Booster</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-pitch" onclick="openEditorPanel('panel-pitch', this)">🎼 Pitch</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-fx" onclick="openEditorPanel('panel-fx', this)">🚀 FX</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-record" onclick="openEditorPanel('panel-record', this)">🎙️ Record</button>
         </div>
 
         <!-- Empty state when no sub-tab selected -->
         <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
             <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
             <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">এডিটর টুল বেছে নিন</p>
-            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX</p>
+            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record</p>
         </div>
 
         <!-- 1. CUTTER PANEL -->
@@ -507,55 +508,6 @@
         <!-- 6. FX STUDIO PANEL -->
         <div id="panel-fx" class="editor-panel card">
             <h2>🚀 FX Studio</h2>
-            
-            <!-- RECORDING + MULTI-TRACK SECTION -->
-            <div style="background:#383854; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed var(--danger);">
-                <h4 style="margin:0 0 12px 0; color:#fff; text-align:center;">🎙️ Recorder</h4>
-                
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-                    <button id="recordBtn" 
-                            type="button"
-                            onclick="toggleRecording()" 
-                            style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
-                            aria-label="রেকর্ড"
-                            aria-live="off">
-                        <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
-                    </button>
-
-                    <button id="pauseBtn" 
-                            type="button"
-                            onclick="togglePauseRecording()" 
-                            style="background: #555; color: #fff; flex: 0 0 90px; font-size: 14px; padding: 12px; margin:0; opacity: 0.5;"
-                            aria-label="পজ"
-                            aria-live="off"
-                            disabled>
-                        <span aria-hidden="true" id="pauseBtnText">⏸</span>
-                    </button>
-                </div>
-
-                <!-- After Stop buttons -->
-                <div id="afterStopButtons" style="display:none; gap:8px; margin-bottom:10px;">
-                    <button onclick="addToProject()" style="background: var(--success); color:#fff; flex:1; margin:0; padding:10px; font-size:13px;">
-                        ➕ প্রজেক্টে যোগ করো
-                    </button>
-                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; flex:1; margin:0; padding:10px; font-size:13px;">
-                        💾 এই রেকর্ড সেভ
-                    </button>
-                </div>
-
-                
-
-
-                <!-- Project Tracks List -->
-                <div id="projectTracksBox" style="background:#2a2a40; border-radius:8px; padding:10px; margin-top:10px; display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <strong style="color:var(--accent); font-size:13px;">📁 প্রজেক্ট ট্র্যাকসমূহ</strong>
-                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:6px 10px; font-size:12px; background:var(--warning); color:#000;">মিক্স ও সেভ</button>
-                    </div>
-                    <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
-                    <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">প্রজেক্ট মুছুন</button>
-                </div>
-            </div>
 
             <input type="file" id="fxFile" accept="audio/*" style="display:none;" aria-hidden="true">
             <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
@@ -624,12 +576,65 @@
                 <button onclick="saveFxEditor()" style="flex: 1;">💾 Save Audio</button>
             </div>
             <div id="fxLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 7. RECORD PANEL (Recorder + Live FX) -->
+        <div id="panel-record" class="editor-panel card">
+            <h2>🎙️ Record</h2>
+
+            <!-- RECORDING + MULTI-TRACK SECTION -->
+            <div style="background:#383854; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed var(--danger);">
+                <h4 style="margin:0 0 12px 0; color:#fff; text-align:center;">🎙️ Recorder</h4>
+                
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                    <button id="recordBtn" 
+                            type="button"
+                            onclick="toggleRecording()" 
+                            style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
+                            aria-label="রেকর্ড"
+                            aria-live="off">
+                        <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
+                    </button>
+
+                    <button id="pauseBtn" 
+                            type="button"
+                            onclick="togglePauseRecording()" 
+                            style="background: #555; color: #fff; flex: 0 0 90px; font-size: 14px; padding: 12px; margin:0; opacity: 0.5;"
+                            aria-label="পজ"
+                            aria-live="off"
+                            disabled>
+                        <span aria-hidden="true" id="pauseBtnText">⏸</span>
+                    </button>
+                </div>
+
+                <!-- After Stop buttons -->
+                <div id="afterStopButtons" style="display:none; gap:8px; margin-bottom:10px;">
+                    <button onclick="addToProject()" style="background: var(--success); color:#fff; flex:1; margin:0; padding:10px; font-size:13px;">
+                        ➕ প্রজেক্টে যোগ করো
+                    </button>
+                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; flex:1; margin:0; padding:10px; font-size:13px;">
+                        💾 এই রেকর্ড সেভ
+                    </button>
+                </div>
+
+                <!-- Project Tracks List -->
+                <div id="projectTracksBox" style="background:#2a2a40; border-radius:8px; padding:10px; margin-top:10px; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <strong style="color:var(--accent); font-size:13px;">📁 প্রজেক্ট ট্র্যাকসমূহ</strong>
+                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:6px 10px; font-size:12px; background:var(--warning); color:#000;">মিক্স ও সেভ</button>
+                    </div>
+                    <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
+                    <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">প্রজেক্ট মুছুন</button>
+                </div>
+            </div>
+
+            <!-- File picker for Live FX preview (shares the same fxFile input used in FX Studio) -->
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Live FX এর জন্য একটি গান বেছে নিন</p>
+            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
 
             <!-- ========== LIVE FX SECTION ========== -->
-            <div style="background:#1a1a2e; border:1px solid var(--purple); border-radius:10px; padding:15px; margin-top:20px;">
+            <div style="background:#1a1a2e; border:1px solid var(--purple); border-radius:10px; padding:15px; margin-top:15px;">
                 <h3 style="margin:0 0 12px 0; color:var(--purple); text-align:center; font-size:16px;">🎛️ Live FX</h3>
-                
-
 
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
                     <button id="livePlayBtn" onclick="toggleLivePlay()" style="flex:1; background:var(--accent); color:#000; margin:0; padding:12px;">
@@ -2770,12 +2775,33 @@
             });
         }
 
+        // Safety-net: if the same "📱 ফোনের সব গান থেকে বেছে নিন" button ever ends up
+        // duplicated inside the same container (e.g. injected twice by the app shell),
+        // keep only the first copy — the one wired to openPhoneMusicPicker with the
+        // name/date sort — and remove the rest.
+        function dedupePhoneButtons() {
+            let groups = {};
+            document.querySelectorAll('button[onclick^="openPhoneMusicPicker("]').forEach(function(btn) {
+                let key = btn.getAttribute('onclick');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(btn);
+            });
+            Object.values(groups).forEach(function(list) {
+                for (let i = 1; i < list.length; i++) {
+                    if (list[i].parentElement === list[0].parentElement) {
+                        list[i].remove();
+                    }
+                }
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             addTrackRow('merge'); addTrackRow('merge');
             addTrackRow('mix'); addTrackRow('mix');
+            dedupePhoneButtons();
             rowAudioPlayer.addEventListener('ended', () => { if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); } currentRowBtn = null; });
             attachPhoneMusicButtons();
-            setInterval(attachPhoneMusicButtons, 1500);
+            setInterval(() => { attachPhoneMusicButtons(); dedupePhoneButtons(); }, 1500);
         });
         // Also expose for MainActivity inject compatibility
         window.__openNativeSongPicker = openPhoneMusicPicker;
