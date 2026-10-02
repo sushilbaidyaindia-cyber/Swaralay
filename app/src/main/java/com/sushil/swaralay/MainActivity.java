@@ -10,6 +10,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.content.ContentValues;
+import java.io.OutputStream;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
@@ -366,6 +369,112 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public String getAudioFilesList() {
             return scanAudioFiles().toString();
+        }
+
+        // ---- Save audio from WebView (chunked, avoids Binder 1MB limit) ----
+        private transient ByteArrayOutputStream saveBuffer = null;
+        private transient String saveFileName = null;
+
+        @JavascriptInterface
+        public synchronized String startSave(String filename) {
+            try {
+                if (filename == null || filename.trim().isEmpty()) filename = "swaralay_audio.wav";
+                filename = filename.replaceAll("[\\/:*?\"<>|]", "_").trim();
+                if (!filename.toLowerCase().endsWith(".wav") && !filename.toLowerCase().endsWith(".webm")
+                        && !filename.toLowerCase().endsWith(".m4a") && !filename.toLowerCase().endsWith(".mp3")) {
+                    filename = filename + ".wav";
+                }
+                saveFileName = filename;
+                saveBuffer = new ByteArrayOutputStream();
+                return "OK";
+            } catch (Exception e) {
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized String appendSaveChunk(String base64Chunk) {
+            try {
+                if (saveBuffer == null) return "ERROR:not_started";
+                if (base64Chunk == null || base64Chunk.isEmpty()) return "OK";
+                byte[] data = Base64.decode(base64Chunk, Base64.DEFAULT);
+                saveBuffer.write(data);
+                return "OK";
+            } catch (Exception e) {
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized String finishSave() {
+            ByteArrayOutputStream buf = saveBuffer;
+            String name = saveFileName;
+            saveBuffer = null;
+            saveFileName = null;
+            if (buf == null || name == null) return "ERROR:not_started";
+            try {
+                byte[] bytes = buf.toByteArray();
+                if (bytes.length == 0) return "ERROR:empty";
+
+                String mime = "audio/wav";
+                String lower = name.toLowerCase();
+                if (lower.endsWith(".webm")) mime = "audio/webm";
+                else if (lower.endsWith(".m4a")) mime = "audio/mp4";
+                else if (lower.endsWith(".mp3")) mime = "audio/mpeg";
+
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Audio.Media.DISPLAY_NAME, name);
+                values.put(MediaStore.Audio.Media.MIME_TYPE, mime);
+                values.put(MediaStore.Audio.Media.IS_PENDING, 1);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    values.put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Swaralay");
+                }
+
+                Uri uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri == null) {
+                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                        return "ERROR:cannot_create_file";
+                    }
+                    // Fallback: Downloads (API 29+)
+                    ContentValues v2 = new ContentValues();
+                    v2.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    v2.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                    v2.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Swaralay");
+                    v2.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v2);
+                    if (uri == null) return "ERROR:cannot_create_file";
+                    try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                        if (out == null) return "ERROR:cannot_open_stream";
+                        out.write(bytes);
+                        out.flush();
+                    }
+                    v2.clear();
+                    v2.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    getContentResolver().update(uri, v2, null, null);
+                    final String msg = "সেভ হয়েছে: Download/Swaralay/" + name;
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
+                    return "OK:" + msg;
+                }
+
+                try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out == null) return "ERROR:cannot_open_stream";
+                    out.write(bytes);
+                    out.flush();
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    ContentValues done = new ContentValues();
+                    done.put(MediaStore.Audio.Media.IS_PENDING, 0);
+                    getContentResolver().update(uri, done, null, null);
+                }
+                final String msg = "সেভ হয়েছে: Music/Swaralay/" + name;
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
+                // Refresh native song list
+                runOnUiThread(() -> checkPermissionAndScan());
+                return "OK:" + msg;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "ERROR:" + e.getMessage();
+            }
         }
     }
 
