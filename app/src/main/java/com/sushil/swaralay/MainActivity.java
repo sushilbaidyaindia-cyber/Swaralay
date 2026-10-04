@@ -25,6 +25,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.view.accessibility.AccessibilityManager;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -77,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(Intent.createChooser(intent, "অডিও সিলেক্ট"), FILE_CHOOSER_REQUEST);
                 } catch (Exception e) {
                     filePathCallback = null;
-                    Toast.makeText(MainActivity.this, "পিকার খোলা যায়নি", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Could not open picker", Toast.LENGTH_SHORT).show();
                     return false;
                 }
                 return true;
@@ -260,8 +263,8 @@ public class MainActivity extends AppCompatActivity {
                         || Manifest.permission.READ_EXTERNAL_STORAGE.equals(permissions[i])) storageOk = granted;
             }
             if (storageOk) scanAndPush();
-            else Toast.makeText(this, "গান দেখতে স্টোরেজ পারমিশন দিন", Toast.LENGTH_LONG).show();
-            if (!micOk) Toast.makeText(this, "রেকর্ড করতে মাইক্রোফোন পারমিশন দিন", Toast.LENGTH_LONG).show();
+            else Toast.makeText(this, "Allow storage permission to list songs", Toast.LENGTH_LONG).show();
+            if (!micOk) Toast.makeText(this, "Allow microphone permission to record", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -324,6 +327,38 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class AudioBridge {
+        /** Stop current TalkBack speech (cannot fully disable TalkBack from an app). */
+        @JavascriptInterface
+        public void silenceTalkBack() {
+            runOnUiThread(() -> {
+                try {
+                    AccessibilityManager am =
+                            (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+                    if (am != null) am.interrupt();
+                } catch (Exception ignored) {}
+            });
+        }
+
+        /** Interrupt TalkBack several times at record start (activation announcement fades). */
+        @JavascriptInterface
+        public void silenceTalkBackBurst() {
+            runOnUiThread(() -> {
+                Handler h = new Handler(Looper.getMainLooper());
+                Runnable stopSpeech = () -> {
+                    try {
+                        AccessibilityManager am =
+                                (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+                        if (am != null) am.interrupt();
+                    } catch (Exception ignored) {}
+                };
+                stopSpeech.run();
+                h.postDelayed(stopSpeech, 80);
+                h.postDelayed(stopSpeech, 200);
+                h.postDelayed(stopSpeech, 400);
+                h.postDelayed(stopSpeech, 700);
+            });
+        }
+
         @JavascriptInterface
         public void requestRescan() {
             runOnUiThread(() -> checkPermissionAndScan());
@@ -436,6 +471,22 @@ public class MainActivity extends AppCompatActivity {
                 }
                 nativeRecorder = r;
                 isNativeRecording = true;
+                // Cut off TalkBack "button activated / recording" speech as much as possible
+                runOnUiThread(() -> {
+                    Handler h = new Handler(Looper.getMainLooper());
+                    Runnable stopSpeech = () -> {
+                        try {
+                            AccessibilityManager am =
+                                    (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+                            if (am != null) am.interrupt();
+                        } catch (Exception ignored) {}
+                    };
+                    stopSpeech.run();
+                    h.postDelayed(stopSpeech, 80);
+                    h.postDelayed(stopSpeech, 200);
+                    h.postDelayed(stopSpeech, 450);
+                    h.postDelayed(stopSpeech, 800);
+                });
                 return "OK";
             } catch (Exception e) {
                 isNativeRecording = false;
@@ -557,7 +608,7 @@ public class MainActivity extends AppCompatActivity {
                     done.put(MediaStore.Audio.Media.IS_PENDING, 0);
                     getContentResolver().update(uri, done, null, null);
                 }
-                final String msg = "সেভ: Music/Swaralay/" + name;
+                final String msg = "Saved: Music/Swaralay/" + name;
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
                 return "OK:" + msg;
             } catch (Exception e) {
@@ -645,7 +696,7 @@ public class MainActivity extends AppCompatActivity {
                     v2.clear();
                     v2.put(MediaStore.MediaColumns.IS_PENDING, 0);
                     getContentResolver().update(uri, v2, null, null);
-                    final String msg = "সেভ হয়েছে: Download/Swaralay/" + name;
+                    final String msg = "Saved: Download/Swaralay/" + name;
                     runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
                     return "OK:" + msg;
                 }
@@ -660,7 +711,7 @@ public class MainActivity extends AppCompatActivity {
                     done.put(MediaStore.Audio.Media.IS_PENDING, 0);
                     getContentResolver().update(uri, done, null, null);
                 }
-                final String msg = "সেভ হয়েছে: Music/Swaralay/" + name;
+                final String msg = "Saved: Music/Swaralay/" + name;
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
                 // Refresh native song list
                 runOnUiThread(() -> checkPermissionAndScan());
