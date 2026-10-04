@@ -15,6 +15,9 @@ import android.content.ContentValues;
 import java.io.OutputStream;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.media.MediaRecorder;
+import java.io.File;
+import java.io.FileInputStream;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -38,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 123;
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private ValueCallback<Uri[]> filePathCallback;
+    private MediaRecorder nativeRecorder;
+    private File nativeRecordFile;
+    private boolean isNativeRecording = false;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -369,6 +375,194 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public String getAudioFilesList() {
             return scanAudioFiles().toString();
+        }
+
+
+        // ---- Native mic recording (reliable on Android WebView) ----
+        @JavascriptInterface
+        public synchronized String startNativeRecording() {
+            try {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    runOnUiThread(() -> ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE));
+                    return "NEED_PERMISSION";
+                }
+                if (isNativeRecording) {
+                    return "ERROR:already_recording";
+                }
+                stopNativeRecorderQuiet();
+                nativeRecordFile = new File(getCacheDir(), "swaralay_rec_" + System.currentTimeMillis() + ".m4a");
+                // Mic-only (monitor never mixed in). Try best speech/studio sources first.
+                int[] sources;
+                if (android.os.Build.VERSION.SDK_INT >= 24) {
+                    sources = new int[]{
+                            MediaRecorder.AudioSource.UNPROCESSED,
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                            MediaRecorder.AudioSource.MIC
+                    };
+                } else {
+                    sources = new int[]{
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                            MediaRecorder.AudioSource.MIC
+                    };
+                }
+                MediaRecorder r = null;
+                Exception lastErr = null;
+                for (int src : sources) {
+                    try {
+                        r = new MediaRecorder();
+                        r.setAudioSource(src);
+                        r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                        r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                        r.setAudioChannels(1);
+                        r.setAudioEncodingBitRate(192000);
+                        r.setAudioSamplingRate(44100);
+                        r.setOutputFile(nativeRecordFile.getAbsolutePath());
+                        r.prepare();
+                        r.start();
+                        lastErr = null;
+                        break;
+                    } catch (Exception e) {
+                        lastErr = e;
+                        if (r != null) {
+                            try { r.release(); } catch (Exception ignored) {}
+                            r = null;
+                        }
+                    }
+                }
+                if (r == null) {
+                    throw (lastErr != null ? lastErr : new Exception("cannot_start_recorder"));
+                }
+                nativeRecorder = r;
+                isNativeRecording = true;
+                return "OK";
+            } catch (Exception e) {
+                isNativeRecording = false;
+                nativeRecorder = null;
+                e.printStackTrace();
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized String stopNativeRecording() {
+            try {
+                if (!isNativeRecording || nativeRecorder == null) {
+                    return "ERROR:not_recording";
+                }
+                try {
+                    nativeRecorder.stop();
+                } catch (Exception ignored) {}
+                try {
+                    nativeRecorder.release();
+                } catch (Exception ignored) {}
+                nativeRecorder = null;
+                isNativeRecording = false;
+
+                if (nativeRecordFile == null || !nativeRecordFile.exists() || nativeRecordFile.length() < 100) {
+                    return "ERROR:empty_recording";
+                }
+
+                // Save into Music/Swaralay via existing finishSave pipeline
+                byte[] bytes = readFileBytes(nativeRecordFile);
+                String name = "Recording_" + System.currentTimeMillis() + ".m4a";
+                String saved = writeBytesToMusic(bytes, name, "audio/mp4");
+                if (saved.startsWith("ERROR")) return saved;
+
+                // Also stage bytes for JS to pull as base64 chunks
+                saveBuffer = new ByteArrayOutputStream();
+                saveBuffer.write(bytes);
+                saveFileName = name;
+                return "OK:" + name + ":" + bytes.length;
+            } catch (Exception e) {
+                e.printStackTrace();
+                isNativeRecording = false;
+                nativeRecorder = null;
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized boolean isNativeRecording() {
+            return isNativeRecording;
+        }
+
+        /** After stopNativeRecording, JS can read staged audio in chunks */
+        @JavascriptInterface
+        public synchronized int getStagedSaveSize() {
+            return saveBuffer == null ? 0 : saveBuffer.size();
+        }
+
+        @JavascriptInterface
+        public synchronized String readStagedChunk(int offset, int length) {
+            try {
+                if (saveBuffer == null) return "ERROR:none";
+                byte[] all = saveBuffer.toByteArray();
+                if (offset < 0 || offset >= all.length) return "";
+                int end = Math.min(all.length, offset + length);
+                byte[] slice = new byte[end - offset];
+                System.arraycopy(all, offset, slice, 0, slice.length);
+                return Base64.encodeToString(slice, Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized void clearStagedSave() {
+            saveBuffer = null;
+            saveFileName = null;
+        }
+
+        private void stopNativeRecorderQuiet() {
+            try {
+                if (nativeRecorder != null) {
+                    try { nativeRecorder.stop(); } catch (Exception ignored) {}
+                    try { nativeRecorder.release(); } catch (Exception ignored) {}
+                }
+            } catch (Exception ignored) {}
+            nativeRecorder = null;
+            isNativeRecording = false;
+        }
+
+        private byte[] readFileBytes(File f) throws Exception {
+            FileInputStream in = new FileInputStream(f);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+            in.close();
+            return out.toByteArray();
+        }
+
+        private String writeBytesToMusic(byte[] bytes, String name, String mime) {
+            try {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Audio.Media.DISPLAY_NAME, name);
+                values.put(MediaStore.Audio.Media.MIME_TYPE, mime);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    values.put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Swaralay");
+                    values.put(MediaStore.Audio.Media.IS_PENDING, 1);
+                }
+                Uri uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri == null) return "ERROR:cannot_create_file";
+                try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out == null) return "ERROR:cannot_open_stream";
+                    out.write(bytes);
+                    out.flush();
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    ContentValues done = new ContentValues();
+                    done.put(MediaStore.Audio.Media.IS_PENDING, 0);
+                    getContentResolver().update(uri, done, null, null);
+                }
+                final String msg = "সেভ: Music/Swaralay/" + name;
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
+                return "OK:" + msg;
+            } catch (Exception e) {
+                return "ERROR:" + e.getMessage();
+            }
         }
 
         // ---- Save audio from WebView (chunked, avoids Binder 1MB limit) ----
