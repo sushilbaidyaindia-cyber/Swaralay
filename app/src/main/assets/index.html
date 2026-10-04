@@ -578,27 +578,33 @@
             <div id="fxLoading" class="loading-text" aria-live="polite"></div>
         </div>
 
-        <!-- 7. RECORD PANEL (Recorder + Live FX) -->
+        <!-- 7. RECORD PANEL (Studio overdub + Live FX) -->
         <div id="panel-record" class="editor-panel card">
-            <h2>🎙️ Record</h2>
+            <h2>🎙️ Studio Record</h2>
 
-            <!-- RECORDING + MULTI-TRACK SECTION -->
             <div style="background:#383854; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed var(--danger);">
-                <h4 style="margin:0 0 12px 0; color:#fff; text-align:center;">🎙️ Recorder</h4>
-                
+                <h4 style="margin:0 0 8px 0; color:#fff; text-align:center;">🎙️ লেয়ারড রেকর্ডার</h4>
+                <p style="font-size:12px; color:#bbb; margin:0 0 12px 0; line-height:1.45; text-align:center;">
+                    ১) রেকর্ড → স্টপ → <b>প্রজেক্টে যোগ</b><br>
+                    ২) আবার রেকর্ড = পুরনো লেয়ার শুনতে শুনতে নতুন লেয়ার<br>
+                    ৩) রেকর্ডারে শুধু মাইক (মনিটর সাউন্ড সফটওয়্যারে মিশে না)<br>
+                    ৪) স্পিকার ব্লিড এড়াতে <b>হেডফোন</b> লাগাও<br>
+                    ৫) শেষে <b>মিক্স ও সেভ</b>
+                </p>
+                <p id="overdubHint" style="font-size:12px; color:var(--accent); text-align:center; margin:0 0 10px 0;" aria-live="polite"></p>
+
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-                    <button id="recordBtn" 
+                    <button id="recordBtn"
                             type="button"
-                            onclick="toggleRecording()" 
+                            onclick="toggleRecording()"
                             style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
                             aria-label="রেকর্ড"
                             aria-live="off">
                         <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
                     </button>
-
-                    <button id="pauseBtn" 
+                    <button id="pauseBtn"
                             type="button"
-                            onclick="togglePauseRecording()" 
+                            onclick="togglePauseRecording()"
                             style="background: #555; color: #fff; flex: 0 0 90px; font-size: 14px; padding: 12px; margin:0; opacity: 0.5;"
                             aria-label="পজ"
                             aria-live="off"
@@ -607,21 +613,19 @@
                     </button>
                 </div>
 
-                <!-- After Stop buttons -->
-                <div id="afterStopButtons" style="display:none; gap:8px; margin-bottom:10px;">
-                    <button onclick="addToProject()" style="background: var(--success); color:#fff; flex:1; margin:0; padding:10px; font-size:13px;">
-                        ➕ প্রজেক্টে যোগ করো
+                <div id="afterStopButtons" style="display:none; flex-direction:column; gap:8px; margin-bottom:10px;">
+                    <button onclick="addToProject()" style="background: var(--success); color:#fff; width:100%; margin:0; padding:12px; font-size:14px;">
+                        ➕ প্রজেক্টে লেয়ার যোগ করো
                     </button>
-                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; flex:1; margin:0; padding:10px; font-size:13px;">
-                        💾 এই রেকর্ড সেভ
+                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; width:100%; margin:0; padding:10px; font-size:13px;">
+                        💾 শুধু এই লেয়ার সেভ
                     </button>
                 </div>
 
-                <!-- Project Tracks List -->
                 <div id="projectTracksBox" style="background:#2a2a40; border-radius:8px; padding:10px; margin-top:10px; display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <strong style="color:var(--accent); font-size:13px;">📁 প্রজেক্ট ট্র্যাকসমূহ</strong>
-                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:6px 10px; font-size:12px; background:var(--warning); color:#000;">মিক্স ও সেভ</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+                        <strong style="color:var(--accent); font-size:13px;">📁 লেয়ারসমূহ</strong>
+                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:8px 12px; font-size:12px; background:var(--warning); color:#000;">🎧 মিক্স ও সেভ</button>
                     </div>
                     <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
                     <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">প্রজেক্ট মুছুন</button>
@@ -680,7 +684,19 @@
             <div class="input-group" style="margin-top: 15px;">
                 Volume/FX Step (%): <input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume Increase Decrease Amount"> 
             </div>
-            
+            <div style="margin-top:16px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
+                <strong style="color:var(--accent);">সেভ ফরম্যাট</strong><br>
+                • কাট / মার্জ / মিক্স / FX → <b>WAV</b> (উচ্চ মান, ফাইল ম্যানেজার: Music/Swaralay)<br>
+                • নেটিভ রেকর্ড → <b>M4A</b> (ছোট ফাইল, প্রায় সব ফোনে চলে)<br>
+                • খাঁটি <b>MP3</b> অ্যান্ড্রয়েডে বিল্ট-ইন এনকোডার নেই — M4A ব্যবহার করুন (একই কাজ, ছোট সাইজ)
+            </div>
+            <div style="margin-top:12px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
+                <strong style="color:var(--accent);">TalkBack প্লে / পজ</strong><br>
+                TalkBack চালু থাকলে দুই আঙুলের জেশ্চার সিস্টেম নিজে নেয়। ব্যবহার করুন:<br>
+                ১) প্লেয়ারের <b>Play</b> বাটনে সোয়াইপ → এক আঙুল ডাবল-ট্যাপ<br>
+                ২) হেডসেট / ব্লুটুথ প্লে-পজ বাটন<br>
+                ৩) TalkBack বন্ধ করে দুই আঙুল ডাবল-ট্যাপ (ব্রাউজারের মতো)
+            </div>
 
             <button onclick="saveSettings()">Save Settings</button>
             <p id="settingsMsg" style="color: var(--accent); display: none; text-align:center; margin-top:10px;" aria-live="polite">Saved Successfully!</p>
@@ -850,16 +866,45 @@
             stopMonitorPlayback();
             try {
                 monitorCtx = new AudioContext();
+                if (monitorCtx.state === 'suspended') {
+                    try { await monitorCtx.resume(); } catch (e) {}
+                }
+                // All previous layers start together (studio overdub monitor)
+                // Only plays to speaker/headphones — NOT mixed into MediaRecorder mic input
+                let t0 = monitorCtx.currentTime + 0.05;
                 for (let track of projectTracks) {
                     if (!track.buffer) continue;
                     let src = monitorCtx.createBufferSource();
                     src.buffer = track.buffer;
-                    src.connect(monitorCtx.destination);
-                    src.start(0);
+                    let gain = monitorCtx.createGain();
+                    gain.gain.value = 1.0;
+                    src.connect(gain);
+                    gain.connect(monitorCtx.destination);
+                    src.start(t0);
                     monitorSources.push(src);
+                }
+                let hint = document.getElementById('overdubHint');
+                if (hint) {
+                    hint.textContent = '🎧 ' + projectTracks.length + ' লেয়ার চলছে — হেডফোনে শুনে নতুন লেয়ার রেকর্ড করো';
                 }
             } catch(e) {
                 console.error("Monitor playback error:", e);
+            }
+        }
+
+        function updateOverdubHint() {
+            let hint = document.getElementById('overdubHint');
+            if (!hint) return;
+            if (isRecording) {
+                if (projectTracks.length > 0) {
+                    hint.textContent = '🔴 রেকর্ড চলছে + ' + projectTracks.length + ' লেয়ার মনিটর (মাইকে মনিটর ঢুকছে না)';
+                } else {
+                    hint.textContent = '🔴 প্রথম লেয়ার রেকর্ড হচ্ছে...';
+                }
+            } else if (projectTracks.length > 0) {
+                hint.textContent = '✅ ' + projectTracks.length + ' লেয়ার আছে — আবার রেকর্ড = ওভারডাব';
+            } else {
+                hint.textContent = '';
             }
         }
 
@@ -874,34 +919,116 @@
             list.innerHTML = '';
             projectTracks.forEach((t, idx) => {
                 let div = document.createElement('div');
-                div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #444; font-size:13px;';
+                div.style.cssText = 'display:flex; flex-direction:column; gap:6px; padding:10px 0; border-bottom:1px solid #444;';
                 div.innerHTML = `
-                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${t.name} (${t.duration.toFixed(1)}s)</span>
-                    <button onclick="playProjectTrack(${idx})" aria-label="Play ${t.name}" style="margin:0 4px; width:auto; padding:4px 8px; font-size:11px; background:#383854;">▶</button>
-                    <button onclick="removeProjectTrack(${idx})" aria-label="Remove ${t.name}" style="margin:0; width:auto; padding:4px 8px; font-size:11px; background:var(--danger); color:#fff;">❌</button>
+                    <span style="font-size:13px; overflow:hidden; text-overflow:ellipsis;">🎚️ ${t.name} (${t.duration.toFixed(1)}s)</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <button type="button" onclick="playProjectTrack(${idx})" aria-label="Play ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:#383854;">▶ প্লে</button>
+                        <button type="button" onclick="saveProjectLayer(${idx})" aria-label="Save layer ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--accent); color:#000;">💾 সেভ</button>
+                        <button type="button" onclick="sendLayerToFx(${idx})" aria-label="Send ${t.name} to FX" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--purple); color:#fff;">🚀 FX</button>
+                        <button type="button" onclick="removeProjectTrack(${idx})" aria-label="Remove ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--danger); color:#fff;">❌</button>
+                    </div>
                 `;
                 list.appendChild(div);
             });
+        }
+
+        async function saveProjectLayer(idx) {
+            let t = projectTracks[idx];
+            if (!t || !t.buffer) return alert('লেয়ার পাওয়া যায়নি');
+            let name = (t.name || ('Layer_' + (idx + 1))).replace(/[\\/:*?"<>|]/g, '_');
+            try {
+                await downloadBlob(audioBufferToWav(t.buffer), name);
+            } catch (e) {
+                alert('লেয়ার সেভ ব্যর্থ: ' + e);
+            }
+        }
+
+        function sendLayerToFx(idx) {
+            let t = projectTracks[idx];
+            if (!t) return alert('লেয়ার পাওয়া যায়নি');
+            try {
+                let blob = t.blob;
+                if (!blob && t.buffer) blob = audioBufferToWav(t.buffer);
+                if (!blob) return alert('অডিও ডেটা নেই');
+                let mime = blob.type || 'audio/wav';
+                let ext = mime.indexOf('mp4') >= 0 ? 'm4a' : (mime.indexOf('webm') >= 0 ? 'webm' : 'wav');
+                let file = new File([blob], (t.name || 'layer') + '.' + ext, { type: mime });
+                let dt = new DataTransfer();
+                dt.items.add(file);
+                let fx = document.getElementById('fxFile');
+                if (fx) {
+                    fx.files = dt.files;
+                    fx.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                let fxTab = document.querySelector('.editor-sub-tab[aria-controls="panel-fx"]');
+                if (fxTab) openEditorPanel('panel-fx', fxTab);
+                alert('লেয়ার FX-এ লোড হয়েছে: ' + t.name);
+            } catch (e) {
+                alert('FX-এ পাঠানো যায়নি: ' + e);
+            }
+        }
+
+        let useNativeRecorder = false;
+
+        async function pullStagedRecordingToBlob() {
+            if (!window.AndroidBridge || typeof AndroidBridge.getStagedSaveSize !== 'function') return null;
+            let size = AndroidBridge.getStagedSaveSize();
+            if (!size || size < 1) return null;
+            let chunks = [];
+            let offset = 0;
+            const step = 240 * 1024;
+            while (offset < size) {
+                let b64 = AndroidBridge.readStagedChunk(offset, step);
+                if (!b64 || String(b64).indexOf('ERROR') === 0) break;
+                if (!b64.length) break;
+                let bin = atob(b64);
+                let arr = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                chunks.push(arr);
+                offset += step;
+            }
+            try { AndroidBridge.clearStagedSave(); } catch (e) {}
+            if (!chunks.length) return null;
+            return new Blob(chunks, { type: 'audio/mp4' });
         }
 
         async function toggleRecording() {
             let btn = document.getElementById('recordBtn');
             let pauseBtn = document.getElementById('pauseBtn');
             let afterStop = document.getElementById('afterStopButtons');
-            
+
             if (isRecording) {
-                // ===== STOP (silent — no TalkBack announcement) =====
+                // ===== STOP =====
                 try {
-                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                        mediaRecorder.stop();
+                    if (useNativeRecorder && window.AndroidBridge && AndroidBridge.stopNativeRecording) {
+                        let result = String(AndroidBridge.stopNativeRecording() || '');
+                        if (result.indexOf('OK') === 0) {
+                            lastRecordingBlob = await pullStagedRecordingToBlob();
+                            if (lastRecordingBlob) {
+                                try {
+                                    let file = new File([lastRecordingBlob], 'Last_Recording.m4a', { type: 'audio/mp4' });
+                                    let dt = new DataTransfer();
+                                    dt.items.add(file);
+                                    let fx = document.getElementById('fxFile');
+                                    if (fx) fx.files = dt.files;
+                                } catch (e) {}
+                            }
+                            if (afterStop) afterStop.style.display = 'flex';
+                        } else {
+                            alert('রেকর্ড বন্ধ সমস্যা: ' + result);
+                        }
+                        useNativeRecorder = false;
+                    } else {
+                        try {
+                            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                        } catch (e) {}
                     }
-                } catch(e) {}
-                
+                } catch (e) { console.error(e); }
+
                 stopMonitorPlayback();
                 isRecording = false;
                 isPaused = false;
-
-                // Visual only — never change aria-label (TalkBack silent)
                 let rt = document.getElementById('recordBtnText');
                 if (rt) rt.textContent = '🔴 রেকর্ড';
                 btn.style.background = 'var(--danger)';
@@ -910,119 +1037,107 @@
                 pauseBtn.disabled = true;
                 let pt = document.getElementById('pauseBtnText');
                 if (pt) pt.textContent = '⏸';
+                updateOverdubHint();
+                return;
+            }
 
-            } else {
-                // ===== START HIGH QUALITY (silent) =====
-                try {
-                    if (afterStop) afterStop.style.display = 'none';
-                    lastRecordingBlob = null;
+            // ===== START (with overdub monitor of existing layers) =====
+            try {
+                if (afterStop) afterStop.style.display = 'none';
+                lastRecordingBlob = null;
+                useNativeRecorder = false;
 
-                    // Android: request RECORD_AUDIO at runtime via native bridge
-                    try {
-                        if (window.AndroidBridge) {
-                            if (AndroidBridge.hasMicPermission && !AndroidBridge.hasMicPermission()) {
-                                if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
-                                alert('মাইক্রোফোন পারমিশন চালু করুন।\nAllow চাপার পর আবার রেকর্ড বাটন চাপুন।');
-                                return;
-                            }
-                            if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
-                        }
-                    } catch (pe) { console.warn(pe); }
-
-                    if (projectTracks.length > 0) {
-                        await startMonitorPlayback();
-                    }
-
-                    // Best quality mic constraints (raw capture; use FX Noise later if needed)
-                    currentStream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false,
-                            channelCount: { ideal: 2 },
-                            sampleRate: { ideal: 48000 },
-                            sampleSize: { ideal: 16 }
-                        } 
-                    });
-
-                    // Best available codec + high bitrate
-                    let mimeType = '';
-                    let candidates = [
-                        'audio/webm;codecs=opus',
-                        'audio/webm;codecs=pcm',
-                        'audio/webm',
-                        'audio/mp4;codecs=mp4a.40.2',
-                        'audio/mp4',
-                        'audio/ogg;codecs=opus'
-                    ];
-                    for (let t of candidates) {
-                        if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) {
-                            mimeType = t;
-                            break;
-                        }
-                    }
-                    let recOpts = { audioBitsPerSecond: 320000 }; // high quality capture
-                    if (mimeType) recOpts.mimeType = mimeType;
-
-                    try {
-                        mediaRecorder = new MediaRecorder(currentStream, recOpts);
-                    } catch(e1) {
-                        try {
-                            mediaRecorder = new MediaRecorder(currentStream, { mimeType: mimeType || undefined });
-                        } catch(e2) {
-                            mediaRecorder = new MediaRecorder(currentStream);
-                        }
-                    }
-
-                    audioChunks = [];
-                    isPaused = false;
-                    let usedMime = mediaRecorder.mimeType || mimeType || 'audio/webm';
-
-                    mediaRecorder.ondataavailable = e => { 
-                        if (e.data && e.data.size > 0) audioChunks.push(e.data); 
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        if (currentStream) {
-                            currentStream.getTracks().forEach(track => track.stop());
-                            currentStream = null;
-                        }
-                        lastRecordingBlob = new Blob(audioChunks, { type: usedMime });
-                        try {
-                            let ext = usedMime.indexOf('mp4') >= 0 ? 'm4a' : 'webm';
-                            let file = new File([lastRecordingBlob], 'Last_Recording.' + ext, { type: usedMime });
-                            let dataTransfer = new DataTransfer();
-                            dataTransfer.items.add(file);
-                            document.getElementById('fxFile').files = dataTransfer.files;
-                        } catch(e) {}
-                        let after = document.getElementById('afterStopButtons');
-                        if (after) after.style.display = 'flex';
-                    };
-
-                    // timeslice 100ms — smoother, less drop risk
-                    mediaRecorder.start(100);
-                    isRecording = true;
-
-                    // Visual only — aria-label unchanged, text is aria-hidden
-                    let rt = document.getElementById('recordBtnText');
-                    if (rt) rt.textContent = '⏹';
-                    btn.style.background = '#ff9f43';
-                    pauseBtn.style.background = '#ff9f43';
-                    pauseBtn.style.opacity = '1';
-                    pauseBtn.disabled = false;
-                    // Remove focus so TalkBack does not speak again
-                    try { btn.blur(); document.activeElement && document.activeElement.blur(); } catch(e) {}
-
-                } catch (err) {
-                    stopMonitorPlayback();
-                    let msg = 'মাইক্রোফোনের অনুমতি পাওয়া যায়নি।\n\n';
-                    msg += '১) ফোন Settings → Apps → স্বরালয় → Permissions → Microphone → Allow\n';
-                    msg += '২) অ্যাপ আনইনস্টল করে নতুন APK ইনস্টল করুন (ম্যানিফেস্টে RECORD_AUDIO লাগবে)\n';
-                    msg += '৩) আবার রেকর্ড চাপুন';
-                    alert(msg);
-                    console.error(err);
-                    isRecording = false;
+                // Play previous layers to headphones/speaker (NOT mixed into mic input)
+                if (projectTracks.length > 0) {
+                    await startMonitorPlayback();
                 }
+
+                // Prefer native Android MediaRecorder — AudioSource.MIC only
+                if (window.AndroidBridge && typeof AndroidBridge.startNativeRecording === 'function') {
+                    let r = String(AndroidBridge.startNativeRecording() || '');
+                    if (r === 'NEED_PERMISSION') {
+                        stopMonitorPlayback();
+                        alert('মাইক্রোফোন পারমিশন Allow করুন, তারপর আবার রেকর্ড চাপুন।');
+                        return;
+                    }
+                    if (r.indexOf('OK') === 0) {
+                        useNativeRecorder = true;
+                        isRecording = true;
+                        isPaused = false;
+                        let rt = document.getElementById('recordBtnText');
+                        if (rt) rt.textContent = '⏹ স্টপ';
+                        btn.style.background = '#ff9f43';
+                        pauseBtn.style.opacity = '0.5';
+                        pauseBtn.disabled = true;
+                        updateOverdubHint();
+                        try { btn.blur(); } catch (e) {}
+                        return;
+                    }
+                    console.warn('Native record failed, trying WebView:', r);
+                }
+
+                // Fallback: WebView getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('মাইক রেকর্ড সাপোর্ট নেই। নতুন APK ইনস্টল করুন (MainActivity আপডেটসহ)।');
+                    return;
+                }
+                if (projectTracks.length > 0) await startMonitorPlayback();
+
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch (e1) {
+                    currentStream = await navigator.mediaDevices.getUserMedia({
+                        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+                    });
+                }
+
+                let mimeType = '';
+                let candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+                for (let t of candidates) {
+                    if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
+                }
+                let recOpts = { audioBitsPerSecond: 128000 };
+                if (mimeType) recOpts.mimeType = mimeType;
+                try {
+                    mediaRecorder = new MediaRecorder(currentStream, recOpts);
+                } catch (e1) {
+                    mediaRecorder = new MediaRecorder(currentStream);
+                }
+
+                audioChunks = [];
+                isPaused = false;
+                let usedMime = mediaRecorder.mimeType || mimeType || 'audio/webm';
+                mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(t => t.stop());
+                        currentStream = null;
+                    }
+                    lastRecordingBlob = new Blob(audioChunks, { type: usedMime });
+                    try {
+                        let ext = usedMime.indexOf('mp4') >= 0 ? 'm4a' : 'webm';
+                        let file = new File([lastRecordingBlob], 'Last_Recording.' + ext, { type: usedMime });
+                        let dt = new DataTransfer();
+                        dt.items.add(file);
+                        document.getElementById('fxFile').files = dt.files;
+                    } catch (e) {}
+                    if (afterStop) afterStop.style.display = 'flex';
+                };
+                mediaRecorder.start(100);
+                isRecording = true;
+                let rt = document.getElementById('recordBtnText');
+                if (rt) rt.textContent = '⏹';
+                btn.style.background = '#ff9f43';
+                pauseBtn.style.background = '#ff9f43';
+                pauseBtn.style.opacity = '1';
+                pauseBtn.disabled = false;
+                try { btn.blur(); } catch (e) {}
+            } catch (err) {
+                stopMonitorPlayback();
+                console.error(err);
+                alert('রেকর্ড শুরু হয়নি: ' + (err && err.message ? err.message : err) +
+                    '\n\nSettings → Apps → স্বরালয় → Microphone → Allow\nতারপর নতুন APK (নেটিভ রেকর্ডসহ) ইনস্টল করুন।');
+                isRecording = false;
             }
         }
 
@@ -1055,7 +1170,7 @@
 
         async function addToProject() {
             if (!lastRecordingBlob) {
-                alert('আগে রেকর্ড করে স্টপ করুন।');
+                alert('আগে একটি লেয়ার রেকর্ড করে স্টপ করুন।');
                 return;
             }
             try {
@@ -1064,8 +1179,8 @@
                 let buffer = await tempCtx.decodeAudioData(arrayBuffer);
                 tempCtx.close();
 
-                let defaultName = 'Track ' + (projectTracks.length + 1);
-                let trackName = prompt('ট্র্যাকের নাম লিখুন:', defaultName);
+                let defaultName = 'Layer ' + (projectTracks.length + 1);
+                let trackName = prompt('লেয়ারের নাম:', defaultName);
                 if (trackName === null) return;
                 trackName = (trackName || defaultName).trim() || defaultName;
                 projectTracks.push({
@@ -1078,8 +1193,10 @@
                 lastRecordingBlob = null;
                 document.getElementById('afterStopButtons').style.display = 'none';
                 updateProjectTracksUI();
+                updateOverdubHint();
+                alert('লেয়ার যোগ হয়েছে। আবার রেকর্ড চাপলে পুরনো লেয়ার শুনতে পাবে।');
             } catch(e) {
-                alert('প্রজেক্টে যোগ করতে সমস্যা হয়েছে।');
+                alert('প্রজেক্টে যোগ করতে সমস্যা: ' + (e && e.message ? e.message : e));
                 console.error(e);
             }
         }
@@ -3554,14 +3671,14 @@
             }
         }
 
-        // Media Session API — headset / system media buttons / some TalkBack actions
+        // Media Session — headset / lock-screen / some system TalkBack media actions
         if ('mediaSession' in navigator) {
             try {
-                navigator.mediaSession.setActionHandler('play', () => {
-                    if (audio && audio.src && audio.paused) togglePlay();
-                });
-                navigator.mediaSession.setActionHandler('pause', () => {
-                    if (audio && !audio.paused) togglePlay();
+                navigator.mediaSession.setActionHandler('play', () => { toggleAnyPlayback(); });
+                navigator.mediaSession.setActionHandler('pause', () => { toggleAnyPlayback(); });
+                navigator.mediaSession.setActionHandler('stop', () => {
+                    try { if (audio && !audio.paused) audio.pause(); } catch(e) {}
+                    try { stopAllPreviews(); } catch(e) {}
                 });
                 navigator.mediaSession.setActionHandler('previoustrack', () => { prevTrack(); });
                 navigator.mediaSession.setActionHandler('nexttrack', () => { nextTrack(); });
