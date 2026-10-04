@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>স্বরালয় · Swaralay</title>
+    <title>Swaralay</title>
     <style>
         :root {
             --bg: #0d0d14;
@@ -245,38 +245,40 @@
         .fx-label.echo { color: var(--purple); }
         .fx-label.reverb { color: var(--purple); }
     </style>
+    <!-- LAME MP3 encoder (~156KB) — high quality (320 kbps) for WhatsApp -->
+    <script src="lame.min.js"></script>
 </head>
 <body>
 
-    <h1 class="header">স্বরালয়<span class="header-sub">SWARALAY</span></h1>
+    <h1 class="header">Swaralay<span class="header-sub">SWARALAY</span></h1>
 
     <!-- 🎵 PLAYER TAB -->
     <div id="player" class="content active">
         <div class="card">
-            <h2>🎵 প্লেয়ার</h2>
+            <h2>🎵 Player</h2>
             <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-hidden="true">
-            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">শুধু ফোনের অডিও থেকে বেছে নিন</p>
-            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio from your phone</p>
+            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 Choose from phone music</button>
             <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
-                <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">কোনো গান নেই</h4>
+                <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
                 <div class="time-display">
                     <span id="currentTime">0:00</span>
                     <span id="totalTime">0:00</span>
                 </div>
                 <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
-                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 শাফল</button>
-                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 রিপিট বন্ধ</button>
+                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 Shuffle</button>
+                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 Repeat Off</button>
                 </div>
                 <div class="controls">
-                    <button onclick="prevTrack()" aria-label="Previous Track"><span>⏮</span>Prev</button>
-                    <button onclick="rewind()" aria-label="Rewind"><span>⏪</span>-<b class="skip-val">10</b>s</button>
-                    <button onclick="togglePlay()" id="playPauseBtn" aria-label="Play"><span>▶</span>Play</button>
-                    <button onclick="fastForward()" aria-label="Fast Forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
-                    <button onclick="nextTrack()" aria-label="Next Track"><span>⏭</span>Next</button>
+                    <button type="button" onclick="prevTrack()" aria-label="Previous track"><span>⏮</span>Prev</button>
+                    <button type="button" onclick="rewind()" aria-label="Rewind"><span>⏪</span>-<b class="skip-val">10</b>s</button>
+                    <button type="button" onclick="togglePlay()" id="playPauseBtn" aria-label="Play"><span>▶</span>Play</button>
+                    <button type="button" onclick="fastForward()" aria-label="Fast forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
+                    <button type="button" onclick="nextTrack()" aria-label="Next track"><span>⏭</span>Next</button>
                 </div>
-                <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 ভলিউম: <span id="volLabel">100</span>%</label>
+                <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 Volume: <span id="volLabel">100</span>%</label>
                 <input type="range" id="playerVolume" value="100" min="0" max="100" aria-label="Player Volume" oninput="setPlayerVolume(this.value)">
                 <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:15px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
                 <p id="playlistMsg" style="color: var(--success); font-size:12px; text-align:center; display:none; margin-top:10px;" aria-live="polite">Added to DB Playlist!</p>
@@ -309,7 +311,7 @@
         <!-- Empty state when no sub-tab selected -->
         <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
             <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
-            <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">এডিটর টুল বেছে নিন</p>
+            <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">Choose an editor tool</p>
             <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record</p>
         </div>
 
@@ -317,7 +319,7 @@
         <div id="panel-cut" class="editor-panel card">
             <h2>✂️ Audio Cutter</h2>
             <input type="file" id="cutFile" accept="audio/*" style="display:none;" aria-hidden="true">
-            <button type="button" onclick="openPhoneMusicPicker('cutFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <button type="button" onclick="openPhoneMusicPicker('cutFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
             <audio id="cutterAudioPlayer" preload="metadata" style="display:none;"></audio>
             <p id="cutDurationInfo" style="display:none; color:var(--accent); font-size:13px; margin:8px 0 0; text-align:center;" aria-live="off" role="status"></p>
 
@@ -329,53 +331,53 @@
             <input type="hidden" id="cutStart" value="0">
             <input type="hidden" id="cutEnd" value="0">
 
-            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">Start Time (মিনিট : সেকেন্ড : মিলিসেকেন্ড)</label>
+            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">Start Time (min : sec : ms)</label>
             <div style="display:flex; gap:6px;">
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartMin', 1, 0)" aria-label="Increase Start Minute">➕</button>
-                    <input type="number" id="cutStartMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="মিনিট" aria-label="Start Minute">
+                    <input type="number" id="cutStartMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="min" aria-label="Start Minute">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartMin', -1, 0)" aria-label="Decrease Start Minute">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartMin')" aria-label="Clear Start Minute">🗑</button>
-                    <span class="time-box-label">মিনিট</span>
+                    <span class="time-box-label">min</span>
                 </div>
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartSec', 1, 0, 59)" aria-label="Increase Start Second">➕</button>
-                    <input type="number" id="cutStartSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="সেকেন্ড" aria-label="Start Second">
+                    <input type="number" id="cutStartSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="sec" aria-label="Start Second">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartSec', -1, 0, 59)" aria-label="Decrease Start Second">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartSec')" aria-label="Clear Start Second">🗑</button>
-                    <span class="time-box-label">সেকেন্ড</span>
+                    <span class="time-box-label">sec</span>
                 </div>
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartMs', 1, 0, 999)" aria-label="Increase Start Millisecond">➕</button>
-                    <input type="number" id="cutStartMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="মিলি সেকেন্ড" aria-label="Start Millisecond">
+                    <input type="number" id="cutStartMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="milliseconds" aria-label="Start Millisecond">
                     <button class="stepper-btn" onclick="stepTimeBox('cutStartMs', -1, 0, 999)" aria-label="Decrease Start Millisecond">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutStartMs')" aria-label="Clear Start Millisecond">🗑</button>
-                    <span class="time-box-label">মিলি সে.</span>
+                    <span class="time-box-label">ms</span>
                 </div>
             </div>
 
-            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">End Time (মিনিট : সেকেন্ড : মিলিসেকেন্ড)</label>
+            <label style="margin-top: 10px; display: block; font-size:12px; color:#ccc;">End Time (min : sec : ms)</label>
             <div style="display:flex; gap:6px;">
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndMin', 1, 0)" aria-label="Increase End Minute">➕</button>
-                    <input type="number" id="cutEndMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="মিনিট" aria-label="End Minute">
+                    <input type="number" id="cutEndMin" inputmode="numeric" pattern="[0-9]*" value="0" min="0" step="1" placeholder="min" aria-label="End Minute">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndMin', -1, 0)" aria-label="Decrease End Minute">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndMin')" aria-label="Clear End Minute">🗑</button>
-                    <span class="time-box-label">মিনিট</span>
+                    <span class="time-box-label">min</span>
                 </div>
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndSec', 1, 0, 59)" aria-label="Increase End Second">➕</button>
-                    <input type="number" id="cutEndSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="সেকেন্ড" aria-label="End Second">
+                    <input type="number" id="cutEndSec" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="59" step="1" placeholder="sec" aria-label="End Second">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndSec', -1, 0, 59)" aria-label="Decrease End Second">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndSec')" aria-label="Clear End Second">🗑</button>
-                    <span class="time-box-label">সেকেন্ড</span>
+                    <span class="time-box-label">sec</span>
                 </div>
                 <div class="time-box-group">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndMs', 1, 0, 999)" aria-label="Increase End Millisecond">➕</button>
-                    <input type="number" id="cutEndMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="মিলি সেকেন্ড" aria-label="End Millisecond">
+                    <input type="number" id="cutEndMs" inputmode="numeric" pattern="[0-9]*" value="0" min="0" max="999" step="1" placeholder="milliseconds" aria-label="End Millisecond">
                     <button class="stepper-btn" onclick="stepTimeBox('cutEndMs', -1, 0, 999)" aria-label="Decrease End Millisecond">➖</button>
                     <button class="stepper-btn del-time-btn" onclick="clearTimeBox('cutEndMs')" aria-label="Clear End Millisecond">🗑</button>
-                    <span class="time-box-label">মিলি সে.</span>
+                    <span class="time-box-label">ms</span>
                 </div>
             </div>
             
@@ -424,7 +426,7 @@
         <div id="panel-boost" class="editor-panel card">
             <h2>🔊 Volume Booster</h2>
             <input type="file" id="boostFile" accept="audio/*" style="display:none;" aria-hidden="true">
-            <button type="button" onclick="openPhoneMusicPicker('boostFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <button type="button" onclick="openPhoneMusicPicker('boostFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
             <label style="margin-top: 15px; display: block; font-size:12px; color:#ccc;">Boost Level (%)</label>
             <div class="stepper-group">
                 <button class="stepper-btn" onclick="adjustInputVal('boostExportIntensity', -1)" aria-label="Decrease Boost">➖</button>
@@ -445,7 +447,7 @@
         <div id="panel-pitch" class="editor-panel card">
             <h2>🎼 Pitch & Rhythm</h2>
             <input type="file" id="pitchFile" accept="audio/*" style="display:none;" aria-hidden="true" onchange="onPitchFileSelected()">
-            <button type="button" onclick="openPhoneMusicPicker('pitchFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <button type="button" onclick="openPhoneMusicPicker('pitchFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
 
             <div id="detectedKeyBox" style="display:none; background:#2a2a40; border-radius:8px; padding:12px; margin-top:12px;">
                 <div style="display:flex; gap:12px; text-align:center;">
@@ -466,7 +468,7 @@
                 <input type="number" id="fxSpeed" value="100" min="50" max="150" step="5" aria-label="Playback speed percent">
                 <button class="stepper-btn" onclick="adjustInputVal('fxSpeed', 1)" aria-label="Increase Speed">➕</button>
             </div>
-            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">50 = স্লো · 100 = নরমাল · 150 = ফাস্ট</p>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">50 = Slow · 100 = normal · 150 = fast</p>
 
             <label class="fx-label" style="color:var(--warning);">🎼 Target Scale / Key</label>
             <select id="fxTargetKey" aria-label="Target musical key" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-top:6px; font-size:15px;" onchange="onTargetKeyChange()">
@@ -493,7 +495,7 @@
                 <input type="number" id="fxPitchDirect" value="0" min="-12" max="12" step="1" aria-label="Direct transpose" onchange="syncPitchDirect()">
                 <button class="stepper-btn" onclick="adjustPitchDirect(1)" aria-label="Pitch up">➕</button>
             </div>
-            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = দুই সেমিটোন উপরে · BPM একই থাকবে</p>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = Two semitones up · BPM stays the same</p>
 
             <div class="input-group">
                 Name: <input type="text" id="pitchName" value="Pitched_Audio" aria-label="File Name">
@@ -510,7 +512,7 @@
             <h2>🚀 FX Studio</h2>
 
             <input type="file" id="fxFile" accept="audio/*" style="display:none;" aria-hidden="true">
-            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
             
 
             
@@ -583,19 +585,19 @@
             <h2>🎙️ Studio Record</h2>
 
             <div style="background:#383854; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed var(--danger);">
-                <h4 style="margin:0 0 8px 0; color:#fff; text-align:center;">🎙️ লেয়ারড রেকর্ডার</h4>
+                <h4 style="margin:0 0 8px 0; color:#fff; text-align:center;">🎙️ Layered Recorder</h4>
                 <p style="font-size:12px; color:#bbb; margin:0 0 12px 0; line-height:1.45; text-align:center;">
-                    ১) রেকর্ড → স্টপ → <b>প্রজেক্টে যোগ</b><br>
-                    ২) আবার রেকর্ড = পুরনো লেয়ার শুনতে শুনতে নতুন লেয়ার<br>
-                    ৩) রেকর্ডারে শুধু মাইক (মনিটর সাউন্ড সফটওয়্যারে মিশে না)<br>
-                    ৪) স্পিকার ব্লিড এড়াতে <b>হেডফোন</b> লাগাও<br>
-                    ৫) শেষে <b>মিক্স ও সেভ</b>
+                    1) Record → Stop → <b>Add to project</b><br>
+                    2) Record again = overdub while hearing previous layers<br>
+                    3) Only the mic is recorded (monitor is not mixed in)<br>
+                    4) Use <b>headphones</b> to avoid speaker bleed<br>
+                    5) Finally <b>Mix & Save</b>
                 </p>
                 <p id="overdubHint" style="font-size:12px; color:var(--accent); text-align:center; margin:0 0 10px 0;" aria-live="off" aria-hidden="true"></p>
 
                 <input type="file" id="backingFile" accept="audio/*" style="display:none;" aria-hidden="true">
                 <button type="button" onclick="openPhoneMusicPicker('backingFile')" style="background:#7c4dff; color:#fff; margin:0 0 10px 0; width:100%;">
-                    🎵 ব্যাকিং মিউজিক যোগ (গানের সাথে গাইবে)
+                    🎵 Add backing music (sing along)
                 </button>
 
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
@@ -603,16 +605,16 @@
                             type="button"
                             onclick="toggleRecording()"
                             style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
-                            aria-label="রেকর্ড বা স্টপ"
+                            aria-label="Record or Stop"
                             aria-live="off"
                             aria-busy="false">
-                        <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
+                        <span aria-hidden="true" id="recordBtnText">🔴 Record</span>
                     </button>
                     <button id="pauseBtn"
                             type="button"
                             onclick="togglePauseRecording()"
                             style="background: #555; color: #fff; flex: 0 0 90px; font-size: 14px; padding: 12px; margin:0; opacity: 0.5;"
-                            aria-label="পজ"
+                            aria-label="Pause"
                             aria-live="off"
                             disabled>
                         <span aria-hidden="true" id="pauseBtnText">⏸</span>
@@ -621,26 +623,26 @@
 
                 <div id="afterStopButtons" style="display:none; flex-direction:column; gap:8px; margin-bottom:10px;">
                     <button onclick="addToProject()" style="background: var(--success); color:#fff; width:100%; margin:0; padding:12px; font-size:14px;">
-                        ➕ প্রজেক্টে লেয়ার যোগ করো
+                        ➕ Add layer to project
                     </button>
                     <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; width:100%; margin:0; padding:10px; font-size:13px;">
-                        💾 শুধু এই লেয়ার সেভ
+                        💾 Save this layer only
                     </button>
                 </div>
 
                 <div id="projectTracksBox" style="background:#2a2a40; border-radius:8px; padding:10px; margin-top:10px; display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
-                        <strong style="color:var(--accent); font-size:13px;">📁 লেয়ারসমূহ</strong>
-                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:8px 12px; font-size:12px; background:var(--warning); color:#000;">🎧 মিক্স ও সেভ</button>
+                        <strong style="color:var(--accent); font-size:13px;">📁 Layers</strong>
+                        <button onclick="mixAndSaveAll()" style="margin:0; width:auto; padding:8px 12px; font-size:12px; background:var(--warning); color:#000;">🎧 Mix & Save</button>
                     </div>
                     <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
-                    <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">প্রজেক্ট মুছুন</button>
+                    <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">Clear project</button>
                 </div>
             </div>
 
             <!-- File picker for Live FX preview (shares the same fxFile input used in FX Studio) -->
-            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Live FX এর জন্য একটি গান বেছে নিন</p>
-            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 ফোনের সব গান থেকে বেছে নিন</button>
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick a song for Live FX</p>
+            <button type="button" onclick="openPhoneMusicPicker('fxFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
 
             <!-- ========== LIVE FX SECTION ========== -->
             <div style="background:#1a1a2e; border:1px solid var(--purple); border-radius:10px; padding:15px; margin-top:15px;">
@@ -648,7 +650,7 @@
 
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
                     <button id="livePlayBtn" onclick="toggleLivePlay()" style="flex:1; background:var(--accent); color:#000; margin:0; padding:12px;">
-                        ▶ প্লে
+                        ▶ Play
                     </button>
                     <button id="liveStopBtn" onclick="stopLivePlay()" aria-label="Stop" style="flex:0 0 80px; background:#555; color:#fff; margin:0; padding:12px;" disabled>
                         ⏹
@@ -669,11 +671,11 @@
                 </button>
 
                 <button id="liveSaveAutoBtn" onclick="saveLiveAutomation()" style="width:100%; background:var(--success); color:#fff; margin:0 0 10px 0; padding:12px;" disabled>
-                    💾 অটোমেশনসহ সেভ করো
+                    💾 Save with automation
                 </button>
 
                 <p id="liveFxStatus" style="font-size:12px; color:#aaa; text-align:center; margin:0;">
-                    ফাইল সিলেক্ট করে প্লে চাপুন
+                    Select a file and press Play
                 </p>
                 <p id="liveAutoInfo" style="font-size:11px; color:#888; text-align:center; margin:5px 0 0 0;"></p>
             </div>
@@ -691,17 +693,17 @@
                 Volume/FX Step (%): <input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume Increase Decrease Amount"> 
             </div>
             <div style="margin-top:16px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
-                <strong style="color:var(--accent);">সেভ ফরম্যাট</strong><br>
-                • কাট / মার্জ / মিক্স / FX → <b>WAV</b> (উচ্চ মান, ফাইল ম্যানেজার: Music/Swaralay)<br>
-                • নেটিভ রেকর্ড → <b>M4A</b> (ছোট ফাইল, প্রায় সব ফোনে চলে)<br>
-                • খাঁটি <b>MP3</b> অ্যান্ড্রয়েডে বিল্ট-ইন এনকোডার নেই — M4A ব্যবহার করুন (একই কাজ, ছোট সাইজ)
+                <strong style="color:var(--accent);">Save format</strong><br>
+                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')"> <b>MP3 320 kbps</b> — best for WhatsApp (LAME encoder)</label>
+                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="wav" onchange="setExportFormat('wav')"> <b>WAV</b> — uncompressed max quality (larger files)</label>
+                <span style="font-size:12px; color:#888;">At 320 kbps, MP3 sounds nearly identical to WAV for music/voice. Native live record still uses M4A; export/mix uses your choice above.</span>
             </div>
             <div style="margin-top:12px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
-                <strong style="color:var(--accent);">TalkBack প্লে / পজ</strong><br>
-                TalkBack চালু থাকলে দুই আঙুলের জেশ্চার সিস্টেম নিজে নেয়। ব্যবহার করুন:<br>
-                ১) প্লেয়ারের <b>Play</b> বাটনে সোয়াইপ → এক আঙুল ডাবল-ট্যাপ<br>
-                ২) হেডসেট / ব্লুটুথ প্লে-পজ বাটন<br>
-                ৩) TalkBack বন্ধ করে দুই আঙুল ডাবল-ট্যাপ (ব্রাউজারের মতো)
+                <strong style="color:var(--accent);">TalkBack play / pause</strong><br>
+                With TalkBack on, two-finger gestures are used by the system. Use:<br>
+                1) Swipe to the <b>Play</b> button → single-finger double-tap<br>
+                2) Headset / Bluetooth play-pause button<br>
+                3) Turn TalkBack off for two-finger double-tap (like in browser)
             </div>
 
             <button onclick="saveSettings()">Save Settings</button>
@@ -719,7 +721,18 @@
     <script>
         // --- GLOBAL VARIABLES & SETTINGS ---
         let skipTime = 10;
-        let volStep = 10; 
+        let volStep = 10;
+        let exportFormat = localStorage.getItem('swaralay_export_format') || 'mp3'; // 'mp3' | 'wav'
+
+        function setExportFormat(fmt) {
+            exportFormat = (fmt === 'wav') ? 'wav' : 'mp3';
+            try { localStorage.setItem('swaralay_export_format', exportFormat); } catch (e) {}
+        }
+        function syncExportFormatUI() {
+            document.querySelectorAll('input[name="exportFormat"]').forEach(function (el) {
+                el.checked = (el.value === exportFormat);
+            });
+        } 
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audio = new Audio(); audio.crossOrigin = "anonymous";
@@ -809,14 +822,19 @@
             }
         }
         function openEditorPanel(panelId, btn) {
+            let panel = document.getElementById(panelId);
+            if (!panel) return;
             document.querySelectorAll('.editor-panel').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.editor-sub-tab').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-selected', 'false'); });
-            document.getElementById(panelId).classList.add('active');
-            btn.classList.add('active');
-            btn.setAttribute('aria-selected', 'true');
+            panel.classList.add('active');
+            if (btn) {
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+            }
             let empty = document.getElementById('editorEmpty');
             if (empty) empty.style.display = 'none';
-            stopAllPreviews();
+            // Don't kill studio recording when only switching editor tools
+            if (!isRecording) stopAllPreviews();
         }
 
         // --- ACCESSIBLE STEPPER LOGIC ---
@@ -891,7 +909,7 @@
                 }
                 let hint = document.getElementById('overdubHint');
                 if (hint) {
-                    hint.textContent = '🎧 ' + projectTracks.length + ' লেয়ার চলছে — হেডফোনে শুনে নতুন লেয়ার রেকর্ড করো';
+                    hint.textContent = '🎧 ' + projectTracks.length + ' layer(s) playing — record a new layer on headphones';
                 }
             } catch(e) {
                 console.error("Monitor playback error:", e);
@@ -906,25 +924,38 @@
             hint.setAttribute('aria-hidden', 'true');
             if (isRecording) {
                 if (projectTracks.length > 0) {
-                    hint.textContent = '🔴 রেকর্ড চলছে + ' + projectTracks.length + ' লেয়ার মনিটর';
+                    hint.textContent = '🔴 Recording + ' + projectTracks.length + ' layer monitor';
                 } else {
-                    hint.textContent = '🔴 রেকর্ড চলছে...';
+                    hint.textContent = '🔴 Recording...';
                 }
             } else if (projectTracks.length > 0) {
-                hint.textContent = '✅ ' + projectTracks.length + ' লেয়ার — আবার রেকর্ড = ওভারডাব / গান';
+                hint.textContent = '✅ ' + projectTracks.length + ' layer(s) — record again = overdub / sing';
             } else {
                 hint.textContent = '';
             }
         }
 
         let recordFocusLocker = null;
+        function silenceTalkBackNow() {
+            try {
+                if (window.AndroidBridge && AndroidBridge.silenceTalkBackBurst) {
+                    AndroidBridge.silenceTalkBackBurst();
+                } else if (window.AndroidBridge && AndroidBridge.silenceTalkBack) {
+                    AndroidBridge.silenceTalkBack();
+                }
+            } catch (e) {}
+        }
         function lockRecordFocus() {
             let btn = document.getElementById('recordBtn');
             if (!btn) return;
-            // Stable accessible name — do NOT change aria-label while recording (TalkBack would speak)
-            btn.setAttribute('aria-label', 'রেকর্ড বা স্টপ');
+            // Fixed name only — never change while recording (TalkBack would speak again)
+            btn.setAttribute('aria-label', 'Record or Stop');
             btn.setAttribute('aria-busy', 'true');
+            silenceTalkBackNow();
             try { btn.focus({ preventScroll: true }); } catch (e) { try { btn.focus(); } catch (e2) {} }
+            setTimeout(silenceTalkBackNow, 50);
+            setTimeout(silenceTalkBackNow, 250);
+            setTimeout(silenceTalkBackNow, 600);
             if (recordFocusLocker) document.removeEventListener('focusin', recordFocusLocker, true);
             recordFocusLocker = function (e) {
                 if (!isRecording) return;
@@ -940,6 +971,7 @@
         function unlockRecordFocus() {
             let btn = document.getElementById('recordBtn');
             if (btn) btn.setAttribute('aria-busy', 'false');
+            silenceTalkBackNow();
             if (recordFocusLocker) {
                 document.removeEventListener('focusin', recordFocusLocker, true);
                 recordFocusLocker = null;
@@ -960,9 +992,9 @@
                 });
                 updateProjectTracksUI();
                 updateOverdubHint();
-                alert('ব্যাকিং মিউজিক যোগ হয়েছে। হেডফোন লাগিয়ে রেকর্ড চাপুন — গান শুনে গাইতে পারবেন।');
+                alert('Backing music added. Put on headphones and press Record to sing along.');
             } catch (e) {
-                alert('মিউজিক লোড ব্যর্থ: ' + (e && e.message ? e.message : e));
+                alert('Music load failed: ' + (e && e.message ? e.message : e));
             }
         }
 
@@ -981,8 +1013,8 @@
                 div.innerHTML = `
                     <span style="font-size:13px; overflow:hidden; text-overflow:ellipsis;">🎚️ ${t.name} (${t.duration.toFixed(1)}s)</span>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        <button type="button" onclick="playProjectTrack(${idx})" aria-label="Play ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:#383854;">▶ প্লে</button>
-                        <button type="button" onclick="saveProjectLayer(${idx})" aria-label="Save layer ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--accent); color:#000;">💾 সেভ</button>
+                        <button type="button" onclick="playProjectTrack(${idx})" aria-label="Play ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:#383854;">▶ Play</button>
+                        <button type="button" onclick="saveProjectLayer(${idx})" aria-label="Save layer ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--accent); color:#000;">💾 Save</button>
                         <button type="button" onclick="sendLayerToFx(${idx})" aria-label="Send ${t.name} to FX" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--purple); color:#fff;">🚀 FX</button>
                         <button type="button" onclick="removeProjectTrack(${idx})" aria-label="Remove ${t.name}" style="margin:0; width:auto; padding:6px 10px; font-size:11px; background:var(--danger); color:#fff;">❌</button>
                     </div>
@@ -993,22 +1025,22 @@
 
         async function saveProjectLayer(idx) {
             let t = projectTracks[idx];
-            if (!t || !t.buffer) return alert('লেয়ার পাওয়া যায়নি');
+            if (!t || !t.buffer) return alert('Layer not found');
             let name = (t.name || ('Layer_' + (idx + 1))).replace(/[\\/:*?"<>|]/g, '_');
             try {
-                await downloadBlob(audioBufferToWav(t.buffer), name);
+                await downloadAudioBuffer(t.buffer, name);
             } catch (e) {
-                alert('লেয়ার সেভ ব্যর্থ: ' + e);
+                alert('Layer save failed: ' + e);
             }
         }
 
         function sendLayerToFx(idx) {
             let t = projectTracks[idx];
-            if (!t) return alert('লেয়ার পাওয়া যায়নি');
+            if (!t) return alert('Layer not found');
             try {
                 let blob = t.blob;
                 if (!blob && t.buffer) blob = audioBufferToWav(t.buffer);
-                if (!blob) return alert('অডিও ডেটা নেই');
+                if (!blob) return alert('No audio data');
                 let mime = blob.type || 'audio/wav';
                 let ext = mime.indexOf('mp4') >= 0 ? 'm4a' : (mime.indexOf('webm') >= 0 ? 'webm' : 'wav');
                 let file = new File([blob], (t.name || 'layer') + '.' + ext, { type: mime });
@@ -1021,9 +1053,9 @@
                 }
                 let fxTab = document.querySelector('.editor-sub-tab[aria-controls="panel-fx"]');
                 if (fxTab) openEditorPanel('panel-fx', fxTab);
-                alert('লেয়ার FX-এ লোড হয়েছে: ' + t.name);
+                alert('Layer loaded into FX: ' + t.name);
             } catch (e) {
-                alert('FX-এ পাঠানো যায়নি: ' + e);
+                alert('Could not send to FX: ' + e);
             }
         }
 
@@ -1074,7 +1106,7 @@
                             }
                             if (afterStop) afterStop.style.display = 'flex';
                         } else {
-                            alert('রেকর্ড বন্ধ সমস্যা: ' + result);
+                            alert('Stop recording error: ' + result);
                         }
                         useNativeRecorder = false;
                     } else {
@@ -1090,7 +1122,7 @@
                 unlockRecordFocus();
                 // Visual only (aria-hidden) — do not change aria-label
                 let rt = document.getElementById('recordBtnText');
-                if (rt) rt.textContent = '🔴 রেকর্ড';
+                if (rt) rt.textContent = '🔴 Record';
                 btn.style.background = 'var(--danger)';
                 pauseBtn.style.background = '#555';
                 pauseBtn.style.opacity = '0.5';
@@ -1109,6 +1141,14 @@
                 lastRecordingBlob = null;
                 useNativeRecorder = false;
 
+                // Pause player/previews so only monitor + mic run (cleaner take, less TalkBack noise)
+                try {
+                    if (audio && !audio.paused) { audio.pause(); setPlayPauseBtnState(false); }
+                    if (rowAudioPlayer && !rowAudioPlayer.paused) rowAudioPlayer.pause();
+                    if (cutterPlayer && !cutterPlayer.paused) cutterPlayer.pause();
+                } catch (e) {}
+                silenceTalkBackNow();
+
                 // Play previous layers / backing music (headphones) — NOT mixed into mic
                 if (projectTracks.length > 0) {
                     await startMonitorPlayback();
@@ -1119,7 +1159,7 @@
                     let r = String(AndroidBridge.startNativeRecording() || '');
                     if (r === 'NEED_PERMISSION') {
                         stopMonitorPlayback();
-                        alert('মাইক্রোফোন পারমিশন Allow করুন, তারপর আবার রেকর্ড চাপুন।');
+                        alert('Allow microphone permission, then press Record again.');
                         return;
                     }
                     if (r.indexOf('OK') === 0) {
@@ -1127,7 +1167,7 @@
                         isRecording = true;
                         isPaused = false;
                         let rt = document.getElementById('recordBtnText');
-                        if (rt) rt.textContent = '⏹ স্টপ';
+                        if (rt) rt.textContent = '⏹ Stop';
                         btn.style.background = '#ff9f43';
                         pauseBtn.style.opacity = '0.5';
                         pauseBtn.disabled = true;
@@ -1140,7 +1180,7 @@
 
                 // Fallback: WebView getUserMedia
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('মাইক রেকর্ড সাপোর্ট নেই। নতুন APK ইনস্টল করুন (MainActivity আপডেটসহ)।');
+                    alert('Mic recording not supported. Install a new APK (with MainActivity update).');
                     return;
                 }
                 if (projectTracks.length > 0) await startMonitorPlayback();
@@ -1199,8 +1239,8 @@
                 stopMonitorPlayback();
                 unlockRecordFocus();
                 console.error(err);
-                alert('রেকর্ড শুরু হয়নি: ' + (err && err.message ? err.message : err) +
-                    '\n\nSettings → Apps → স্বরালয় → Microphone → Allow\nতারপর নতুন APK (নেটিভ রেকর্ডসহ) ইনস্টল করুন।');
+                alert('Could not start recording: ' + (err && err.message ? err.message : err) +
+                    '\n\nSettings → Apps → Swaralay → Microphone → Allow\nThen install a new APK (with native record).');
                 isRecording = false;
             }
         }
@@ -1217,7 +1257,7 @@
                     isPaused = true;
                     let _pt=document.getElementById('pauseBtnText'); if(_pt) _pt.textContent='▶'; else pauseBtn.innerHTML='▶';
                     pauseBtn.style.background = 'var(--success)';
-                    pauseBtn.setAttribute('aria-label', 'পজ');
+                    pauseBtn.setAttribute('aria-label', 'Pause');
                 } catch(e) { console.error(e); }
             } else {
                 try {
@@ -1227,14 +1267,14 @@
                     isPaused = false;
                     let _pt2=document.getElementById('pauseBtnText'); if(_pt2) _pt2.textContent='⏸'; else pauseBtn.innerHTML='⏸';
                     pauseBtn.style.background = '#ff9f43';
-                    pauseBtn.setAttribute('aria-label', 'পজ');
+                    pauseBtn.setAttribute('aria-label', 'Pause');
                 } catch(e) { console.error(e); }
             }
         }
 
         async function addToProject() {
             if (!lastRecordingBlob) {
-                alert('আগে একটি লেয়ার রেকর্ড করে স্টপ করুন।');
+                alert('Record a layer and stop first.');
                 return;
             }
             try {
@@ -1244,7 +1284,7 @@
                 tempCtx.close();
 
                 let defaultName = 'Layer ' + (projectTracks.length + 1);
-                let trackName = prompt('লেয়ারের নাম:', defaultName);
+                let trackName = prompt('Layer name:', defaultName);
                 if (trackName === null) return;
                 trackName = (trackName || defaultName).trim() || defaultName;
                 projectTracks.push({
@@ -1258,20 +1298,20 @@
                 document.getElementById('afterStopButtons').style.display = 'none';
                 updateProjectTracksUI();
                 updateOverdubHint();
-                alert('লেয়ার যোগ হয়েছে। আবার রেকর্ড চাপলে পুরনো লেয়ার শুনতে পাবে।');
+                alert('Layer added. Record again to hear previous layers while overdubbing.');
             } catch(e) {
-                alert('প্রজেক্টে যোগ করতে সমস্যা: ' + (e && e.message ? e.message : e));
+                alert('Could not add to project: ' + (e && e.message ? e.message : e));
                 console.error(e);
             }
         }
 
         async function saveLastRecording() {
             if (!lastRecordingBlob) {
-                alert('আগে রেকর্ড করে স্টপ করুন।');
+                alert('Record and stop first.');
                 return;
             }
             let defaultName = 'Recording_' + new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
-            let name = prompt('ফাইলের নাম লিখুন (WAV অডিও):', defaultName);
+            let name = prompt('File name (WAV audio):', defaultName);
             if (name === null) return; // cancelled
             name = (name || defaultName).trim().replace(/[\\/:*?"<>|]/g, '_');
             if (!name) name = defaultName;
@@ -1281,15 +1321,15 @@
                 let tempCtx = new AudioContext();
                 let buffer = await tempCtx.decodeAudioData(arrayBuffer.slice(0));
                 tempCtx.close();
-                downloadBlob(audioBufferToWav(buffer), name);
+                downloadAudioBuffer(buffer, name);
             } catch(e) {
                 console.error(e);
                 // Fallback: original blob via native save
                 try {
                     await downloadBlob(lastRecordingBlob, name + '.webm');
-                    alert('WAV এ রূপান্তর হয়নি, মূল ফরম্যাটে সেভ চেষ্টা করা হয়েছে।');
+                    alert('Could not convert to WAV; tried saving original format.');
                 } catch (e2) {
-                    alert('সেভ ব্যর্থ: ' + e2);
+                    alert('Save failed: ' + e2);
                 }
             }
         }
@@ -1310,12 +1350,15 @@
         function removeProjectTrack(idx) {
             projectTracks.splice(idx, 1);
             updateProjectTracksUI();
+            updateOverdubHint();
         }
 
         function clearProject() {
-            if (!confirm('সব প্রজেক্ট ট্র্যাক মুছে ফেলবেন?')) return;
+            if (!confirm('Delete all project tracks?')) return;
+            stopMonitorPlayback();
             projectTracks = [];
             updateProjectTracksUI();
+            updateOverdubHint();
         }
 
         async function resampleBufferTo(buffer, targetRate, targetChannels) {
@@ -1334,12 +1377,12 @@
 
         async function mixAndSaveAll() {
             if (projectTracks.length === 0) {
-                alert('প্রজেক্টে কোনো ট্র্যাক নেই।');
+                alert('No tracks in the project.');
                 return;
             }
             let valid = projectTracks.filter(t => t && t.buffer && t.duration > 0);
             if (valid.length === 0) {
-                alert('কোনো বৈধ লেয়ার নেই। আবার রেকর্ড/মিউজিক যোগ করুন।');
+                alert('No valid layers. Record or add music again.');
                 return;
             }
             try {
@@ -1367,10 +1410,10 @@
                     src.start(0);
                 }
                 let rendered = await offlineCtx.startRendering();
-                await downloadBlob(audioBufferToWav(rendered), 'Mixed_Project_' + Date.now());
+                await downloadAudioBuffer(rendered, 'Mixed_Project_' + Date.now());
             } catch (e) {
                 console.error(e);
-                alert('মিক্স সমস্যা: ' + (e && e.message ? e.message : e));
+                alert('Mix error: ' + (e && e.message ? e.message : e));
             }
         }
 
@@ -1476,18 +1519,18 @@
             let trackList = document.getElementById('trackList');
             // Show a loading message immediately (scanning a big folder can take a moment,
             // and without this the screen looks "frozen"/unresponsive while it works).
-            trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">⏳ ফোল্ডার স্ক্যান করা হচ্ছে, একটু অপেক্ষা করো...</p>';
+            trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">⏳ Scanning folder, please wait...</p>';
             let allFiles = Array.from(e.target.files);
             // Defer the heavy filtering/sorting so the "loading" message actually paints first
             setTimeout(() => {
                 files = allFiles.filter(f => (f.type && f.type.startsWith('audio')) || AUDIO_EXT_RE.test(f.name));
                 if (files.length === 0) {
-                    trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">এই ফোল্ডারে কোনো অডিও ফাইল পাওয়া যায়নি।</p>';
+                    trackList.innerHTML = '<p style="padding:15px; color:#aaa; font-size:13px;">No audio files found in this folder.</p>';
                     return;
                 }
                 // Sort so files are grouped folder-by-folder, then by the chosen sort mode within each folder
                 sortFilesArray(true);
-                renderTrackList('📁 ফোল্ডার থেকে যোগ হয়েছে (' + files.length + 'টি গান)', true);
+                renderTrackList('📁 Added from folder (' + files.length + ' tracks)', true);
                 playTrack(0);
             }, 30);
         });
@@ -1524,11 +1567,11 @@
                 sortWrap.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
                 let nameBtn = document.createElement('button');
                 nameBtn.type = 'button'; nameBtn.className = 'mini-btn'; nameBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'name' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'name' ? '#000' : '#fff') + ';';
-                nameBtn.innerText = '🔤 নাম অনুযায়ী (A-Z)';
+                nameBtn.innerText = '🔤 Name (A-Z)';
                 nameBtn.onclick = () => setSortMode('name');
                 let dateBtn = document.createElement('button');
                 dateBtn.type = 'button'; dateBtn.className = 'mini-btn'; dateBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'date' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'date' ? '#000' : '#fff') + ';';
-                dateBtn.innerText = '📅 তারিখ অনুযায়ী';
+                dateBtn.innerText = '📅 By date';
                 dateBtn.onclick = () => setSortMode('date');
                 sortWrap.appendChild(nameBtn); sortWrap.appendChild(dateBtn);
                 frag.appendChild(sortWrap);
@@ -1540,11 +1583,11 @@
                 viewWrap.style.cssText = 'display:flex; gap:8px; margin-bottom:10px;';
                 let browseBtn = document.createElement('button');
                 browseBtn.type = 'button'; browseBtn.className = 'mini-btn'; browseBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (folderViewMode === 'browse' ? 'var(--accent)' : '#2a2a40') + '; color:' + (folderViewMode === 'browse' ? '#000' : '#fff') + ';';
-                browseBtn.innerText = '📂 ফোল্ডার আকারে দেখুন';
+                browseBtn.innerText = '📂 Browse folders';
                 browseBtn.onclick = () => setFolderViewMode('browse');
                 let combinedBtn = document.createElement('button');
                 combinedBtn.type = 'button'; combinedBtn.className = 'mini-btn'; combinedBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (folderViewMode === 'combined' ? 'var(--accent)' : '#2a2a40') + '; color:' + (folderViewMode === 'combined' ? '#000' : '#fff') + ';';
-                combinedBtn.innerText = '📃 সব একসাথে';
+                combinedBtn.innerText = '📃 All together';
                 combinedBtn.onclick = () => setFolderViewMode('combined');
                 viewWrap.appendChild(browseBtn); viewWrap.appendChild(combinedBtn);
                 frag.appendChild(viewWrap);
@@ -1570,7 +1613,7 @@
                 let searchBox = document.createElement('input');
                 searchBox.type = 'text';
                 searchBox.id = 'trackSearchBox';
-                searchBox.placeholder = '🔍 গান খুঁজুন...';
+                searchBox.placeholder = '🔍 Search songs...';
                 searchBox.setAttribute('aria-label', 'Search tracks');
                 searchBox.style.cssText = 'width:100%; box-sizing:border-box; padding:8px 10px; font-size:14px;';
                 searchBox.addEventListener('input', () => {
@@ -1643,13 +1686,13 @@
                     div.className = 'track-item';
                     div.setAttribute('role', 'button');
                     div.setAttribute('tabindex', '0');
-                    div.setAttribute('aria-label', 'ফোল্ডার খুলুন ' + key);
+                    div.setAttribute('aria-label', 'Open folder ' + key);
                     let nameSpan = document.createElement('span');
                     nameSpan.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis;';
                     nameSpan.innerText = '📁 ' + key;
                     let countSpan = document.createElement('span');
                     countSpan.style.cssText = 'color:#888; font-size:12px; margin-left:8px;';
-                    countSpan.innerText = counts[key] + 'টি গান';
+                    countSpan.innerText = counts[key] + ' tracks';
                     div.appendChild(nameSpan);
                     div.appendChild(countSpan);
                     let openFolder = () => { currentBrowseFolder = key; refreshTrackListView(); };
@@ -1663,7 +1706,7 @@
                 backDiv.setAttribute('role', 'button');
                 backDiv.setAttribute('tabindex', '0');
                 backDiv.style.cssText = 'color: var(--accent); font-weight: bold;';
-                backDiv.innerText = '⬅ ফোল্ডার লিস্টে ফিরুন';
+                backDiv.innerText = '⬅ Back to folder list';
                 let goBack = () => { currentBrowseFolder = null; refreshTrackListView(); };
                 backDiv.addEventListener('click', goBack);
                 backDiv.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } });
@@ -1748,6 +1791,7 @@
 
         function setPlayPauseBtnState(isPlaying) {
             let btn = document.getElementById('playPauseBtn');
+            if (!btn) return;
             if (isPlaying) {
                 btn.innerHTML = '<span>⏸</span>Pause';
                 btn.setAttribute('aria-label', 'Pause');
@@ -1802,12 +1846,12 @@
         }
         function clearSelectedFiles() {
             if (!files.length) return;
-            if (!confirm('সব সিলেক্টেড গান মুছে ফেলবেন?')) return;
+            if (!confirm('Clear all selected songs?')) return;
             files = [];
             currentTrackIndex = 0;
             try { audio.pause(); audio.removeAttribute('src'); } catch(e) {}
             let nameEl = document.getElementById('currentTrackName');
-            if (nameEl) nameEl.textContent = 'কোনো গান নেই';
+            if (nameEl) nameEl.textContent = 'No song selected';
             document.getElementById('currentTime').textContent = '0:00';
             document.getElementById('totalTime').textContent = '0:00';
             document.getElementById('progressBar').value = 0;
@@ -1820,10 +1864,10 @@
             if (audio.duration) {
                 let progressBar = document.getElementById('progressBar');
                 progressBar.value = (audio.currentTime / audio.duration) * 100;
-                // Throttle aria updates so TalkBack does not spam
+                // Rare aria updates only — TalkBack spam prevention (every ~8s, never while recording)
                 let now = Date.now();
-                if (now - lastAriaTimeUpdate > 2500) {
-                    progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + ' of ' + formatTime(audio.duration));
+                if (!isRecording && now - lastAriaTimeUpdate > 8000) {
+                    progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + '  of ' + formatTime(audio.duration));
                     lastAriaTimeUpdate = now;
                 }
                 document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
@@ -1848,7 +1892,7 @@
             repeatMode = repeatMode === 'off' ? 'all' : (repeatMode === 'all' ? 'one' : 'off');
             let btn = document.getElementById('repeatBtn');
             if (btn) {
-                let labels = { off: '🔁 রিপিট বন্ধ', all: '🔁 সব রিপিট', one: '🔂 একটি রিপিট' };
+                let labels = { off: '🔁 Repeat Off', all: '🔁 Repeat all', one: '🔂 Repeat one' };
                 btn.innerText = labels[repeatMode];
                 btn.style.background = repeatMode === 'off' ? '#383854' : 'var(--accent)';
                 btn.style.color = repeatMode === 'off' ? '#fff' : '#000';
@@ -1891,7 +1935,7 @@
         // same folder-grouping mode it was originally shown in.
         function refreshTrackListView() {
             let headerText = lastListGroupByFolder
-                ? '📁 ফোল্ডার থেকে যোগ হয়েছে (' + files.length + 'টি গান)'
+                ? '📁 Added from folder (' + files.length + ' tracks)'
                 : '📁 Selected Files';
             renderTrackList(headerText, lastListGroupByFolder);
         }
@@ -1910,7 +1954,7 @@
                 audio.removeAttribute('src');
                 if (currentAudioObjectUrl) { try { URL.revokeObjectURL(currentAudioObjectUrl); } catch(e) {} }
                 currentAudioObjectUrl = null;
-                document.getElementById('currentTrackName').innerText = 'কোনো গান নেই';
+                document.getElementById('currentTrackName').innerText = 'No song selected';
                 document.getElementById('progressBar').value = 0;
                 document.getElementById('currentTime').innerText = '0:00';
                 document.getElementById('totalTime').innerText = '0:00';
@@ -1950,6 +1994,67 @@
             return new Blob([bufferWav], {type: "audio/wav"});
         }
 
+        // LAME MP3 encode — 320 kbps is near-transparent vs WAV for most listening
+        function floatTo16BitPCM(input) {
+            let out = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i++) {
+                let s = Math.max(-1, Math.min(1, input[i]));
+                out[i] = (s < 0 ? s * 0x8000 : s * 0x7FFF) | 0;
+            }
+            return out;
+        }
+
+        function audioBufferToMp3(buffer, bitrateKbps) {
+            if (typeof lamejs === 'undefined' || !lamejs.Mp3Encoder) {
+                throw new Error('LAME encoder not loaded');
+            }
+            let bitrate = bitrateKbps || 320;
+            let channels = buffer.numberOfChannels;
+            let sampleRate = buffer.sampleRate;
+            // LAME works best with common rates
+            let left = floatTo16BitPCM(buffer.getChannelData(0));
+            let right = channels > 1 ? floatTo16BitPCM(buffer.getChannelData(1)) : null;
+            let encChannels = right ? 2 : 1;
+            let encoder = new lamejs.Mp3Encoder(encChannels, sampleRate, bitrate);
+            let block = 1152;
+            let parts = [];
+            for (let i = 0; i < left.length; i += block) {
+                let leftChunk = left.subarray(i, i + block);
+                let buf;
+                if (right) {
+                    let rightChunk = right.subarray(i, i + block);
+                    buf = encoder.encodeBuffer(leftChunk, rightChunk);
+                } else {
+                    buf = encoder.encodeBuffer(leftChunk);
+                }
+                if (buf.length > 0) parts.push(buf);
+            }
+            let end = encoder.flush();
+            if (end.length > 0) parts.push(end);
+            return new Blob(parts, { type: 'audio/mpeg' });
+        }
+
+        /** Export AudioBuffer using Settings format (MP3 320 default, or WAV) */
+        async function downloadAudioBuffer(buffer, filename) {
+            if (!buffer) return alert('No audio to save');
+            let base = (filename || 'swaralay_audio').toString().replace(/\.(wav|mp3|m4a|webm|ogg)$/i, '');
+            try {
+                if (exportFormat === 'mp3') {
+                    try {
+                        let mp3blob = audioBufferToMp3(buffer, 320);
+                        await downloadBlob(mp3blob, base + '.mp3');
+                        return;
+                    } catch (e) {
+                        console.error(e);
+                        alert('MP3 encode failed, saving WAV instead: ' + e);
+                    }
+                }
+                await downloadBlob(audioBufferToWav(buffer), base + '.wav');
+            } catch (e) {
+                alert('Save failed: ' + e);
+            }
+        }
+
         function u8ToBase64(u8) {
             // Build base64 in pieces so large files do not blow call stack
             const step = 0x8000;
@@ -1975,7 +2080,7 @@
                 try {
                     let start = AndroidBridge.startSave(name);
                     if (start && String(start).indexOf('ERROR') === 0) {
-                        alert('সেভ শুরু হয়নি: ' + start);
+                        alert('Save could not start: ' + start);
                         return;
                     }
                     let buf = await blob.arrayBuffer();
@@ -1986,21 +2091,21 @@
                         let slice = u8.subarray(i, Math.min(i + CHUNK, u8.length));
                         let r = AndroidBridge.appendSaveChunk(u8ToBase64(slice));
                         if (r && String(r).indexOf('ERROR') === 0) {
-                            alert('সেভ সমস্যা: ' + r);
+                            alert('Save error: ' + r);
                             return;
                         }
                     }
                     let result = String(AndroidBridge.finishSave() || '');
                     if (result.indexOf('OK') === 0) {
                         // Native Toast already shows path; also alert once for clarity
-                        alert(result.replace(/^OK:/, '') || 'ফাইল সেভ হয়েছে (Music/Swaralay)');
+                        alert(result.replace(/^OK:/, '') || 'File saved (Music/Swaralay)');
                         return;
                     }
-                    alert('সেভ ব্যর্থ: ' + result);
+                    alert('Save failed: ' + result);
                     return;
                 } catch (e) {
                     console.error(e);
-                    alert('সেভ সমস্যা: ' + e);
+                    alert('Save error: ' + e);
                     return;
                 }
             }
@@ -2205,7 +2310,7 @@
                 reverb: liveReverbOn
             });
             let info = document.getElementById('liveAutoInfo');
-            if (info) info.innerText = 'অটোমেশন পয়েন্ট: ' + liveAutomation.length;
+            if (info) info.innerText = 'Automation points: ' + liveAutomation.length;
         }
 
         function setLiveEcho(on) {
@@ -2266,7 +2371,7 @@
 
             let file = document.getElementById('fxFile').files[0];
             if (!file) {
-                alert('আগে একটি অডিও ফাইল সিলেক্ট করুন।');
+                alert('Select an audio file first.');
                 return;
             }
 
@@ -2336,12 +2441,12 @@
 
                 liveSource.onended = () => {
                     liveIsPlaying = false;
-                    document.getElementById('livePlayBtn').innerText = '▶ প্লে';
+                    document.getElementById('livePlayBtn').innerText = '▶ Play';
                     document.getElementById('liveStopBtn').disabled = true;
                     document.getElementById('liveEchoBtn').disabled = true;
                     document.getElementById('liveReverbBtn').disabled = true;
                     document.getElementById('liveAllFxBtn').disabled = true;
-                    document.getElementById('liveFxStatus').innerText = 'শেষ হয়েছে';
+                    document.getElementById('liveFxStatus').innerText = 'Finished';
                     // Keep save button enabled if automation exists
                     let saveBtn = document.getElementById('liveSaveAutoBtn');
                     if (saveBtn) saveBtn.disabled = liveAutomation.length === 0;
@@ -2358,7 +2463,7 @@
                 // Initial state
                 liveAutomation = [{ t: 0, echo: false, reverb: false }];
 
-                document.getElementById('livePlayBtn').innerText = '⏸ পজ';
+                document.getElementById('livePlayBtn').innerText = '⏸ Pause';
                 document.getElementById('liveStopBtn').disabled = false;
                 document.getElementById('liveEchoBtn').disabled = false;
                 document.getElementById('liveReverbBtn').disabled = false;
@@ -2369,7 +2474,7 @@
 
             } catch (err) {
                 console.error(err);
-                alert('লাইভ প্লে করতে সমস্যা হয়েছে।');
+                alert('Live play failed.');
                 stopLivePlay();
             }
         }
@@ -2392,7 +2497,7 @@
             }
 
             let playBtn = document.getElementById('livePlayBtn');
-            if (playBtn) playBtn.innerText = '▶ প্লে';
+            if (playBtn) playBtn.innerText = '▶ Play';
             let stopBtn = document.getElementById('liveStopBtn');
             if (stopBtn) stopBtn.disabled = true;
             ['liveEchoBtn','liveReverbBtn','liveAllFxBtn'].forEach(id => {
@@ -2405,7 +2510,7 @@
 
             let status = document.getElementById('liveFxStatus');
             if (status) {
-                status.innerText = liveAutomation.length > 1 ? 'অটোমেশন রেডি। সেভ করতে পারো।' : 'ফাইল সিলেক্ট করে প্লে চাপুন';
+                status.innerText = liveAutomation.length > 1 ? 'Automation ready. You can save.' : 'Select a file and press Play';
                 status.style.color = liveAutomation.length > 1 ? 'var(--success)' : '#aaa';
             }
             updateLiveFxButtons();
@@ -2487,18 +2592,18 @@
 
         async function saveLiveAutomation() {
             if (!liveBuffer && !liveOriginalFile) {
-                alert('আগে Live প্লে করে অটোমেশন রেকর্ড করুন।');
+                alert('Do a Live Play first to record automation.');
                 return;
             }
             if (liveAutomation.length < 2) {
-                alert('কোনো ইফেক্ট চালু/বন্ধ করা হয়নি। আগে Live প্লে করে Echo/Reverb টগল করুন।');
+                alert('No effect toggles recorded. Live Play and toggle Echo/Reverb first.');
                 return;
             }
 
             let loading = document.getElementById('fxLoading');
             if (loading) {
                 loading.style.display = 'block';
-                loading.innerText = 'অটোমেশন প্রসেস হচ্ছে... অপেক্ষা করুন';
+                loading.innerText = 'Processing automation...';
             }
 
             try {
@@ -2561,37 +2666,44 @@
 
                 let rendered = await offline.startRendering();
                 let name = (document.getElementById('fxName').value || 'LiveFX') + '_Automated';
-                downloadBlob(audioBufferToWav(rendered), name);
+                downloadAudioBuffer(rendered, name);
 
                 if (loading) {
-                    loading.innerText = 'সেভ সম্পন্ন!';
+                    loading.innerText = 'Saved!';
                     setTimeout(() => { loading.style.display = 'none'; }, 2000);
                 }
-                alert('অটোমেশনসহ ফাইল সেভ হয়েছে!');
+                alert('File saved with automation!');
             } catch (err) {
                 console.error(err);
-                alert('সেভ করতে সমস্যা হয়েছে: ' + err.message);
+                alert('Save failed: ' + err.message);
                 if (loading) loading.style.display = 'none';
             }
         }
 
         function stopAllPreviews() {
-            stopLivePlay();
+            try { stopMonitorPlayback(); } catch (e) {}
+            try { stopLivePlay(); } catch (e) {}
             if (currentMasterSource) { 
                 try { currentMasterSource.stop(); } catch(e){} 
                 try { currentMasterSource.disconnect(); } catch(e){}
                 currentMasterSource = null; 
             }
+            isPreviewingMaster = false;
             if (rowAudioPlayer && !rowAudioPlayer.paused) { 
                 rowAudioPlayer.pause(); 
-                if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); }
+                if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play'); }
             }
             if (cutterPlayer && !cutterPlayer.paused) { 
                 cutterPlayer.pause(); 
                 clearInterval(previewCutInterval); 
-                isPreviewingCut = false; 
-                document.getElementById('previewCutBtn').innerHTML = '▶ Preview Cut'; 
-                document.getElementById('previewCutBtn').style.background = 'var(--warning)';
+                isPreviewingCut = false;
+                let pcb = document.getElementById('previewCutBtn');
+                if (pcb) {
+                    pcb.innerHTML = '▶ Preview Cut';
+                    pcb.style.background = 'var(--warning)';
+                }
+                let cpb = document.getElementById('cutPlayPauseBtn');
+                if (cpb) cpb.textContent = '▶';
             }
             if (audio && !audio.paused) { 
                 audio.pause(); 
@@ -2717,7 +2829,7 @@
                     let s = Math.floor(d % 60);
                     let ms = Math.round((d - Math.floor(d)) * 1000);
                     // aria-live is off — set text without repeated announcements
-                    info.textContent = 'মোট দৈর্ঘ্য: ' + m + ' মিনিট ' + s + ' সেকেন্ড ' + ms + ' মিলি · End অটো সেট';
+                    info.textContent = 'Total length: ' + m + ' min ' + s + ' sec ' + ms + ' ms · End auto-set';
                     info.style.display = 'block';
                 }
                 try {
@@ -2794,7 +2906,7 @@
                 for (let i = 0; i < buffer.numberOfChannels; i++) {
                     cutBuffer.getChannelData(i).set(buffer.getChannelData(i).subarray(startOffset, endOffset));
                 }
-                downloadBlob(audioBufferToWav(cutBuffer), filename);
+                downloadAudioBuffer(cutBuffer, filename);
                 loading.innerText = "Saved!";
             } catch(e) { alert("Error cutting audio!"); console.error(e); }
             setTimeout(() => loading.style.display = "none", 3000);
@@ -2824,7 +2936,7 @@
             div.innerHTML = `
                 <div class="track-row-header" style="flex-direction:column; align-items:stretch; gap:8px;">
                     <input type="file" class="file-input" id="${dynId}" accept="audio/*" style="display:none;" aria-hidden="true">
-                    <button type="button" onclick="openPhoneMusicPicker('${dynId}')" style="margin:0; padding:10px; background:#7c4dff; color:#fff; border:none; border-radius:8px; font-weight:bold; width:100%;">📱 ফোনের সব গান</button>
+                    <button type="button" onclick="openPhoneMusicPicker('${dynId}')" style="margin:0; padding:10px; background:#7c4dff; color:#fff; border:none; border-radius:8px; font-weight:bold; width:100%;">📱 Choose from phone music</button>
                     <div style="display:flex; gap:8px;">
                         <button class="mini-btn" onclick="playIndividualTrack(this)" aria-label="Play this track" style="background: var(--accent); flex:1;">▶</button>
                         <button class="mini-btn" onclick="this.closest('.track-row').remove()" aria-label="Remove this track" style="background: var(--danger); flex:1;">❌</button>
@@ -2852,7 +2964,7 @@
             input.value = newVal;
         }
 
-        // ========== ফোনের সব গান থেকে বেছে নেওয়া (নাম / তারিখ সর্ট) ==========
+        // ========== Phone music picker (name / date sort) ==========
         let nativePickerSort = 'name'; // 'name' | 'date'
         let nativePickerTargetId = null;
 
@@ -2899,7 +3011,7 @@
                 try {
                     if (window.AndroidBridge && AndroidBridge.requestRescan) AndroidBridge.requestRescan();
                 } catch (e) {}
-                alert('ফোনের গানের লিস্ট পাওয়া যায়নি।\n\n১) অ্যাপে স্টোরেজ/অডিও পারমিশন দিন\n২) আবার চেষ্টা করুন\n\nঅথবা নিচের সাধারণ ফাইল বাটন দিয়ে রিসেন্ট ফাইল নিতে পারেন।');
+                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again'));
                 return;
             }
             renderNativePickerOverlay(list);
@@ -2913,14 +3025,14 @@
             let ov = document.createElement('div');
             ov.id = '__nativePickerOverlay';
             ov.setAttribute('role', 'dialog');
-            ov.setAttribute('aria-label', 'ফোনের সব গান থেকে বেছে নিন');
+            ov.setAttribute('aria-label', 'Choose from phone music');
             ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;overflow:auto;padding:12px;';
 
             let box = document.createElement('div');
             box.style.cssText = 'max-width:560px;margin:12px auto;background:#161622;border-radius:14px;padding:14px;border:1px solid #333;';
 
             let h = document.createElement('h3');
-            h.textContent = '📱 ফোনের সব গান (' + sorted.length + ')';
+            h.textContent = '📱 Phone music (' + sorted.length + ')';
             h.style.cssText = 'color:#00d2ff;margin:0 0 10px;font-size:16px;';
             box.appendChild(h);
 
@@ -2929,14 +3041,14 @@
             sortRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
             let nameBtn = document.createElement('button');
             nameBtn.type = 'button';
-            nameBtn.textContent = 'অক্ষর অনুযায়ী';
-            nameBtn.setAttribute('aria-label', 'নাম অনুযায়ী সাজান');
+            nameBtn.textContent = 'By name';
+            nameBtn.setAttribute('aria-label', 'Sort by name');
             nameBtn.style.cssText = 'flex:1;margin:0;padding:10px;font-size:13px;background:' + (nativePickerSort === 'name' ? 'var(--accent)' : '#2a2a40') + ';color:' + (nativePickerSort === 'name' ? '#000' : '#fff') + ';border:none;border-radius:8px;font-weight:bold;';
             nameBtn.onclick = function() { nativePickerSort = 'name'; renderNativePickerOverlay(list); };
             let dateBtn = document.createElement('button');
             dateBtn.type = 'button';
-            dateBtn.textContent = 'তারিখ অনুযায়ী';
-            dateBtn.setAttribute('aria-label', 'তারিখ অনুযায়ী সাজান');
+            dateBtn.textContent = 'By date';
+            dateBtn.setAttribute('aria-label', 'Sort by date');
             dateBtn.style.cssText = 'flex:1;margin:0;padding:10px;font-size:13px;background:' + (nativePickerSort === 'date' ? 'var(--accent)' : '#2a2a40') + ';color:' + (nativePickerSort === 'date' ? '#000' : '#fff') + ';border:none;border-radius:8px;font-weight:bold;';
             dateBtn.onclick = function() { nativePickerSort = 'date'; renderNativePickerOverlay(list); };
             sortRow.appendChild(nameBtn);
@@ -2945,16 +3057,16 @@
 
             let close = document.createElement('button');
             close.type = 'button';
-            close.textContent = 'বন্ধ';
-            close.setAttribute('aria-label', 'পিকার বন্ধ');
+            close.textContent = 'Close';
+            close.setAttribute('aria-label', 'Close picker');
             close.style.cssText = 'background:#555;color:#fff;padding:10px 14px;border:none;border-radius:8px;margin-bottom:12px;width:100%;';
             close.onclick = function() { ov.remove(); };
             box.appendChild(close);
 
             let search = document.createElement('input');
             search.type = 'search';
-            search.placeholder = 'গান খুঁজুন...';
-            search.setAttribute('aria-label', 'গান খুঁজুন');
+            search.placeholder = 'Search songs...';
+            search.setAttribute('aria-label', 'Search songs');
             search.style.cssText = 'width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #444;background:#222;color:#fff;';
             box.appendChild(search);
 
@@ -2967,13 +3079,13 @@
                 let q = (filter || '').toLowerCase().trim();
                 let shown = 0;
                 sorted.forEach(function(item) {
-                    let name = item.title || item.name || 'গান';
+                    let name = item.title || item.name || 'Song';
                     let artist = item.artist || '';
                     if (q && (name + ' ' + artist).toLowerCase().indexOf(q) === -1) return;
                     shown++;
                     let btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.setAttribute('aria-label', name + ' নির্বাচন');
+                    btn.setAttribute('aria-label', name + ' select');
                     btn.textContent = '🎵 ' + name + (artist ? (' — ' + artist) : '');
                     btn.style.cssText = 'display:block;width:100%;text-align:left;padding:12px;margin:5px 0;background:#2a2a40;color:#fff;border:1px solid #444;border-radius:8px;font-size:13px;';
                     btn.onclick = function() {
@@ -2985,7 +3097,7 @@
                 if (!shown) {
                     let p = document.createElement('p');
                     p.style.color = '#aaa';
-                    p.textContent = 'কোনো গান পাওয়া যায়নি।';
+                    p.textContent = 'No songs found.';
                     listBox.appendChild(p);
                 }
             }
@@ -3000,14 +3112,14 @@
         function assignNativeFileToInput(inputId, item) {
             try {
                 if (!window.AndroidBridge || !AndroidBridge.readUriAsBase64) {
-                    alert('নেটিভ ব্রিজ নেই। অ্যাপ আপডেট করুন।');
+                    alert('Native bridge missing. Update the app.');
                     return;
                 }
                 let uri = item.uri || item.path;
                 let name = item.title || item.name || 'song.mp3';
                 let b64 = AndroidBridge.readUriAsBase64(uri);
                 if (!b64 || b64.indexOf('ERROR:') === 0) {
-                    alert('ফাইল পড়া যায়নি: ' + b64);
+                    alert('Could not read file: ' + b64);
                     return;
                 }
                 let bin = atob(b64);
@@ -3023,14 +3135,14 @@
                 dt.items.add(file);
                 let input = document.getElementById(inputId);
                 if (!input) {
-                    alert('ইনপুট পাওয়া যায়নি');
+                    alert('Input not found');
                     return;
                 }
                 input.files = dt.files;
                 input.dispatchEvent(new Event('change', { bubbles: true }));
                 if (typeof onPitchFileSelected === 'function' && inputId === 'pitchFile') onPitchFileSelected();
             } catch (e) {
-                alert('লোড সমস্যা: ' + e);
+                alert('Load error: ' + e);
                 console.error(e);
             }
         }
@@ -3043,7 +3155,7 @@
             });
         }
 
-        // Safety-net: if the same "📱 ফোনের সব গান থেকে বেছে নিন" button ever ends up
+        // Safety-net: if the same "📱 Choose from phone music" button ever ends up
         // duplicated inside the same container (e.g. injected twice by the app shell),
         // keep only the first copy — the one wired to openPhoneMusicPicker with the
         // name/date sort — and remove the rest.
@@ -3064,6 +3176,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            try { syncExportFormatUI(); } catch(e) {}
             addTrackRow('merge'); addTrackRow('merge');
             addTrackRow('mix'); addTrackRow('mix');
             dedupePhoneButtons();
@@ -3085,7 +3198,7 @@
             let row = btn.closest('.track-row');
             if (!row) return;
             let fileInput = row.querySelector('.file-input');
-            if(!fileInput || !fileInput.files.length) return alert("আগে 📱 ফোনের সব গান থেকে বেছে নিন!");
+            if(!fileInput || !fileInput.files.length) return alert("Select a file via 📱 Choose from phone music first!");
             if(currentRowBtn === btn && !rowAudioPlayer.paused) { rowAudioPlayer.pause(); btn.innerText = '▶'; btn.setAttribute('aria-label', 'Play this track'); return; }
             stopAllPreviews();
             if (currentRowObjectUrl) { try { URL.revokeObjectURL(currentRowObjectUrl); } catch(e) {} }
@@ -3219,7 +3332,7 @@
             try {
                 loading.innerText = "Saving..."; loading.style.display = "block";
                 let finalBuffer = await generateMasterBuffer(type);
-                downloadBlob(audioBufferToWav(finalBuffer), filename);
+                downloadAudioBuffer(finalBuffer, filename);
                 loading.innerText = "Saved!";
             } catch(e) { alert(e.message); }
             setTimeout(() => loading.style.display = "none", 3000);
@@ -3250,7 +3363,7 @@
                         channel[j] = s;
                     }
                 }
-                downloadBlob(audioBufferToWav(boostedBuffer), filename);
+                downloadAudioBuffer(boostedBuffer, filename);
                 loading.innerText = "Saved!";
             } catch(e) { alert("Error!"); console.error(e); }
             setTimeout(() => loading.style.display = "none", 3000);
@@ -3664,7 +3777,7 @@
                 loading.innerText = "Saving..."; loading.style.display = "block";
                 let buffer = await readAudioData(f1);
                 buffer = await applyPitchAndTempo(buffer);
-                downloadBlob(audioBufferToWav(buffer), filename);
+                await downloadAudioBuffer(buffer, filename);
                 loading.innerText = "Saved!";
             } catch(e) {
                 alert("Error!"); console.error(e);
@@ -3732,7 +3845,7 @@
                 let source = await buildFxGraph(offlineCtx, buffer, true);
                 source.start(0);
                 let renderedBuffer = await offlineCtx.startRendering();
-                downloadBlob(audioBufferToWav(renderedBuffer), filename);
+                downloadAudioBuffer(renderedBuffer, filename);
                 loading.innerText = "Saved!";
             } catch(e) { 
                 alert("Error rendering!"); 
@@ -3790,8 +3903,8 @@
             if ('mediaSession' in navigator) {
                 try {
                     navigator.mediaSession.playbackState = 'playing';
-                    let name = (files[currentTrackIndex] && files[currentTrackIndex].name) || 'স্বরালয়';
-                    navigator.mediaSession.metadata = new MediaMetadata({ title: name, artist: 'স্বরালয়' });
+                    let name = (files[currentTrackIndex] && files[currentTrackIndex].name) || 'Swaralay';
+                    navigator.mediaSession.metadata = new MediaMetadata({ title: name, artist: 'Swaralay' });
                 } catch(e) {}
             }
         });
