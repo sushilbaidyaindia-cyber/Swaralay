@@ -803,7 +803,7 @@
             request.onsuccess = function(e) { db = e.target.result; isDbReady = true; };
             request.onerror = function(e) { console.error("IndexedDB Error: ", e); };
         }
-        initDB();
+        try { initDB(); } catch (e) { console.warn('IndexedDB unavailable', e); }
 
         // --- TAB LOGIC ---
         function openMainTab(tabName, btn) {
@@ -3011,7 +3011,7 @@
                 try {
                     if (window.AndroidBridge && AndroidBridge.requestRescan) AndroidBridge.requestRescan();
                 } catch (e) {}
-                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again'));
+                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again');
                 return;
             }
             renderNativePickerOverlay(list);
