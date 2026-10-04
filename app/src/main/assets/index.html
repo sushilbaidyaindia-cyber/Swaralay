@@ -591,15 +591,21 @@
                     ৪) স্পিকার ব্লিড এড়াতে <b>হেডফোন</b> লাগাও<br>
                     ৫) শেষে <b>মিক্স ও সেভ</b>
                 </p>
-                <p id="overdubHint" style="font-size:12px; color:var(--accent); text-align:center; margin:0 0 10px 0;" aria-live="polite"></p>
+                <p id="overdubHint" style="font-size:12px; color:var(--accent); text-align:center; margin:0 0 10px 0;" aria-live="off" aria-hidden="true"></p>
+
+                <input type="file" id="backingFile" accept="audio/*" style="display:none;" aria-hidden="true">
+                <button type="button" onclick="openPhoneMusicPicker('backingFile')" style="background:#7c4dff; color:#fff; margin:0 0 10px 0; width:100%;">
+                    🎵 ব্যাকিং মিউজিক যোগ (গানের সাথে গাইবে)
+                </button>
 
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
                     <button id="recordBtn"
                             type="button"
                             onclick="toggleRecording()"
                             style="background: var(--danger); color: #fff; flex: 1; font-size: 14px; padding: 12px; margin:0;"
-                            aria-label="রেকর্ড"
-                            aria-live="off">
+                            aria-label="রেকর্ড বা স্টপ"
+                            aria-live="off"
+                            aria-busy="false">
                         <span aria-hidden="true" id="recordBtnText">🔴 রেকর্ড</span>
                     </button>
                     <button id="pauseBtn"
@@ -895,16 +901,68 @@
         function updateOverdubHint() {
             let hint = document.getElementById('overdubHint');
             if (!hint) return;
+            // Visual only — never announce (TalkBack silent during record)
+            hint.setAttribute('aria-live', 'off');
+            hint.setAttribute('aria-hidden', 'true');
             if (isRecording) {
                 if (projectTracks.length > 0) {
-                    hint.textContent = '🔴 রেকর্ড চলছে + ' + projectTracks.length + ' লেয়ার মনিটর (মাইকে মনিটর ঢুকছে না)';
+                    hint.textContent = '🔴 রেকর্ড চলছে + ' + projectTracks.length + ' লেয়ার মনিটর';
                 } else {
-                    hint.textContent = '🔴 প্রথম লেয়ার রেকর্ড হচ্ছে...';
+                    hint.textContent = '🔴 রেকর্ড চলছে...';
                 }
             } else if (projectTracks.length > 0) {
-                hint.textContent = '✅ ' + projectTracks.length + ' লেয়ার আছে — আবার রেকর্ড = ওভারডাব';
+                hint.textContent = '✅ ' + projectTracks.length + ' লেয়ার — আবার রেকর্ড = ওভারডাব / গান';
             } else {
                 hint.textContent = '';
+            }
+        }
+
+        let recordFocusLocker = null;
+        function lockRecordFocus() {
+            let btn = document.getElementById('recordBtn');
+            if (!btn) return;
+            // Stable accessible name — do NOT change aria-label while recording (TalkBack would speak)
+            btn.setAttribute('aria-label', 'রেকর্ড বা স্টপ');
+            btn.setAttribute('aria-busy', 'true');
+            try { btn.focus({ preventScroll: true }); } catch (e) { try { btn.focus(); } catch (e2) {} }
+            if (recordFocusLocker) document.removeEventListener('focusin', recordFocusLocker, true);
+            recordFocusLocker = function (e) {
+                if (!isRecording) return;
+                if (e.target !== btn) {
+                    try {
+                        e.stopPropagation();
+                        btn.focus({ preventScroll: true });
+                    } catch (err) {}
+                }
+            };
+            document.addEventListener('focusin', recordFocusLocker, true);
+        }
+        function unlockRecordFocus() {
+            let btn = document.getElementById('recordBtn');
+            if (btn) btn.setAttribute('aria-busy', 'false');
+            if (recordFocusLocker) {
+                document.removeEventListener('focusin', recordFocusLocker, true);
+                recordFocusLocker = null;
+            }
+        }
+
+        async function addBackingMusicFromFile(file) {
+            if (!file) return;
+            try {
+                let buffer = await readAudioData(file);
+                let name = (file.name || 'Backing').replace(/\.[^.]+$/, '');
+                projectTracks.push({
+                    id: Date.now(),
+                    name: '🎵 ' + name,
+                    blob: file,
+                    buffer: buffer,
+                    duration: buffer.duration
+                });
+                updateProjectTracksUI();
+                updateOverdubHint();
+                alert('ব্যাকিং মিউজিক যোগ হয়েছে। হেডফোন লাগিয়ে রেকর্ড চাপুন — গান শুনে গাইতে পারবেন।');
+            } catch (e) {
+                alert('মিউজিক লোড ব্যর্থ: ' + (e && e.message ? e.message : e));
             }
         }
 
@@ -1029,6 +1087,8 @@
                 stopMonitorPlayback();
                 isRecording = false;
                 isPaused = false;
+                unlockRecordFocus();
+                // Visual only (aria-hidden) — do not change aria-label
                 let rt = document.getElementById('recordBtnText');
                 if (rt) rt.textContent = '🔴 রেকর্ড';
                 btn.style.background = 'var(--danger)';
@@ -1038,6 +1098,8 @@
                 let pt = document.getElementById('pauseBtnText');
                 if (pt) pt.textContent = '⏸';
                 updateOverdubHint();
+                // Keep focus on same button so TalkBack does not jump/speak elsewhere
+                try { btn.focus({ preventScroll: true }); } catch (e) { try { btn.focus(); } catch (e2) {} }
                 return;
             }
 
@@ -1047,7 +1109,7 @@
                 lastRecordingBlob = null;
                 useNativeRecorder = false;
 
-                // Play previous layers to headphones/speaker (NOT mixed into mic input)
+                // Play previous layers / backing music (headphones) — NOT mixed into mic
                 if (projectTracks.length > 0) {
                     await startMonitorPlayback();
                 }
@@ -1070,7 +1132,7 @@
                         pauseBtn.style.opacity = '0.5';
                         pauseBtn.disabled = true;
                         updateOverdubHint();
-                        try { btn.blur(); } catch (e) {}
+                        lockRecordFocus(); // stay on button, TalkBack silent as possible
                         return;
                     }
                     console.warn('Native record failed, trying WebView:', r);
@@ -1131,9 +1193,11 @@
                 pauseBtn.style.background = '#ff9f43';
                 pauseBtn.style.opacity = '1';
                 pauseBtn.disabled = false;
-                try { btn.blur(); } catch (e) {}
+                updateOverdubHint();
+                lockRecordFocus();
             } catch (err) {
                 stopMonitorPlayback();
+                unlockRecordFocus();
                 console.error(err);
                 alert('রেকর্ড শুরু হয়নি: ' + (err && err.message ? err.message : err) +
                     '\n\nSettings → Apps → স্বরালয় → Microphone → Allow\nতারপর নতুন APK (নেটিভ রেকর্ডসহ) ইনস্টল করুন।');
@@ -1254,29 +1318,59 @@
             updateProjectTracksUI();
         }
 
+        async function resampleBufferTo(buffer, targetRate, targetChannels) {
+            if (!buffer) return null;
+            if (buffer.sampleRate === targetRate && buffer.numberOfChannels === targetChannels) {
+                return buffer;
+            }
+            let frameCount = Math.ceil(buffer.duration * targetRate);
+            let offline = new OfflineAudioContext(targetChannels, Math.max(1, frameCount), targetRate);
+            let src = offline.createBufferSource();
+            src.buffer = buffer;
+            src.connect(offline.destination);
+            src.start(0);
+            return await offline.startRendering();
+        }
+
         async function mixAndSaveAll() {
             if (projectTracks.length === 0) {
                 alert('প্রজেক্টে কোনো ট্র্যাক নেই।');
                 return;
             }
+            let valid = projectTracks.filter(t => t && t.buffer && t.duration > 0);
+            if (valid.length === 0) {
+                alert('কোনো বৈধ লেয়ার নেই। আবার রেকর্ড/মিউজিক যোগ করুন।');
+                return;
+            }
             try {
-                let maxDuration = Math.max(...projectTracks.map(t => t.duration));
-                let sampleRate = projectTracks[0].buffer.sampleRate;
-                let offlineCtx = new OfflineAudioContext(2, Math.ceil(maxDuration * sampleRate), sampleRate);
-
-                for (let t of projectTracks) {
-                    let src = offlineCtx.createBufferSource();
-                    src.buffer = t.buffer;
-                    src.connect(offlineCtx.destination);
-                    src.start(0); // all start at the same time for overdub mix
+                let targetRate = 44100;
+                let targetCh = 2;
+                let prepared = [];
+                for (let t of valid) {
+                    let b = await resampleBufferTo(t.buffer, targetRate, targetCh);
+                    if (b) prepared.push(b);
                 }
-
+                if (!prepared.length) throw new Error('resample_failed');
+                let maxDuration = Math.max(...prepared.map(b => b.duration));
+                let offlineCtx = new OfflineAudioContext(
+                    targetCh,
+                    Math.ceil(maxDuration * targetRate) + targetRate,
+                    targetRate
+                );
+                for (let b of prepared) {
+                    let src = offlineCtx.createBufferSource();
+                    src.buffer = b;
+                    let g = offlineCtx.createGain();
+                    g.gain.value = Math.min(1, 1 / Math.sqrt(prepared.length));
+                    src.connect(g);
+                    g.connect(offlineCtx.destination);
+                    src.start(0);
+                }
                 let rendered = await offlineCtx.startRendering();
-                downloadBlob(audioBufferToWav(rendered), 'Mixed_Project_' + Date.now());
-                alert('মিক্সড ফাইল সেভ হয়েছে।');
-            } catch(e) {
-                alert('মিক্স করতে সমস্যা হয়েছে।');
+                await downloadBlob(audioBufferToWav(rendered), 'Mixed_Project_' + Date.now());
+            } catch (e) {
                 console.error(e);
+                alert('মিক্স সমস্যা: ' + (e && e.message ? e.message : e));
             }
         }
 
@@ -2976,6 +3070,12 @@
             rowAudioPlayer.addEventListener('ended', () => { if(currentRowBtn) { currentRowBtn.innerText = '▶'; currentRowBtn.setAttribute('aria-label', 'Play this track'); } currentRowBtn = null; });
             attachPhoneMusicButtons();
             setInterval(() => { attachPhoneMusicButtons(); dedupePhoneButtons(); }, 1500);
+            let bf = document.getElementById('backingFile');
+            if (bf) {
+                bf.addEventListener('change', function () {
+                    if (bf.files && bf.files[0]) addBackingMusicFromFile(bf.files[0]);
+                });
+            }
         });
         // Also expose for MainActivity inject compatibility
         window.__openNativeSongPicker = openPhoneMusicPicker;
