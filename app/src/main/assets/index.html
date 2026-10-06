@@ -259,8 +259,10 @@
             <h2>🎵 Player</h2>
             <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-hidden="true">
-            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio from your phone</p>
-            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 Choose from phone music</button>
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio (browser or phone)</p>
+            <button type="button" onclick="document.getElementById('fileInput').click()" style="background:var(--accent); color:#000; margin-top:4px;">📁 Pick audio files</button>
+            <button type="button" onclick="document.getElementById('folderInput').click()" style="background:#383854; color:#fff; margin-top:8px;">📂 Pick folder</button>
+            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:8px;">📱 Choose from phone music (app only)</button>
             <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
                 <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
@@ -308,13 +310,14 @@
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-fx" onclick="openEditorPanel('panel-fx', this)">🚀 FX</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-record" onclick="openEditorPanel('panel-record', this)">🎙️ Record</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-video" onclick="openEditorPanel('panel-video', this)">🎬 Video→MP3</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-rhythm" onclick="openEditorPanel('panel-rhythm', this)">🥁 Auto Rhythm</button>
         </div>
 
         <!-- Empty state when no sub-tab selected -->
         <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
             <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
             <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">Choose an editor tool</p>
-            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record · Video→MP3</p>
+            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record · Video→MP3 · Auto Rhythm</p>
         </div>
 
         <!-- 1. CUTTER PANEL -->
@@ -698,6 +701,74 @@
             </div>
             <button type="button" id="videoConvertBtn" onclick="convertVideoToMp3()" style="margin-top:12px;">⚡ Convert &amp; Save MP3</button>
             <div id="videoLoading" class="loading-text" aria-live="polite"></div>
+        </div>
+
+        <!-- 9. AUTO RHYTHM (offline, free, no server) -->
+        <div id="panel-rhythm" class="editor-panel card">
+            <h2>🥁 Auto Rhythm</h2>
+            <p style="font-size:13px; color:#aaa; margin:0 0 12px 0; line-height:1.45;">
+                Upload a song (voice + guitar, etc.). The app detects <b>BPM</b> and places a matching drum pattern automatically — <b>offline, free, no server</b>.
+                Drums are synthesized offline (free, no copyright packs). Includes Indian taals: Keherwa, Dadra, Bhajan, Bhangra, Teental-ish — tabla-style tones (not studio sample packs).
+            </p>
+            <input type="file" id="rhythmFile" accept="audio/*" style="display:none;" aria-hidden="true">
+            <button type="button" onclick="openPhoneMusicPicker('rhythmFile')" style="background:#7c4dff; color:#fff; margin:0;">📱 Choose from phone music</button>
+            <button type="button" onclick="document.getElementById('rhythmFile').click()" style="background:#383854; color:#fff; margin-top:8px;">📁 Or pick any audio file</button>
+            <p id="rhythmFileLabel" style="font-size:12px; color:#8a8a9a; margin:10px 0 0;">No song selected</p>
+
+            <div class="input-group" style="margin-top:12px;">
+                Detected BPM:
+                <input type="number" id="rhythmBpm" value="120" min="60" max="200" step="1" aria-label="BPM">
+                <button type="button" onclick="detectRhythmBpm()" style="width:auto; margin-left:8px; padding:8px 12px;">🔍 Detect</button>
+            </div>
+
+            <label class="fx-label" style="margin-top:12px;">Mood / style</label>
+            <select id="rhythmStyle" aria-label="Drum style" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; font-size:15px;">
+                <option value="pop">Pop / soft</option>
+                <option value="rock">Rock</option>
+                <option value="hiphop">Hip-Hop</option>
+                <option value="dance">Dance / four-on-floor</option>
+                <option value="ballad">Ballad / slow</option>
+                <option value="percussion">Light percussion</option>
+                <option value="keherwa">🇮🇳 Keherwa (8-beat · bhajan/filmi)</option>
+                <option value="dadra">🇮🇳 Dadra (6-beat · light classical)</option>
+                <option value="bhajan">🇮🇳 Bhajan groove</option>
+                <option value="bhangra">🇮🇳 Bhangra / dhol-ish</option>
+                <option value="teental">🇮🇳 Teental-ish (16-beat)</option>
+            </select>
+
+            <div class="input-group" style="margin-top:12px;">
+                Drum volume (%):
+                <input type="number" id="rhythmDrumVol" value="55" min="10" max="100" step="5" aria-label="Drum volume">
+            </div>
+            <div class="input-group" style="margin-top:8px;">
+                Song volume (%):
+                <input type="number" id="rhythmSongVol" value="100" min="20" max="100" step="5" aria-label="Song volume">
+            </div>
+            <div class="input-group" style="margin-top:8px;">
+                Name: <input type="text" id="rhythmOutName" value="Song_With_Rhythm" aria-label="Output name">
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+                <button type="button" onclick="previewDrumsOnly()" style="flex:1; min-width:120px; background:#7c4dff; color:#fff;">🥁 Test drums only</button>
+                <button type="button" id="rhythmPreviewBtn" onclick="previewAutoRhythm()" style="flex:1; min-width:120px; background:var(--warning); color:#000;">▶ Preview mix</button>
+                <button type="button" id="rhythmSaveBtn" onclick="saveAutoRhythm()" style="flex:1; min-width:120px;">💾 Mix &amp; Save</button>
+            </div>
+
+            <hr style="border:none; border-top:1px solid #333; margin:18px 0;">
+            <h3 style="margin:0 0 8px 0; color:var(--accent); font-size:15px;">🎸 Auto Guitar (test)</h3>
+            <p style="font-size:12px; color:#888; margin:0 0 10px 0;">Guesses chords from the song and plays melodic arpeggio + soft pad. Not pro-level accuracy — adjust guitar volume below.</p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px;">
+                <input type="checkbox" id="rhythmGuitarOn" checked> Add guitar chords to mix
+            </label>
+            <div class="input-group">
+                Guitar volume (%):
+                <input type="number" id="rhythmGuitarVol" value="40" min="0" max="100" step="5" aria-label="Guitar volume">
+            </div>
+            <p id="rhythmChordInfo" style="font-size:12px; color:#aaa; margin:8px 0;">Chords: —</p>
+            <button type="button" onclick="previewGuitarOnly()" style="background:#383854; color:#fff; margin:0;">🎸 Test guitar only</button>
+
+            <div id="rhythmLoading" class="loading-text" aria-live="polite"></div>
+            <p style="font-size:11px; color:#666; margin-top:12px;">Browser tip: use <b>📁 Pick audio files</b> on Player tab, or pick a file here. Keep <code>lame.min.js</code> + <code>soundtouch.js</code> in the same folder as this HTML.</p>
         </div>
     </div>
 
@@ -1800,7 +1871,12 @@
                 if (!forceStart && lastPos > 0 && lastPos < audio.duration - 1) {
                     audio.currentTime = lastPos;
                 }
-                audio.play();
+                let p = audio.play();
+                if (p && p.catch) p.catch(err => {
+                    console.warn('play blocked', err);
+                    setPlayPauseBtnState(false);
+                    alert('Playback blocked. Tap Play once more.');
+                });
             };
 
             setPlayPauseBtnState(true);
@@ -1823,7 +1899,8 @@
         function togglePlay() {
             if (!audio.src) return alert('Select a file first!');
             if (audio.paused) {
-                audio.play();
+                let p = audio.play();
+                if (p && p.catch) p.catch(err => alert('Could not play: ' + err));
                 setPlayPauseBtnState(true);
             } else {
                 audio.pause();
@@ -2120,6 +2197,612 @@
                     let el = document.getElementById('videoLoading');
                     if (el) el.style.display = 'none';
                 }, 2500);
+            }
+        }
+
+
+        // ========== AUTO RHYTHM (offline procedural drums + BPM detect) ==========
+        let rhythmSourceBuffer = null;
+        let rhythmPreviewNodes = [];
+
+        function getRhythmPattern(style) {
+            // 16-step grid (or shorter cycles repeated). x = hit
+            // Indian styles map: kick≈bayan/dha, snare≈ta/na, hat≈ti/light, clap≈tin accent
+            const patterns = {
+                pop: {
+                    kick:  'x...x...x...x...',
+                    snare: '....x.......x...',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '................'
+                },
+                rock: {
+                    kick:  'x...x.x.x...x.x.',
+                    snare: '....x.......x...',
+                    hat:   'xxxxxxxxxxxxxxxx',
+                    clap:  '................'
+                },
+                hiphop: {
+                    kick:  'x...x...x..x....',
+                    snare: '....x.......x...',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '....x.......x...'
+                },
+                dance: {
+                    kick:  'x...x...x...x...',
+                    snare: '....x.......x...',
+                    hat:   'xxxxxxxxxxxxxxxx',
+                    clap:  '....x.......x...'
+                },
+                ballad: {
+                    kick:  'x.......x.......',
+                    snare: '....x.......x...',
+                    hat:   'x...x...x...x...',
+                    clap:  '................'
+                },
+                percussion: {
+                    kick:  'x.....x.x.......',
+                    snare: '....x......x....',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '..x....x..x....x'
+                },
+                // Keherwa (8 matra) → two cycles in 16 steps: Dha ge na ti | na ka dhi na feel
+                keherwa: {
+                    kick:  'x...x...x...x...',
+                    snare: '....x.......x...',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '........x.......'
+                },
+                // Dadra (6 matra) approximated on 16-grid
+                dadra: {
+                    kick:  'x.....x.....x...',
+                    snare: '....x.....x.....',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '................'
+                },
+                bhajan: {
+                    kick:  'x.......x.......',
+                    snare: '....x.......x...',
+                    hat:   'x...x.x.x...x.x.',
+                    clap:  '........x.......'
+                },
+                bhangra: {
+                    kick:  'x.x.x.x.x.x.x.x.',
+                    snare: '..x...x...x...x.',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  'x...x...x...x...'
+                },
+                teental: {
+                    kick:  'x...x...x...x...',
+                    snare: '....x.......x...',
+                    hat:   'x.x.x.x.x.x.x.x.',
+                    clap:  '............x...'
+                }
+            };
+            return patterns[style] || patterns.pop;
+        }
+
+        function isIndianRhythmStyle(style) {
+            return ['keherwa','dadra','bhajan','bhangra','teental'].indexOf(style) >= 0;
+        }
+
+        function synthDrumHit(ctx, type, when, gainVal) {
+            const g = ctx.createGain();
+            g.gain.value = 0;
+            g.connect(ctx.destination);
+            const t0 = when;
+            if (type === 'kick') {
+                const o = ctx.createOscillator();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(150, t0);
+                o.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+                g.gain.setValueAtTime(0.0001, t0);
+                g.gain.exponentialRampToValueAtTime(Math.max(0.001, gainVal), t0 + 0.01);
+                g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+                o.connect(g);
+                o.start(t0);
+                o.stop(t0 + 0.3);
+            } else if (type === 'snare' || type === 'clap') {
+                const o = ctx.createOscillator();
+                o.type = 'triangle';
+                o.frequency.value = type === 'clap' ? 900 : 180;
+                const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.2), ctx.sampleRate);
+                const data = noiseBuf.getChannelData(0);
+                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                const noise = ctx.createBufferSource();
+                noise.buffer = noiseBuf;
+                const ng = ctx.createGain();
+                const og = ctx.createGain();
+                ng.gain.setValueAtTime(gainVal * 0.7, t0);
+                ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+                og.gain.setValueAtTime(gainVal * 0.35, t0);
+                og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
+                noise.connect(ng); ng.connect(ctx.destination);
+                o.connect(og); og.connect(ctx.destination);
+                noise.start(t0); noise.stop(t0 + 0.2);
+                o.start(t0); o.stop(t0 + 0.1);
+            } else { // hat
+                const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+                const data = noiseBuf.getChannelData(0);
+                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                const noise = ctx.createBufferSource();
+                noise.buffer = noiseBuf;
+                const bp = ctx.createBiquadFilter();
+                bp.type = 'highpass';
+                bp.frequency.value = 8000;
+                const ng = ctx.createGain();
+                ng.gain.setValueAtTime(gainVal * 0.25, t0);
+                ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
+                noise.connect(bp); bp.connect(ng); ng.connect(ctx.destination);
+                noise.start(t0); noise.stop(t0 + 0.05);
+            }
+        }
+
+        function renderDrumBuffer(durationSec, bpm, style, sampleRate, drumGain) {
+            const steps = 16;
+            const beatsPerSec = bpm / 60;
+            const stepDur = (1 / beatsPerSec) / 4; // 16th notes
+            const frames = Math.ceil(durationSec * sampleRate) + sampleRate;
+            const offline = new OfflineAudioContext(2, frames, sampleRate);
+            const pattern = getRhythmPattern(style);
+            const indian = isIndianRhythmStyle(style);
+            const types = ['kick', 'snare', 'hat', 'clap'];
+            const maps = [pattern.kick, pattern.snare, pattern.hat, pattern.clap];
+            let t = 0;
+            let step = 0;
+            while (t < durationSec + 0.5) {
+                for (let i = 0; i < 4; i++) {
+                    const row = maps[i];
+                    if (row[step % 16] === 'x') {
+                        const vol = drumGain * (types[i] === 'hat' ? 0.7 : 1);
+                        synthDrumIntoOffline(offline, types[i], t, vol, indian);
+                    }
+                }
+                step++;
+                t += stepDur;
+            }
+            return offline.startRendering();
+        }
+
+        function synthDrumIntoOffline(ctx, type, when, gainVal, indian) {
+            if (type === 'kick') {
+                // Bayan-ish low boom when indian
+                const o = ctx.createOscillator();
+                const o2 = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o2.type = 'sine';
+                const f0 = indian ? 95 : 150;
+                const f1 = indian ? 38 : 40;
+                o.frequency.setValueAtTime(f0, when);
+                o.frequency.exponentialRampToValueAtTime(f1, when + (indian ? 0.22 : 0.14));
+                o2.frequency.setValueAtTime(f0 * 1.5, when);
+                o2.frequency.exponentialRampToValueAtTime(f1 * 1.2, when + 0.1);
+                g.gain.setValueAtTime(0.0001, when);
+                g.gain.exponentialRampToValueAtTime(Math.max(0.001, gainVal * (indian ? 1.1 : 1)), when + 0.008);
+                g.gain.exponentialRampToValueAtTime(0.0001, when + (indian ? 0.45 : 0.32));
+                o.connect(g); o2.connect(g); g.connect(ctx.destination);
+                o.start(when); o.stop(when + 0.5);
+                o2.start(when); o2.stop(when + 0.2);
+            } else if (type === 'snare' || type === 'clap') {
+                // Dayan / na / tin-ish: short ring + noise
+                const len = Math.floor(ctx.sampleRate * (indian ? 0.12 : 0.18));
+                const noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = noiseBuf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuf;
+                const bp = ctx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.frequency.value = indian ? (type === 'clap' ? 2200 : 1800) : (type === 'clap' ? 1500 : 1200);
+                bp.Q.value = indian ? 2.5 : 1;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(gainVal * (type === 'clap' ? 0.5 : 0.6), when);
+                g.gain.exponentialRampToValueAtTime(0.0001, when + (indian ? 0.1 : 0.14));
+                src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+                src.start(when); src.stop(when + 0.15);
+                const o = ctx.createOscillator();
+                const og = ctx.createGain();
+                o.type = indian ? 'sine' : 'triangle';
+                o.frequency.value = indian ? (type === 'clap' ? 420 : 280) : 180;
+                og.gain.setValueAtTime(gainVal * (indian ? 0.45 : 0.3), when);
+                og.gain.exponentialRampToValueAtTime(0.0001, when + (indian ? 0.12 : 0.06));
+                o.connect(og); og.connect(ctx.destination);
+                o.start(when); o.stop(when + 0.15);
+            } else {
+                // Light finger / ti
+                const len = Math.floor(ctx.sampleRate * (indian ? 0.03 : 0.04));
+                const noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = noiseBuf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuf;
+                const hp = ctx.createBiquadFilter();
+                hp.type = 'highpass';
+                hp.frequency.value = indian ? 5000 : 7000;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(gainVal * (indian ? 0.28 : 0.22), when);
+                g.gain.exponentialRampToValueAtTime(0.0001, when + 0.03);
+                src.connect(hp); hp.connect(g); g.connect(ctx.destination);
+                src.start(when); src.stop(when + 0.04);
+            }
+        }
+
+        async function detectBpmFromBuffer(buffer) {
+            // Energy-envelope onset strength + autocorrelation (offline, free)
+            const sr = buffer.sampleRate;
+            const ch = buffer.getChannelData(0);
+            const hop = 512;
+            const win = 1024;
+            const energies = [];
+            for (let i = 0; i + win < ch.length; i += hop) {
+                let sum = 0;
+                for (let j = 0; j < win; j++) sum += ch[i + j] * ch[i + j];
+                energies.push(Math.sqrt(sum / win));
+            }
+            const onset = [];
+            for (let i = 1; i < energies.length; i++) {
+                onset.push(Math.max(0, energies[i] - energies[i - 1]));
+            }
+            // Autocorrelation on onset for lag range 60–200 BPM
+            const minBpm = 70, maxBpm = 180;
+            const minLag = Math.floor((60 / maxBpm) * sr / hop);
+            const maxLag = Math.floor((60 / minBpm) * sr / hop);
+            let bestLag = minLag, bestScore = -1;
+            for (let lag = minLag; lag <= maxLag; lag++) {
+                let s = 0;
+                for (let i = 0; i + lag < onset.length; i++) s += onset[i] * onset[i + lag];
+                if (s > bestScore) { bestScore = s; bestLag = lag; }
+            }
+            let bpm = 60 * sr / (bestLag * hop);
+            // Prefer 80–160 by doubling/halving
+            while (bpm < 75 && bpm * 2 <= 180) bpm *= 2;
+            while (bpm > 170 && bpm / 2 >= 75) bpm /= 2;
+            return Math.round(Math.max(60, Math.min(200, bpm)));
+        }
+
+        async function loadRhythmFileFromInput() {
+            const input = document.getElementById('rhythmFile');
+            if (!input || !input.files || !input.files[0]) {
+                alert('Choose a song first.');
+                return null;
+            }
+            const loading = document.getElementById('rhythmLoading');
+            if (loading) { loading.style.display = 'block'; loading.innerText = 'Loading song...'; }
+            rhythmSourceBuffer = await readAudioData(input.files[0]);
+            const lab = document.getElementById('rhythmFileLabel');
+            if (lab) lab.textContent = 'Selected: ' + input.files[0].name;
+            return rhythmSourceBuffer;
+        }
+
+        async function detectRhythmBpm() {
+            try {
+                if (!rhythmSourceBuffer) await loadRhythmFileFromInput();
+                if (!rhythmSourceBuffer) return;
+                const loading = document.getElementById('rhythmLoading');
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Detecting BPM...'; }
+                const bpm = await detectBpmFromBuffer(rhythmSourceBuffer);
+                document.getElementById('rhythmBpm').value = bpm;
+                if (loading) loading.innerText = 'BPM ≈ ' + bpm;
+                setTimeout(() => { if (loading) loading.style.display = 'none'; }, 1500);
+            } catch (e) {
+                alert('BPM detect failed: ' + (e.message || e));
+            }
+        }
+
+        async function buildRhythmMixBuffer() {
+            if (!rhythmSourceBuffer) await loadRhythmFileFromInput();
+            if (!rhythmSourceBuffer) return null;
+            let bpm = parseInt(document.getElementById('rhythmBpm').value, 10) || 120;
+            bpm = Math.max(60, Math.min(200, bpm));
+            const style = document.getElementById('rhythmStyle').value || 'pop';
+            const drumVol = (parseInt(document.getElementById('rhythmDrumVol').value, 10) || 55) / 100;
+            const songVol = (parseInt(document.getElementById('rhythmSongVol').value, 10) || 100) / 100;
+            const guitarOn = document.getElementById('rhythmGuitarOn') && document.getElementById('rhythmGuitarOn').checked;
+            const gvol = (parseInt((document.getElementById('rhythmGuitarVol') || {}).value, 10) || 40) / 100;
+            const sr = rhythmSourceBuffer.sampleRate;
+            const dur = rhythmSourceBuffer.duration;
+            const drumBuf = await renderDrumBuffer(dur, bpm, style, sr, drumVol);
+            let guitarBuf = null;
+            if (guitarOn && gvol > 0) {
+                const chords = estimateChordsFromBuffer(rhythmSourceBuffer);
+                const info = document.getElementById('rhythmChordInfo');
+                if (info) info.textContent = 'Chords: ' + chords.join(' → ');
+                guitarBuf = await renderGuitarBuffer(dur, bpm, chords, sr, gvol);
+            }
+            const frames = Math.max(rhythmSourceBuffer.length, drumBuf.length, guitarBuf ? guitarBuf.length : 0);
+            const offline = new OfflineAudioContext(2, frames, sr);
+            const songSrc = offline.createBufferSource();
+            songSrc.buffer = rhythmSourceBuffer;
+            const sg = offline.createGain();
+            sg.gain.value = songVol;
+            songSrc.connect(sg); sg.connect(offline.destination);
+            const drumSrc = offline.createBufferSource();
+            drumSrc.buffer = drumBuf;
+            drumSrc.connect(offline.destination);
+            songSrc.start(0);
+            drumSrc.start(0);
+            if (guitarBuf) {
+                const gSrc = offline.createBufferSource();
+                gSrc.buffer = guitarBuf;
+                gSrc.connect(offline.destination);
+                gSrc.start(0);
+            }
+            return await offline.startRendering();
+        }
+
+        function stopRhythmPreview() {
+            try {
+                rhythmPreviewNodes.forEach(n => { try { n.stop(); } catch(e){} });
+            } catch (e) {}
+            rhythmPreviewNodes = [];
+        }
+
+        async function previewAutoRhythm() {
+            try {
+                stopRhythmPreview();
+                const loading = document.getElementById('rhythmLoading');
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Building preview...'; }
+                // Auto-detect BPM if still default and file just loaded
+                if (!rhythmSourceBuffer) await loadRhythmFileFromInput();
+                if (!rhythmSourceBuffer) return;
+                let bpmField = document.getElementById('rhythmBpm');
+                if (bpmField && (!bpmField.dataset.detected)) {
+                    const bpm = await detectBpmFromBuffer(rhythmSourceBuffer);
+                    bpmField.value = bpm;
+                    bpmField.dataset.detected = '1';
+                }
+                const mixed = await buildRhythmMixBuffer();
+                const ctx = new AudioContext();
+                const src = ctx.createBufferSource();
+                src.buffer = mixed;
+                src.connect(ctx.destination);
+                src.start(0);
+                rhythmPreviewNodes = [src];
+                src.onended = () => { try { ctx.close(); } catch(e){} };
+                if (loading) loading.innerText = 'Playing mix...';
+                setTimeout(() => { if (loading) loading.style.display = 'none'; }, 2000);
+            } catch (e) {
+                console.error(e);
+                alert('Preview failed: ' + (e.message || e));
+            }
+        }
+
+        async function saveAutoRhythm() {
+            const loading = document.getElementById('rhythmLoading');
+            const btn = document.getElementById('rhythmSaveBtn');
+            try {
+                if (btn) btn.disabled = true;
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Mixing & encoding...'; }
+                if (!rhythmSourceBuffer) await loadRhythmFileFromInput();
+                if (!rhythmSourceBuffer) return;
+                let bpmField = document.getElementById('rhythmBpm');
+                if (bpmField && !bpmField.dataset.detected) {
+                    const bpm = await detectBpmFromBuffer(rhythmSourceBuffer);
+                    bpmField.value = bpm;
+                    bpmField.dataset.detected = '1';
+                }
+                const mixed = await buildRhythmMixBuffer();
+                const name = (document.getElementById('rhythmOutName').value || 'Song_With_Rhythm').trim();
+                await downloadAudioBuffer(mixed, name);
+                if (loading) loading.innerText = 'Saved to Music/Swaralay';
+            } catch (e) {
+                console.error(e);
+                alert('Save failed: ' + (e.message || e));
+            } finally {
+                if (btn) btn.disabled = false;
+                setTimeout(() => {
+                    const el = document.getElementById('rhythmLoading');
+                    if (el) el.style.display = 'none';
+                }, 2500);
+            }
+        }
+
+
+        // --- Drums-only preview (no song needed, for browser test) ---
+        async function previewDrumsOnly() {
+            try {
+                stopRhythmPreview();
+                const loading = document.getElementById('rhythmLoading');
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Playing drums...'; }
+                let bpm = parseInt(document.getElementById('rhythmBpm').value, 10) || 120;
+                const style = document.getElementById('rhythmStyle').value || 'pop';
+                const drumVol = (parseInt(document.getElementById('rhythmDrumVol').value, 10) || 55) / 100;
+                const sr = 44100;
+                const buf = await renderDrumBuffer(8, bpm, style, sr, drumVol);
+                const ctx = new AudioContext();
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                src.connect(ctx.destination);
+                src.start(0);
+                rhythmPreviewNodes = [src];
+                src.onended = () => { try { ctx.close(); } catch(e){} };
+                if (loading) loading.innerText = 'Drums: ' + style + ' @ ' + bpm + ' BPM';
+                setTimeout(() => { if (loading) loading.style.display = 'none'; }, 3000);
+            } catch (e) {
+                alert('Drum test failed: ' + (e.message || e));
+            }
+        }
+
+        // Chord estimate: Goertzel pitch-class + major/minor, then smooth to common progression
+        function estimateChordsFromBuffer(buffer) {
+            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            const sr = buffer.sampleRate;
+            const ch = buffer.getChannelData(0);
+            const segment = Math.floor(sr * 2.0);
+            const raw = [];
+            for (let start = 0; start + segment < Math.min(ch.length, sr * 90); start += segment) {
+                const bins = new Float32Array(12);
+                for (let pc = 0; pc < 12; pc++) {
+                    let energy = 0;
+                    // several octaves
+                    for (const oct of [2, 3, 4]) {
+                        const f = 55 * Math.pow(2, oct) * Math.pow(2, pc / 12);
+                        if (f > sr * 0.4) continue;
+                        const w = 2 * Math.PI * f / sr;
+                        let re = 0, im = 0;
+                        const step = 6;
+                        const N = Math.floor(segment / step);
+                        for (let i = 0; i < N; i++) {
+                            const idx = start + i * step;
+                            re += ch[idx] * Math.cos(w * i * step);
+                            im += ch[idx] * Math.sin(w * i * step);
+                        }
+                        energy += (re * re + im * im) / (N * N);
+                    }
+                    bins[pc] = energy;
+                }
+                let root = 0;
+                for (let i = 1; i < 12; i++) if (bins[i] > bins[root]) root = i;
+                // major vs minor: compare energy of major third vs minor third
+                const maj3 = bins[(root + 4) % 12];
+                const min3 = bins[(root + 3) % 12];
+                const quality = min3 > maj3 * 1.05 ? 'min' : 'maj';
+                raw.push(names[root] + quality);
+            }
+            if (!raw.length) return ['Cmaj', 'Gmaj', 'Amin', 'Fmaj'];
+            // collapse repeats
+            const collapsed = [];
+            for (const c of raw) {
+                if (!collapsed.length || collapsed[collapsed.length - 1] !== c) collapsed.push(c);
+            }
+            // If too chaotic, fall back to I–V–vi–IV in detected key
+            if (collapsed.length >= 2) {
+                const rootName = collapsed[0].replace(/maj|min/g, '');
+                const ri = names.indexOf(rootName);
+                if (ri >= 0 && collapsed.length > 6) {
+                    const I = names[ri] + 'maj';
+                    const V = names[(ri + 7) % 12] + 'maj';
+                    const vi = names[(ri + 9) % 12] + 'min';
+                    const IV = names[(ri + 5) % 12] + 'maj';
+                    return [I, V, vi, IV];
+                }
+            }
+            return collapsed.slice(0, 8);
+        }
+
+        function chordToFreqs(chordName) {
+            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            const root = chordName.replace(/maj|min/g, '');
+            let ri = names.indexOf(root);
+            if (ri < 0) ri = 0;
+            const minor = /min/.test(chordName);
+            const third = minor ? 3 : 4;
+            // Guitar-like open voicing (Hz)
+            const note = (pc, oct) => 440 * Math.pow(2, (pc - 9) / 12 + (oct - 4));
+            return [
+                note(ri, 2),                 // bass root
+                note((ri + 7) % 12, 3),      // fifth
+                note((ri + third) % 12, 3),  // third
+                note(ri, 4),                 // high root
+                note((ri + third) % 12, 4)   // high third (melody)
+            ];
+        }
+
+        function pluckPartial(ctx, freq, when, dur, gainVal, bright) {
+            // Soft pluck: triangle + short noise tick + slight detune
+            const filt = ctx.createBiquadFilter();
+            filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(bright ? 4200 : 2800, when);
+            filt.frequency.exponentialRampToValueAtTime(900, when + dur * 0.8);
+            filt.Q.value = 0.8;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, when);
+            g.gain.exponentialRampToValueAtTime(Math.max(0.001, gainVal), when + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+            filt.connect(g); g.connect(ctx.destination);
+
+            const o1 = ctx.createOscillator();
+            o1.type = 'triangle';
+            o1.frequency.value = freq;
+            o1.connect(filt);
+            o1.start(when); o1.stop(when + dur + 0.02);
+
+            const o2 = ctx.createOscillator();
+            o2.type = 'sine';
+            o2.frequency.value = freq * 2.002; // slight chorus
+            const g2 = ctx.createGain();
+            g2.gain.value = 0.25;
+            o2.connect(g2); g2.connect(filt);
+            o2.start(when); o2.stop(when + dur * 0.7);
+
+            // pick noise
+            const nlen = Math.max(1, Math.floor(ctx.sampleRate * 0.012));
+            const nb = ctx.createBuffer(1, nlen, ctx.sampleRate);
+            const nd = nb.getChannelData(0);
+            for (let i = 0; i < nlen; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nlen);
+            const ns = ctx.createBufferSource();
+            ns.buffer = nb;
+            const ng = ctx.createGain();
+            ng.gain.value = gainVal * 0.35;
+            const hp = ctx.createBiquadFilter();
+            hp.type = 'highpass';
+            hp.frequency.value = 1500;
+            ns.connect(hp); hp.connect(ng); ng.connect(ctx.destination);
+            ns.start(when); ns.stop(when + 0.015);
+        }
+
+        function renderGuitarBuffer(durationSec, bpm, chords, sampleRate, gainVal) {
+            const frames = Math.ceil(durationSec * sampleRate) + sampleRate;
+            const offline = new OfflineAudioContext(2, frames, sampleRate);
+            const beat = 60 / Math.max(60, Math.min(200, bpm));
+            const bar = beat * 4;
+            let t = 0;
+            let ci = 0;
+            // Pattern per bar: melodic arpeggio + light fingerpick on off-beats
+            while (t < durationSec) {
+                const chord = chords[ci % chords.length];
+                const freqs = chordToFreqs(chord);
+                // Travis-ish / fingerstyle: bass on 1 & 3, melody arpeggio 16ths
+                const pattern = [
+                    { at: 0,     idx: 0, g: 1.0 },
+                    { at: 0.5,   idx: 2, g: 0.7 },
+                    { at: 1.0,   idx: 1, g: 0.85 },
+                    { at: 1.5,   idx: 3, g: 0.65 },
+                    { at: 2.0,   idx: 0, g: 0.9 },
+                    { at: 2.5,   idx: 4, g: 0.75 },
+                    { at: 3.0,   idx: 1, g: 0.8 },
+                    { at: 3.5,   idx: 2, g: 0.6 }
+                ];
+                for (const p of pattern) {
+                    const when = t + p.at * beat;
+                    if (when >= durationSec) break;
+                    const f = freqs[Math.min(p.idx, freqs.length - 1)];
+                    pluckPartial(offline, f, when, beat * 2.2, gainVal * 0.22 * p.g, p.idx >= 3);
+                }
+                t += bar;
+                ci++;
+            }
+            return offline.startRendering();
+        }
+
+        async function previewGuitarOnly() {
+            try {
+                stopRhythmPreview();
+                const loading = document.getElementById('rhythmLoading');
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Guitar test...'; }
+                let chords = ['Cmaj', 'Gmaj', 'Amin', 'Fmaj'];
+                if (rhythmSourceBuffer) {
+                    chords = estimateChordsFromBuffer(rhythmSourceBuffer);
+                    const info = document.getElementById('rhythmChordInfo');
+                    if (info) info.textContent = 'Chords: ' + chords.join(' → ');
+                } else {
+                    const info = document.getElementById('rhythmChordInfo');
+                    if (info) info.textContent = 'Chords (demo): ' + chords.join(' → ') + ' — load a song for detect';
+                }
+                const bpm = parseInt(document.getElementById('rhythmBpm').value, 10) || 100;
+                const gvol = (parseInt(document.getElementById('rhythmGuitarVol').value, 10) || 40) / 100;
+                const buf = await renderGuitarBuffer(8, bpm, chords, 44100, gvol);
+                const ctx = new AudioContext();
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                src.connect(ctx.destination);
+                src.start(0);
+                rhythmPreviewNodes = [src];
+                src.onended = () => { try { ctx.close(); } catch(e){} };
+                if (loading) loading.innerText = 'Playing guitar...';
+                setTimeout(() => { if (loading) loading.style.display = 'none'; }, 2500);
+            } catch (e) {
+                alert('Guitar test failed: ' + (e.message || e));
             }
         }
 
@@ -3099,7 +3782,13 @@
                 try {
                     if (window.AndroidBridge && AndroidBridge.requestRescan) AndroidBridge.requestRescan();
                 } catch (e) {}
-                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again');
+                // Browser / no native list → fall back to normal file picker
+                let inp = document.getElementById(nativePickerTargetId || 'fileInput');
+                if (inp) {
+                    inp.click();
+                    return;
+                }
+                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again\n\nOr use "Pick audio files" button.');
                 return;
             }
             renderNativePickerOverlay(list);
@@ -3266,6 +3955,22 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             try { syncExportFormatUI(); } catch(e) {}
+            let rf = document.getElementById('rhythmFile');
+            if (rf) rf.addEventListener('change', async function () {
+                let lab = document.getElementById('rhythmFileLabel');
+                if (lab) lab.textContent = (rf.files && rf.files[0]) ? ('Selected: ' + rf.files[0].name) : 'No song selected';
+                rhythmSourceBuffer = null;
+                let bpmEl = document.getElementById('rhythmBpm');
+                if (bpmEl) delete bpmEl.dataset.detected;
+                if (rf.files && rf.files[0]) {
+                    try {
+                        rhythmSourceBuffer = await readAudioData(rf.files[0]);
+                        let bpm = await detectBpmFromBuffer(rhythmSourceBuffer);
+                        if (bpmEl) { bpmEl.value = bpm; bpmEl.dataset.detected = '1'; }
+                    } catch (err) { console.warn(err); }
+                }
+            });
+
             let vf = document.getElementById('videoFile');
             if (vf) {
                 vf.addEventListener('change', function () {
