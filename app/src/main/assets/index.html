@@ -247,6 +247,7 @@
     </style>
     <!-- LAME MP3 encoder (~156KB) — high quality (320 kbps) for WhatsApp -->
     <script src="lame.min.js"></script>
+    <script src="soundtouch.js"></script>
 </head>
 <body>
 
@@ -446,7 +447,7 @@
 
         <!-- 5. PITCH & RHYTHM PANEL -->
         <div id="panel-pitch" class="editor-panel card">
-            <h2>🎼 Pitch & Rhythm</h2>
+            <h2>🎼 Pitch & Tempo</h2>
             <input type="file" id="pitchFile" accept="audio/*" style="display:none;" aria-hidden="true" onchange="onPitchFileSelected()">
             <button type="button" onclick="openPhoneMusicPicker('pitchFile')" style="background:#7c4dff; color:#fff; margin-top:0;">📱 Choose from phone music</button>
 
@@ -469,7 +470,7 @@
                 <input type="number" id="fxSpeed" value="100" min="50" max="150" step="5" aria-label="Playback speed percent">
                 <button class="stepper-btn" onclick="adjustInputVal('fxSpeed', 1)" aria-label="Increase Speed">➕</button>
             </div>
-            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">50 = Slow · 100 = normal · 150 = fast</p>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">50 = slower rhythm · 100 = original · 150 = faster — pitch stays the same (SoundTouch)</p>
 
             <label class="fx-label" style="color:var(--warning);">🎼 Target Scale / Key</label>
             <select id="fxTargetKey" aria-label="Target musical key" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-top:6px; font-size:15px;" onchange="onTargetKeyChange()">
@@ -496,7 +497,7 @@
                 <input type="number" id="fxPitchDirect" value="0" min="-12" max="12" step="1" aria-label="Direct transpose" onchange="syncPitchDirect()">
                 <button class="stepper-btn" onclick="adjustPitchDirect(1)" aria-label="Pitch up">➕</button>
             </div>
-            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = Two semitones up · BPM stays the same</p>
+            <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = two semitones higher · duration/tempo stays the same (SoundTouch)</p>
 
             <div class="input-group">
                 Name: <input type="text" id="pitchName" value="Pitched_Audio" aria-label="File Name">
@@ -3703,20 +3704,60 @@
             let speedPct = parseInt(document.getElementById('fxSpeed').value, 10);
             if (isNaN(speedPct)) speedPct = 100;
             speedPct = Math.max(50, Math.min(150, speedPct));
-            let tempoRatio = speedPct / 100;
+            let tempo = speedPct / 100;
+
+            // Independent controls via SoundTouch when available:
+            // - tempo changes rhythm/length WITHOUT changing pitch
+            // - pitchSemitones changes key WITHOUT changing tempo
+            if (window.SoundTouchLib && (semitones !== 0 || Math.abs(tempo - 1) > 0.001)) {
+                try {
+                    return processWithSoundTouch(buffer, tempo, semitones);
+                } catch (e) {
+                    console.warn('SoundTouch failed, fallback', e);
+                }
+            }
+            // Fallback (older devices): previous methods
             let result = buffer;
-
-            // 1) Scale/Key change — BPM preserved
-            if (semitones !== 0) {
-                result = pitchShiftPreserveDuration(result, semitones);
-            }
-
-            // 2) Speed — changes BPM (clean)
-            if (Math.abs(tempoRatio - 1) > 0.001) {
-                result = await rateProcess(result, tempoRatio);
-            }
-
+            if (semitones !== 0) result = pitchShiftPreserveDuration(result, semitones);
+            if (Math.abs(tempo - 1) > 0.001) result = await rateProcess(result, tempo);
             return result;
+        }
+
+        function processWithSoundTouch(buffer, tempo, pitchSemitones) {
+            let ST = window.SoundTouchLib;
+            let soundTouch = new ST.SoundTouch();
+            soundTouch.tempo = tempo || 1;
+            // pitch ratio 1.0 = original; semitones via API
+            if (typeof soundTouch.pitchSemitones !== 'undefined') {
+                soundTouch.pitchSemitones = pitchSemitones || 0;
+            } else {
+                soundTouch.pitch = Math.pow(2, (pitchSemitones || 0) / 12);
+            }
+            let source = new ST.WebAudioBufferSource(buffer);
+            let filter = new ST.SimpleFilter(source, soundTouch);
+            let chunkFrames = 4096;
+            let samples = new Float32Array(chunkFrames * 2);
+            let left = [];
+            let right = [];
+            let extracted = 0;
+            do {
+                extracted = filter.extract(samples, chunkFrames);
+                for (let i = 0; i < extracted; i++) {
+                    left.push(samples[i * 2]);
+                    right.push(samples[i * 2 + 1]);
+                }
+            } while (extracted > 0);
+
+            let frames = left.length;
+            if (frames < 1) return buffer;
+            let outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, frames, buffer.sampleRate);
+            // OfflineAudioContext.createBuffer not on prototype until constructed - use AudioContext
+            let ac = new (window.AudioContext || window.webkitAudioContext)();
+            let out = ac.createBuffer(2, frames, buffer.sampleRate);
+            try { ac.close(); } catch (e) {}
+            out.getChannelData(0).set(Float32Array.from(left));
+            out.getChannelData(1).set(Float32Array.from(right));
+            return out;
         }
 
         // ========== IMPROVED FX GRAPH ==========
