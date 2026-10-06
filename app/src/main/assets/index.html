@@ -306,13 +306,14 @@
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-pitch" onclick="openEditorPanel('panel-pitch', this)">🎼 Pitch</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-fx" onclick="openEditorPanel('panel-fx', this)">🚀 FX</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-record" onclick="openEditorPanel('panel-record', this)">🎙️ Record</button>
+            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-video" onclick="openEditorPanel('panel-video', this)">🎬 Video→MP3</button>
         </div>
 
         <!-- Empty state when no sub-tab selected -->
         <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
             <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
             <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">Choose an editor tool</p>
-            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record</p>
+            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record · Video→MP3</p>
         </div>
 
         <!-- 1. CUTTER PANEL -->
@@ -680,6 +681,23 @@
                 <p id="liveAutoInfo" style="font-size:11px; color:#888; text-align:center; margin:5px 0 0 0;"></p>
             </div>
         </div>
+
+        <!-- 8. VIDEO TO MP3 -->
+        <div id="panel-video" class="editor-panel card">
+            <h2>🎬 Video → MP3</h2>
+            <p style="font-size:13px; color:#aaa; margin:0 0 12px 0; line-height:1.45;">
+                Extract audio from video at high quality, then save as <b>MP3 320 kbps</b> (or WAV if chosen in Settings).<br>
+                On Android the original audio track is copied first (no extra generation loss), then encoded to MP3.
+            </p>
+            <input type="file" id="videoFile" accept="video/*,.mp4,.webm,.mkv,.3gp,.mov" style="display:none;" aria-hidden="true">
+            <button type="button" onclick="document.getElementById('videoFile').click()" style="background:#7c4dff; color:#fff; margin:0;">📁 Choose video file</button>
+            <p id="videoFileLabel" style="font-size:12px; color:#8a8a9a; margin:10px 0 0;">No video selected</p>
+            <div class="input-group" style="margin-top:12px;">
+                Name: <input type="text" id="videoOutName" value="Video_Audio" aria-label="Output file name">
+            </div>
+            <button type="button" id="videoConvertBtn" onclick="convertVideoToMp3()" style="margin-top:12px;">⚡ Convert &amp; Save MP3</button>
+            <div id="videoLoading" class="loading-text" aria-live="polite"></div>
+        </div>
     </div>
 
     <!-- ⚙️ SETTINGS TAB -->
@@ -696,7 +714,7 @@
                 <strong style="color:var(--accent);">Save format</strong><br>
                 <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')"> <b>MP3 320 kbps</b> — best for WhatsApp (LAME encoder)</label>
                 <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="wav" onchange="setExportFormat('wav')"> <b>WAV</b> — uncompressed max quality (larger files)</label>
-                <span style="font-size:12px; color:#888;">At 320 kbps, MP3 sounds nearly identical to WAV for music/voice. Native live record still uses M4A; export/mix uses your choice above.</span>
+                <span style="font-size:12px; color:#888;">At 320 kbps, MP3 sounds nearly identical to WAV. Record / cut / mix / video export all follow this setting (default MP3). No extra M4A file is written on record stop.</span>
             </div>
             <div style="margin-top:12px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
                 <strong style="color:var(--accent);">TalkBack play / pause</strong><br>
@@ -2035,6 +2053,75 @@
         }
 
         /** Export AudioBuffer using Settings format (MP3 320 default, or WAV) */
+
+        async function convertVideoToMp3() {
+            let input = document.getElementById('videoFile');
+            let loading = document.getElementById('videoLoading');
+            let btn = document.getElementById('videoConvertBtn');
+            if (!input || !input.files || !input.files[0]) {
+                return alert('Choose a video file first.');
+            }
+            let file = input.files[0];
+            let outName = (document.getElementById('videoOutName').value || 'Video_Audio').trim().replace(/[\\/:*?"<>|]/g, '_');
+            try {
+                if (loading) { loading.style.display = 'block'; loading.innerText = 'Extracting audio...'; }
+                if (btn) btn.disabled = true;
+                let buffer = null;
+
+                // 1) Try WebAudio decode (works for some formats in WebView)
+                try {
+                    buffer = await readAudioData(file);
+                } catch (e1) {
+                    console.warn('decodeAudioData failed', e1);
+                }
+
+                // 2) Native extract (copy audio track) then decode
+                if (!buffer && window.AndroidBridge && AndroidBridge.extractAudioFromVideo) {
+                    // Need content uri - if file is from native picker it may have path
+                    let uri = file._swaralayUri || null;
+                    if (!uri && file.name) {
+                        // staged from assignNativeFileToInput only has blob - try bridge with object URL won't work
+                    }
+                    if (uri) {
+                        let r = String(AndroidBridge.extractAudioFromVideo(uri) || '');
+                        if (r.indexOf('OK') === 0) {
+                            let blob = await pullStagedRecordingToBlob();
+                            if (blob) buffer = await readAudioData(new File([blob], 'a.m4a', { type: 'audio/mp4' }));
+                        } else {
+                            console.warn(r);
+                        }
+                    }
+                }
+
+                // 3) Fallback: play video element into Offline capture not available;
+                // try decode again after reading as array buffer through File
+                if (!buffer) {
+                    try {
+                        let ab = await file.arrayBuffer();
+                        let ctx = new AudioContext();
+                        buffer = await ctx.decodeAudioData(ab.slice(0));
+                        ctx.close();
+                    } catch (e2) {
+                        throw new Error('Could not decode audio from this video. Try MP4/AAC. ' + (e2.message || e2));
+                    }
+                }
+
+                if (loading) loading.innerText = 'Encoding MP3 320 kbps...';
+                await downloadAudioBuffer(buffer, outName);
+                if (loading) loading.innerText = 'Saved to Music/Swaralay';
+            } catch (e) {
+                console.error(e);
+                alert('Video convert failed: ' + (e && e.message ? e.message : e));
+                if (loading) loading.innerText = '';
+            } finally {
+                if (btn) btn.disabled = false;
+                setTimeout(function () {
+                    let el = document.getElementById('videoLoading');
+                    if (el) el.style.display = 'none';
+                }, 2500);
+            }
+        }
+
         async function downloadAudioBuffer(buffer, filename) {
             if (!buffer) return alert('No audio to save');
             let base = (filename || 'swaralay_audio').toString().replace(/\.(wav|mp3|m4a|webm|ogg)$/i, '');
@@ -3131,6 +3218,7 @@
                 else if (/\.m4a$/i.test(name)) mime = 'audio/mp4';
                 else if (/\.flac$/i.test(name)) mime = 'audio/flac';
                 let file = new File([arr], name, { type: mime });
+                try { file._swaralayUri = uri; } catch (e) {}
                 let dt = new DataTransfer();
                 dt.items.add(file);
                 let input = document.getElementById(inputId);
@@ -3177,6 +3265,14 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             try { syncExportFormatUI(); } catch(e) {}
+            let vf = document.getElementById('videoFile');
+            if (vf) {
+                vf.addEventListener('change', function () {
+                    let lab = document.getElementById('videoFileLabel');
+                    if (lab) lab.textContent = (vf.files && vf.files[0]) ? ('Selected: ' + vf.files[0].name) : 'No video selected';
+                });
+            }
+
             addTrackRow('merge'); addTrackRow('merge');
             addTrackRow('mix'); addTrackRow('mix');
             dedupePhoneButtons();
@@ -3537,8 +3633,9 @@
             let channels = buffer.numberOfChannels;
             let sr = buffer.sampleRate;
             let len = buffer.length;
-            let frameSize = 2048;
-            let hop = 512;
+            // Larger grains = smoother pitch (studio-style overlap-add)
+            let frameSize = 4096;
+            let hop = 1024;
 
             let window = new Float32Array(frameSize);
             for (let i = 0; i < frameSize; i++) {
