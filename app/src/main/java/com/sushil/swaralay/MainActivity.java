@@ -16,6 +16,11 @@ import java.io.OutputStream;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.media.MediaRecorder;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
+import android.media.MediaCodec;
+import java.nio.ByteBuffer;
 import java.io.File;
 import java.io.FileInputStream;
 import android.webkit.JavascriptInterface;
@@ -515,13 +520,9 @@ public class MainActivity extends AppCompatActivity {
                     return "ERROR:empty_recording";
                 }
 
-                // Save into Music/Swaralay via existing finishSave pipeline
+                // Stage only — do NOT auto-save M4A (user exports MP3 from Settings)
                 byte[] bytes = readFileBytes(nativeRecordFile);
                 String name = "Recording_" + System.currentTimeMillis() + ".m4a";
-                String saved = writeBytesToMusic(bytes, name, "audio/mp4");
-                if (saved.startsWith("ERROR")) return saved;
-
-                // Also stage bytes for JS to pull as base64 chunks
                 saveBuffer = new ByteArrayOutputStream();
                 saveBuffer.write(bytes);
                 saveFileName = name;
@@ -613,6 +614,68 @@ public class MainActivity extends AppCompatActivity {
                 return "OK:" + msg;
             } catch (Exception e) {
                 return "ERROR:" + e.getMessage();
+            }
+        }
+
+
+        /** Copy audio track from a video Uri into staged buffer (no quality loss on copy). */
+        @JavascriptInterface
+        public synchronized String extractAudioFromVideo(String uriString) {
+            MediaExtractor extractor = null;
+            MediaMuxer muxer = null;
+            try {
+                if (uriString == null || uriString.isEmpty()) return "ERROR:no_uri";
+                Uri uri = Uri.parse(uriString);
+                extractor = new MediaExtractor();
+                extractor.setDataSource(MainActivity.this, uri, null);
+                int audioTrack = -1;
+                MediaFormat format = null;
+                for (int i = 0; i < extractor.getTrackCount(); i++) {
+                    MediaFormat f = extractor.getTrackFormat(i);
+                    String mime = f.getString(MediaFormat.KEY_MIME);
+                    if (mime != null && mime.startsWith("audio/")) {
+                        audioTrack = i;
+                        format = f;
+                        break;
+                    }
+                }
+                if (audioTrack < 0 || format == null) return "ERROR:no_audio_track";
+                extractor.selectTrack(audioTrack);
+                File outFile = new File(getCacheDir(), "vid_audio_" + System.currentTimeMillis() + ".m4a");
+                muxer = new MediaMuxer(outFile.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+                int dstTrack = muxer.addTrack(format);
+                muxer.start();
+                ByteBuffer buffer = ByteBuffer.allocate(1024 * 256);
+                MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+                while (true) {
+                    int sampleSize = extractor.readSampleData(buffer, 0);
+                    if (sampleSize < 0) break;
+                    info.offset = 0;
+                    info.size = sampleSize;
+                    info.presentationTimeUs = extractor.getSampleTime();
+                    info.flags = extractor.getSampleFlags();
+                    muxer.writeSampleData(dstTrack, buffer, info);
+                    extractor.advance();
+                }
+                muxer.stop();
+                muxer.release();
+                muxer = null;
+                extractor.release();
+                extractor = null;
+                byte[] bytes = readFileBytes(outFile);
+                try { outFile.delete(); } catch (Exception ignored) {}
+                if (bytes.length < 100) return "ERROR:empty_audio";
+                String name = "VideoAudio_" + System.currentTimeMillis() + ".m4a";
+                saveBuffer = new ByteArrayOutputStream();
+                saveBuffer.write(bytes);
+                saveFileName = name;
+                return "OK:" + name + ":" + bytes.length;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "ERROR:" + e.getMessage();
+            } finally {
+                try { if (muxer != null) { muxer.release(); } } catch (Exception ignored) {}
+                try { if (extractor != null) extractor.release(); } catch (Exception ignored) {}
             }
         }
 
