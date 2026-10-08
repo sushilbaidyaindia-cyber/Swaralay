@@ -244,55 +244,10 @@
         .fx-label.treble { color: var(--accent); }
         .fx-label.echo { color: var(--purple); }
         .fx-label.reverb { color: var(--purple); }
-
-        /* Full-screen beat-tap layer (TalkBack off → tap anywhere) */
-        #rhythmTapOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: rgba(8, 10, 20, 0.92);
-            color: #fff;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 24px 18px;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        #rhythmTapOverlay.active { display: flex; }
-        #rhythmTapOverlay .tap-count {
-            font-size: 64px;
-            font-weight: 800;
-            color: var(--accent);
-            margin: 12px 0;
-            font-variant-numeric: tabular-nums;
-        }
-        #rhythmTapOverlay .tap-hint {
-            font-size: 16px;
-            color: #ccc;
-            line-height: 1.5;
-            max-width: 320px;
-        }
-        #rhythmTapOverlay .tap-exit {
-            margin-top: 28px;
-            width: auto;
-            padding: 12px 22px;
-            background: #383854;
-            color: #fff;
-            font-size: 14px;
-        }
     </style>
     <!-- LAME MP3 encoder (~156KB) — high quality (320 kbps) for WhatsApp -->
     <script src="lame.min.js"></script>
     <script src="soundtouch.js"></script>
-    <!-- Essentia.js (AGPL) — best offline beat tracker; wasm must sit next to this HTML -->
-    <script src="essentia-wasm.web.js"></script>
-    <script src="essentia.js-core.js"></script>
-    <!-- Beatroot fallback (MIT, lightweight) -->
-    <script src="music-tempo.min.js"></script>
 </head>
 <body>
 
@@ -304,10 +259,8 @@
             <h2>🎵 Player</h2>
             <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-hidden="true">
-            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio (browser or phone)</p>
-            <button type="button" onclick="document.getElementById('fileInput').click()" style="background:var(--accent); color:#000; margin-top:4px;">📁 Pick audio files</button>
-            <button type="button" onclick="document.getElementById('folderInput').click()" style="background:#383854; color:#fff; margin-top:8px;">📂 Pick folder</button>
-            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:8px;">📱 Choose from phone music (app only)</button>
+            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio from your phone</p>
+            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 Choose from phone music</button>
             <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
                 <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
@@ -355,14 +308,13 @@
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-fx" onclick="openEditorPanel('panel-fx', this)">🚀 FX</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-record" onclick="openEditorPanel('panel-record', this)">🎙️ Record</button>
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-video" onclick="openEditorPanel('panel-video', this)">🎬 Video→MP3</button>
-            <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-rhythm" onclick="openEditorPanel('panel-rhythm', this)">🥁 Auto Rhythm</button>
         </div>
 
         <!-- Empty state when no sub-tab selected -->
         <div id="editorEmpty" style="text-align:center; padding:60px 24px; color:#666;">
             <p style="font-size:28px; margin:0 0 12px 0; opacity:0.7;">🎵</p>
             <p style="font-size:16px; margin:0 0 6px 0; color:#aaa;">Choose an editor tool</p>
-            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record · Video→MP3 · Auto Rhythm</p>
+            <p style="font-size:13px; color:#666; margin:0;">Cut · Merge · Mix · Booster · Pitch · FX · Record · Video→MP3</p>
         </div>
 
         <!-- 1. CUTTER PANEL -->
@@ -612,11 +564,40 @@
 
                 <label style="font-size:12px; color:#aaa; display:block; margin-top:8px;">Reverb Type</label>
                 <select id="fxReverbType" aria-label="Select Reverb Category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:4px;">
-                    <option value="room">Room</option>
-                    <option value="hall">Hall</option>
-                    <option value="plate">Plate</option>
-                    <option value="cathedral">Cathedral</option>
+                    <option value="room">Room — real IR (natural small space)</option>
+                    <option value="hall">Hall — real IR (wide hall)</option>
+                    <option value="plate">Plate — real IR (studio plate)</option>
+                    <option value="cathedral">Cathedral — real IR (long tail)</option>
                 </select>
+                <p style="font-size:11px; color:#666; margin:6px 0 0;">Uses <b>real convolution IR</b> files (studio-style). Falls back to synthetic if a file is missing.</p>
+
+                <label style="font-size:12px; color:#aaa; display:block; margin-top:14px;">Echo style</label>
+                <select id="fxEchoStyle" aria-label="Echo style" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
+                    <option value="mono">Normal — same on both speakers</option>
+                    <option value="pingpong" selected>Ping-pong — left ↔ right (guitar / vocal separate feel)</option>
+                </select>
+
+                <label class="fx-label" style="color:var(--accent); margin-top:14px;">🔄 Auto-pan (rotate between speakers) %</label>
+                <div class="stepper-group" style="margin-bottom:8px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxAutoPan', -5)" aria-label="Decrease auto pan">➖</button>
+                    <input type="number" id="fxAutoPan" value="0" min="0" max="100" aria-label="Auto pan amount">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxAutoPan', 5)" aria-label="Increase auto pan">➕</button>
+                </div>
+                <label style="font-size:12px; color:#aaa; display:block;">Pan speed (how fast it moves L↔R)</label>
+                <select id="fxAutoPanSpeed" aria-label="Auto pan speed" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:4px;">
+                    <option value="0.15">Slow — gentle sweep</option>
+                    <option value="0.35" selected>Medium</option>
+                    <option value="0.7">Fast</option>
+                    <option value="1.2">Very fast</option>
+                </select>
+
+                <label class="fx-label" style="color:var(--accent); margin-top:12px;">↔️ Stereo width %</label>
+                <div class="stepper-group" style="margin-bottom:4px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxStereoWidth', -5)" aria-label="Decrease stereo width">➖</button>
+                    <input type="number" id="fxStereoWidth" value="70" min="0" max="100" aria-label="Stereo width">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxStereoWidth', 5)" aria-label="Increase stereo width">➕</button>
+                </div>
+                <p style="font-size:11px; color:#666; margin:6px 0 0;">Width / ping-pong / auto-pan make left &amp; right speakers feel separate — like guitar one side, vocal the other.</p>
             </div>
 
             <div class="input-group" style="margin-top: 15px;">
@@ -735,7 +716,7 @@
         <div id="panel-video" class="editor-panel card">
             <h2>🎬 Video → MP3</h2>
             <p style="font-size:13px; color:#aaa; margin:0 0 12px 0; line-height:1.45;">
-                Extract audio from video at high quality, then save as <b>MP3 320 kbps</b> (or WAV if chosen in Settings).<br>
+                Extract audio from video at high quality, then save as <b>MP3</b> (quality from Settings, min 128 kbps) (or WAV if chosen in Settings).<br>
                 On Android the original audio track is copied first (no extra generation loss), then encoded to MP3.
             </p>
             <input type="file" id="videoFile" accept="video/*,.mp4,.webm,.mkv,.3gp,.mov" style="display:none;" aria-hidden="true">
@@ -746,163 +727,6 @@
             </div>
             <button type="button" id="videoConvertBtn" onclick="convertVideoToMp3()" style="margin-top:12px;">⚡ Convert &amp; Save MP3</button>
             <div id="videoLoading" class="loading-text" aria-live="polite"></div>
-        </div>
-
-        <!-- 9. AUTO RHYTHM (offline, free, no server) -->
-        <div id="panel-rhythm" class="editor-panel card">
-            <h2>🥁 Auto Rhythm</h2>
-            <p style="font-size:13px; color:#aaa; margin:0 0 12px 0; line-height:1.45;">
-                Upload a song (voice + guitar, etc.). The app finds the <b>BPM, the first beat and the chords</b>, then plays beat-aligned drums and a chord-following guitar — <b>offline, free, no server</b>.
-                Drums are synthesized (no copyright packs). Indian taals use real bol patterns (Keherwa, Dadra, Teental, Bhajan, Bhangra) with tabla/dhol-style tones.
-            </p>
-            <input type="file" id="rhythmFile" accept="audio/*" style="display:none;" aria-hidden="true" onchange="rhythmOnFileChosen()">
-            <button type="button" onclick="openPhoneMusicPicker('rhythmFile')" style="background:#7c4dff; color:#fff; margin:0;">📱 Choose from phone music</button>
-            <button type="button" onclick="document.getElementById('rhythmFile').click()" style="background:#383854; color:#fff; margin-top:8px;">📁 Or pick any audio file</button>
-            <p id="rhythmFileLabel" style="font-size:12px; color:#8a8a9a; margin:10px 0 0;">No song selected</p>
-            <p id="rhythmAnalysisInfo" style="font-size:12px; color:#9aa; margin:6px 0 0; line-height:1.4;">Analysis: —</p>
-
-            <div class="input-group" style="margin-top:12px;">
-                Tap speed (taps / min):
-                <input type="number" id="rhythmBpm" value="120" min="10" max="480" step="0.1" aria-label="Tap speed per minute" onchange="rhythmBpmEdited()">
-                <button type="button" onclick="detectRhythmBpm()" style="width:auto; margin-left:8px; padding:8px 12px; background:#2ed573; color:#000;" title="Beatroot offline beat tracker">🔍 Detect beats (Essentia)</button>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-                <button type="button" onclick="rhythmScaleBpm(0.5)" style="flex:1; min-width:70px; background:#383854; color:#fff; margin:0;">½×</button>
-                <button type="button" onclick="rhythmScaleBpm(2)" style="flex:1; min-width:70px; background:#383854; color:#fff; margin:0;">2×</button>
-                <button type="button" id="rhythmTapBtn" onclick="rhythmTapTempo()" style="flex:2; min-width:140px; background:#383854; color:#fff; margin:0;">👆 Tap beat</button>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-                <button type="button" id="rhythmTapAlongBtn" onclick="rhythmStartTapAlong()" style="flex:2; min-width:160px; background:#7c4dff; color:#fff; margin:0;">▶ Ready — then tap to start</button>
-                <button type="button" onclick="rhythmClearTapLock()" style="flex:1; min-width:100px; background:#383854; color:#fff; margin:0;">Reset taps</button>
-            </div>
-            <p id="rhythmTapInfo" style="font-size:12px; color:#9aa; margin:8px 0 0; line-height:1.45;">
-                Lock: Ready → TalkBack OFF → first tap starts song → tap <b>every beat</b> (not only once per cycle) up to 8 → lock. Drift later? Use ½× / 2× or Beat shift. Perfect long-song sync is hard offline; steady taps help most.
-            </p>
-            <div class="input-group" style="margin-top:8px; flex-wrap:wrap;">
-                Beat shift (seconds — if drums are early/late):
-                <button type="button" class="stepper-btn" onclick="rhythmNudgeSec(-0.1)" style="width:auto; margin:0;" aria-label="Shift earlier 0.1s">−0.1s</button>
-                <input type="number" id="rhythmOffsetSec" value="0" min="-2" max="2" step="0.05" aria-label="Beat shift in seconds" style="width:90px; text-align:center;">
-                <button type="button" class="stepper-btn" onclick="rhythmNudgeSec(0.1)" style="width:auto; margin:0;" aria-label="Shift later 0.1s">+0.1s</button>
-            </div>
-            <p style="font-size:11px; color:#666; margin:4px 0 0;">Range −2.00s to +2.00s. Positive = drums later; negative = drums earlier.</p>
-
-            <div style="margin-top:14px; padding:12px; background:#1a1a28; border-radius:10px;">
-                <strong style="color:var(--accent);">🪘 Your taal (you decide)</strong>
-                <p style="font-size:12px; color:#9aa; margin:6px 0 8px; line-height:1.5;">
-                    Pick the taal below (or Custom + matra count). Then say <b>how many matras one tap is</b>:
-                    <b>1</b> = you tap every matra · <b>4</b> = you tap every 4th matra · <b>same as the taal (e.g. 12)</b> = you tap only on the “1”.
-                    Start tapping exactly on the “1”.
-                </p>
-                <div class="input-group">
-                    Matras per tap:
-                    <input type="number" id="rhythmMatraPerTap" value="1" min="0.25" max="64" step="0.25" aria-label="Matras per tap" onchange="rhUpdatePlan()">
-                </div>
-                <div class="input-group" style="margin-top:8px;">
-                    Custom taal matras:
-                    <input type="number" id="rhythmCustomMatras" value="12" min="2" max="32" step="1" aria-label="Custom matra count" onchange="rhUpdatePlan()">
-                </div>
-                <div class="input-group" style="margin-top:8px;">
-                    Move the “1” by (matras):
-                    <input type="number" id="rhythmSamShift" value="0" min="-32" max="32" step="1" aria-label="Shift the first matra" onchange="rhUpdatePlan()">
-                </div>
-                <div class="input-group" style="margin-top:8px;">
-                    Sound:
-                    <select id="rhythmTaalSound" aria-label="Taal sound" onchange="rhUpdatePlan()" style="padding:8px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
-                        <option value="kit" selected>Drum kit</option>
-                        <option value="tabla">Tabla (synth)</option>
-                    </select>
-                </div>
-                <button type="button" onclick="previewClickCheck()" style="background:#7c4dff; color:#fff; margin-top:10px;">🔔 Click check (song + clicks on your matras)</button>
-            </div>
-            <div class="input-group" style="margin-top:8px;">
-                Bar starts on beat:
-                <select id="rhythmBarShift" aria-label="Which beat is the bar start" style="padding:8px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
-                    <option value="auto">Auto</option>
-                    <option value="0">1st</option>
-                    <option value="1">2nd</option>
-                    <option value="2">3rd</option>
-                    <option value="3">4th</option>
-                </select>
-            </div>
-
-            <label style="display:flex; align-items:center; gap:8px; font-size:14px; margin:12px 0 4px;">
-                <input type="checkbox" id="rhythmDrumsOn" checked> 🥁 Drums / tabla ON <span style="font-size:12px; color:#888;">(untick = guitar only)</span>
-            </label>
-            <label class="fx-label" style="margin-top:8px;">Taal / style</label>
-            <select id="rhythmStyle" aria-label="Drum style" onchange="rhythmStyleChanged()" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; font-size:15px;">
-                <optgroup label="🪘 Taal — you give the matra count">
-                    <option value="taal6" selected>Dadra — 6 matra (3+3)</option>
-                    <option value="taal7">Rupak — 7 matra (3+2+2)</option>
-                    <option value="taal8">Keherwa — 8 matra (4+4)</option>
-                    <option value="taal10">Jhaptal — 10 matra (2+3+2+3)</option>
-                    <option value="taal12">Ektal — 12 matra (2×6)</option>
-                    <option value="taal16">Teental — 16 matra (4×4)</option>
-                    <option value="taalN">Custom — type the matra count below</option>
-                </optgroup>
-                <optgroup label="Beat patterns (your tap = 1 beat)">
-                    <option value="dadra">Dadra kit — single (3 beats)</option>
-                    <option value="dadra_double">Dadra kit — double (busier)</option>
-                    <option value="pop">Pop / soft</option>
-                    <option value="rock">Rock</option>
-                    <option value="hiphop">Hip-Hop</option>
-                    <option value="dance">Dance / four-on-floor</option>
-                    <option value="ballad">Ballad / slow</option>
-                    <option value="percussion">Light percussion</option>
-                    <option value="bhajan">Bhajan groove (dholak)</option>
-                    <option value="bhangra">Bhangra / dhol</option>
-                </optgroup>
-            </select>
-
-            <p id="rhythmTaalInfo" style="font-size:12px; color:#9aa; margin:8px 0 0; line-height:1.5;">Taal: —</p>
-            <div class="input-group" style="margin-top:12px;">
-                Drum volume (%):
-                <input type="number" id="rhythmDrumVol" value="55" min="10" max="100" step="5" aria-label="Drum volume">
-            </div>
-            <div class="input-group" style="margin-top:8px;">
-                Song volume (%):
-                <input type="number" id="rhythmSongVol" value="100" min="20" max="100" step="5" aria-label="Song volume">
-            </div>
-            <div class="input-group" style="margin-top:8px;">
-                Name: <input type="text" id="rhythmOutName" value="Song_With_Rhythm" aria-label="Output name">
-            </div>
-
-            <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-                <button type="button" onclick="previewDrumsOnly()" style="flex:1; min-width:120px; background:#7c4dff; color:#fff;">🥁 Test drums only</button>
-                <button type="button" id="rhythmPreviewBtn" onclick="previewAutoRhythm()" style="flex:1; min-width:120px; background:var(--warning); color:#000;">▶ Preview mix</button>
-                <button type="button" onclick="stopRhythmPreview()" style="flex:0 0 auto; min-width:70px; background:#383854; color:#fff;">⏹ Stop</button>
-                <button type="button" id="rhythmSaveBtn" onclick="saveAutoRhythm()" style="flex:1; min-width:120px;">💾 Mix &amp; Save</button>
-            </div>
-
-            <hr style="border:none; border-top:1px solid #333; margin:18px 0;">
-            <h3 style="margin:0 0 8px 0; color:var(--accent); font-size:15px;">🎸 Auto Guitar</h3>
-            <p style="font-size:12px; color:#888; margin:0 0 10px 0;">Real chord shapes, plucked-string model: strum, fingerpick, <b>arpeggio</b> (notes one-by-one), palm-mute, waltz — follows detected chords. Chord detection is a good guess, not perfect — you can type the chords yourself below.</p>
-            <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px;">
-                <input type="checkbox" id="rhythmGuitarOn" checked> Add guitar to mix
-            </label>
-            <label class="fx-label">Guitar pattern</label>
-            <select id="rhythmGuitarStyle" aria-label="Guitar pattern" style="width:100%; padding:12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; font-size:15px; margin-bottom:8px;">
-                <option value="auto">Auto (follows the taal / style)</option>
-                <option value="strum">Strumming</option>
-                <option value="pick">Fingerpicking</option>
-                <option value="arpeggio">Arpeggio (up &amp; down)</option>
-                <option value="arpeggio_up">Arpeggio up only</option>
-                <option value="arpeggio_slow">Arpeggio slow (melodic)</option>
-                <option value="rock">Palm-muted rock</option>
-                <option value="waltz">Waltz (3 beats)</option>
-            </select>
-            <div class="input-group">
-                Guitar volume (%):
-                <input type="number" id="rhythmGuitarVol" value="40" min="0" max="100" step="5" aria-label="Guitar volume">
-            </div>
-            <div class="input-group" style="margin-top:8px;">
-                Chords (optional, one per bar):
-                <input type="text" id="rhythmChordsManual" placeholder="e.g. Am F C G" aria-label="Manual chord progression" style="min-width:140px;">
-            </div>
-            <p id="rhythmChordInfo" style="font-size:12px; color:#aaa; margin:8px 0;">Chords: —</p>
-            <button type="button" onclick="previewGuitarOnly()" style="background:#383854; color:#fff; margin:0;">🎸 Test guitar only</button>
-
-            <div id="rhythmLoading" class="loading-text" aria-live="polite"></div>
-            <p style="font-size:11px; color:#666; margin-top:12px;">Keep <code>lame.min.js</code> + <code>soundtouch.js</code> in the same folder as this HTML. Songs longer than 6 minutes are cut at 6:00 for device safety.</p>
         </div>
     </div>
 
@@ -918,9 +742,16 @@
             </div>
             <div style="margin-top:16px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
                 <strong style="color:var(--accent);">Save format</strong><br>
-                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')"> <b>MP3 320 kbps</b> — best for WhatsApp (LAME encoder)</label>
-                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="wav" onchange="setExportFormat('wav')"> <b>WAV</b> — uncompressed max quality (larger files)</label>
-                <span style="font-size:12px; color:#888;">At 320 kbps, MP3 sounds nearly identical to WAV. Record / cut / mix / video export all follow this setting (default MP3). No extra M4A file is written on record stop.</span>
+                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')"> <b>MP3</b> (LAME) — WhatsApp-friendly</label>
+                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="wav" onchange="setExportFormat('wav')"> <b>WAV</b> — uncompressed (larger files)</label>
+                <label style="display:block; margin:10px 0 4px; color:#aaa;">MP3 quality (minimum 128 kbps)</label>
+                <select id="mp3Bitrate" aria-label="MP3 bitrate" onchange="setMp3Bitrate(this.value)" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
+                    <option value="128">128 kbps — smaller file</option>
+                    <option value="192" selected>192 kbps — clear (recommended)</option>
+                    <option value="256">256 kbps — high</option>
+                    <option value="320">320 kbps — maximum</option>
+                </select>
+                <span style="font-size:12px; color:#888; display:block; margin-top:8px;">Record / cut / mix / FX / video export all use this setting. Default MP3 ≥ 128 kbps.</span>
             </div>
             <div style="margin-top:12px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
                 <strong style="color:var(--accent);">TalkBack play / pause</strong><br>
@@ -946,11 +777,27 @@
         // --- GLOBAL VARIABLES & SETTINGS ---
         let skipTime = 10;
         let volStep = 10;
-        let exportFormat = localStorage.getItem('swaralay_export_format') || 'mp3'; // 'mp3' | 'wav'
+        let exportFormat = localStorage.getItem('swaralay_export_format') || 'mp3';
+        let mp3Bitrate = parseInt(localStorage.getItem('swaralay_mp3_bitrate') || '192', 10);
+        if (![128, 192, 256, 320].includes(mp3Bitrate)) mp3Bitrate = 192;
+        function setMp3Bitrate(v) {
+            let n = parseInt(v, 10);
+            if (![128, 192, 256, 320].includes(n)) n = 192;
+            mp3Bitrate = n;
+            try { localStorage.setItem('swaralay_mp3_bitrate', String(n)); } catch (e) {}
+        }
+        function getMp3Bitrate() {
+            return Math.max(128, mp3Bitrate || 192);
+        }
+ // 'mp3' | 'wav'
 
         function setExportFormat(fmt) {
             exportFormat = (fmt === 'wav') ? 'wav' : 'mp3';
             try { localStorage.setItem('swaralay_export_format', exportFormat); } catch (e) {}
+            try {
+                let el = document.getElementById('mp3Bitrate');
+                if (el) el.value = String(getMp3Bitrate());
+            } catch (e2) {}
         }
         function syncExportFormatUI() {
             document.querySelectorAll('input[name="exportFormat"]').forEach(function (el) {
@@ -1046,6 +893,8 @@
             }
         }
         function openEditorPanel(panelId, btn) {
+            try { if (panelId === 'panel-fx') { loadRealIRBuffer('room'); loadRealIRBuffer('hall'); loadRealIRBuffer('plate'); loadRealIRBuffer('cathedral'); } } catch (e) {}
+
             let panel = document.getElementById(panelId);
             if (!panel) return;
             document.querySelectorAll('.editor-panel').forEach(el => el.classList.remove('active'));
@@ -2005,12 +1854,7 @@
                 if (!forceStart && lastPos > 0 && lastPos < audio.duration - 1) {
                     audio.currentTime = lastPos;
                 }
-                let p = audio.play();
-                if (p && p.catch) p.catch(err => {
-                    console.warn('play blocked', err);
-                    setPlayPauseBtnState(false);
-                    alert('Playback blocked. Tap Play once more.');
-                });
+                audio.play();
             };
 
             setPlayPauseBtnState(true);
@@ -2033,8 +1877,7 @@
         function togglePlay() {
             if (!audio.src) return alert('Select a file first!');
             if (audio.paused) {
-                let p = audio.play();
-                if (p && p.catch) p.catch(err => alert('Could not play: ' + err));
+                audio.play();
                 setPlayPauseBtnState(true);
             } else {
                 audio.pause();
@@ -2234,11 +2077,11 @@
             return out;
         }
 
-        async function audioBufferToMp3(buffer, bitrateKbps) {
+        function audioBufferToMp3(buffer, bitrateKbps) {
             if (typeof lamejs === 'undefined' || !lamejs.Mp3Encoder) {
                 throw new Error('LAME encoder not loaded');
             }
-            let bitrate = bitrateKbps || 320;
+            let bitrate = Math.max(128, bitrateKbps || getMp3Bitrate());
             let channels = buffer.numberOfChannels;
             let sampleRate = buffer.sampleRate;
             // LAME works best with common rates
@@ -2258,7 +2101,6 @@
                     buf = encoder.encodeBuffer(leftChunk);
                 }
                 if (buf.length > 0) parts.push(buf);
-                if (((i / block) & 511) === 511) await new Promise(function (r) { setTimeout(r, 0); });
             }
             let end = encoder.flush();
             if (end.length > 0) parts.push(end);
@@ -2276,52 +2118,46 @@
             }
             let file = input.files[0];
             let outName = (document.getElementById('videoOutName').value || 'Video_Audio').trim().replace(/[\\/:*?"<>|]/g, '_');
+            if (btn) btn.disabled = true;
+            if (loading) {
+                loading.style.display = 'block';
+                loading.innerText = 'Reading video…';
+            }
             try {
-                if (loading) { loading.style.display = 'block'; loading.innerText = 'Extracting audio...'; }
-                if (btn) btn.disabled = true;
-                let buffer = null;
+                // Prefer native bridge extract if available (Android)
+                if (window.AndroidBridge && typeof AndroidBridge.extractAudioFromVideo === 'function') {
+                    if (loading) loading.innerText = 'Extracting audio track (native)…';
+                    try {
+                        let pathOrUri = await AndroidBridge.extractAudioFromVideo(file.name || 'video');
+                        // fall through to file decode if bridge returns nothing usable
+                    } catch (br) {
+                        console.warn('Native extract skipped', br);
+                    }
+                }
 
-                // 1) Try WebAudio decode (works for some formats in WebView)
+                if (loading) loading.innerText = 'Decoding audio from video…';
+                let buffer = null;
+                // Path 1: decode whole file via WebAudio (works for many MP4/WebM)
                 try {
                     buffer = await readAudioData(file);
                 } catch (e1) {
-                    console.warn('decodeAudioData failed', e1);
+                    console.warn('readAudioData failed', e1);
                 }
-
-                // 2) Native extract (copy audio track) then decode
-                if (!buffer && window.AndroidBridge && AndroidBridge.extractAudioFromVideo) {
-                    // Need content uri - if file is from native picker it may have path
-                    let uri = file._swaralayUri || null;
-                    if (!uri && file.name) {
-                        // staged from assignNativeFileToInput only has blob - try bridge with object URL won't work
-                    }
-                    if (uri) {
-                        let r = String(AndroidBridge.extractAudioFromVideo(uri) || '');
-                        if (r.indexOf('OK') === 0) {
-                            let blob = await pullStagedRecordingToBlob();
-                            if (blob) buffer = await readAudioData(new File([blob], 'a.m4a', { type: 'audio/mp4' }));
-                        } else {
-                            console.warn(r);
-                        }
-                    }
-                }
-
-                // 3) Fallback: play video element into Offline capture not available;
-                // try decode again after reading as array buffer through File
+                // Path 2: HTML video/audio element + MediaElementSource offline capture (short clips)
                 if (!buffer) {
-                    try {
-                        let ab = await file.arrayBuffer();
-                        let ctx = new AudioContext();
-                        buffer = await ctx.decodeAudioData(ab.slice(0));
-                        ctx.close();
-                    } catch (e2) {
-                        throw new Error('Could not decode audio from this video. Try MP4/AAC. ' + (e2.message || e2));
-                    }
+                    if (loading) loading.innerText = 'Trying alternate decoder…';
+                    buffer = await decodeVideoAudioFallback(file, loading);
+                }
+                if (!buffer || buffer.length < 256) {
+                    throw new Error('Could not decode audio from this video. Try MP4 (AAC) or WebM.');
                 }
 
-                if (loading) loading.innerText = 'Encoding MP3 320 kbps...';
+                // Light peak normalize so quiet tracks are clearer (not a hard limiter)
+                buffer = softNormalizeBuffer(buffer, 0.95);
+
+                if (loading) loading.innerText = 'Encoding MP3 ' + getMp3Bitrate() + ' kbps…';
                 await downloadAudioBuffer(buffer, outName);
-                if (loading) loading.innerText = 'Saved to Music/Swaralay';
+                if (loading) loading.innerText = 'Saved · MP3 ' + getMp3Bitrate() + ' kbps';
             } catch (e) {
                 console.error(e);
                 alert('Video convert failed: ' + (e && e.message ? e.message : e));
@@ -2330,1977 +2166,93 @@
                 if (btn) btn.disabled = false;
                 setTimeout(function () {
                     let el = document.getElementById('videoLoading');
+                    if (el && el.innerText && el.innerText.indexOf('Saved') === 0) return;
                     if (el) el.style.display = 'none';
-                }, 2500);
+                }, 2800);
             }
         }
 
-
-        // ========== AUTO RHYTHM v2 (offline: beat-aligned drums + chord-aware guitar) ==========
-        // Analysis (tempo, first-beat phase, key, chords) runs in a Web Worker when available.
-        // Drums + guitar are synthesised straight into the output buffer (no giant intermediate buffers).
-        let rhythmSourceBuffer = null;
-        let rhythmAnalysis = null;
-        let rhythmLoadToken = 0;
-        let rhythmLoadPromise = null;
-        let rhythmPreviewNodes = [];
-        let rhythmPreviewCtx = null;
-        let rhythmGridCache = null;
-        let rhythmTapTimes = [];
-        let rhythmUserLock = null; // { bpm, tDown } from taps or Beatroot
-        let rhythmBeatTimes = null; // beat times in seconds (Essentia / MusicTempo)
-        // Preload Essentia WASM in background (personal offline use)
-        try { setTimeout(function () { rhythmInitEssentia(); }, 1200); } catch (e) {}
-        let rhythmTapAlong = null; // { ctx, src, t0audio, taps: number[] song-seconds }
-        const RH_MAX_SECONDS = 360;
-        const RH_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-        function rhYield() { return new Promise(function (r) { setTimeout(r, 0); }); }
-        function rhRng(seed) {
-            let s = (seed >>> 0) || 1;
-            return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-        }
-        function rhChordName(root, minor) { return RH_NAMES[((root % 12) + 12) % 12] + (minor ? 'm' : ''); }
-
-        // ---------- beat phase / bar position for a given BPM (also re-used when the user edits BPM) ----------
-        function rhPhaseFromEnv(comb, low, hopSec, biasSec, bpm) {
-            const n = comb.length;
-            const P = 60 / bpm / hopSec;
-            const beatLen = 60 / bpm;
-            if (n < 8 || !(P > 2)) return { score: 0, t0: 0, bar: 0, tDown0: 0 };
-            let bestScore = -1, bestPh = 0;
-            for (let ph = 0; ph < P; ph += 0.5) {
-                let s = 0, c = 0;
-                for (let p = ph; p < n - 1; p += P) {
-                    const i = p | 0, fr = p - i;
-                    s += comb[i] * (1 - fr) + comb[i + 1] * fr; c++;
-                }
-                if (c) { s /= c; if (s > bestScore) { bestScore = s; bestPh = ph; } }
-            }
-            const acc = [0, 0, 0, 0];
-            let k = 0;
-            for (let p = bestPh; p < n - 2; p += P, k++) {
-                const i = Math.round(p);
-                const v = Math.max(low[Math.max(0, i - 1)], low[i], low[Math.min(n - 1, i + 1)]) + 0.3 * comb[i];
-                acc[k & 3] += v;
-            }
-            let j = 0;
-            for (let m = 1; m < 4; m++) if (acc[m] > acc[j]) j = m;
-            const barLen = 4 * beatLen;
-            let timeK0 = bestPh * hopSec + biasSec;
-            let tDown0 = (timeK0 + j * beatLen) % barLen;
-            if (tDown0 < 0) tDown0 += barLen;
-            const t0 = tDown0 % beatLen;
-            return { score: bestScore, t0: t0, bar: Math.floor(tDown0 / beatLen + 1e-6), tDown0: tDown0 };
-        }
-
-        function rhRefineTempo(comb, low, hopSec, biasSec, bpm0) {
-            let best = { score: -1, bpm: bpm0 };
-            for (let b = bpm0 * 0.97; b <= bpm0 * 1.03 + 1e-9; b += 0.05) {
-                const r = rhPhaseFromEnv(comb, low, hopSec, biasSec, b);
-                if (r.score > best.score) best = { score: r.score, bpm: b };
-            }
-            return best.bpm;
-        }
-
-        // ---------- analysis core: must stay self-contained (it is also stringified into a Worker) ----------
-        function rhAnalyzeCore(x, fs, opts) {
-            opts = opts || {};
-            function makeFFT(n) {
-                const levels = Math.round(Math.log2(n));
-                const cs = new Float32Array(n / 2), sn = new Float32Array(n / 2);
-                for (let i = 0; i < n / 2; i++) { cs[i] = Math.cos(2 * Math.PI * i / n); sn[i] = Math.sin(2 * Math.PI * i / n); }
-                const rev = new Uint32Array(n);
-                for (let i = 0; i < n; i++) { let r = 0, v = i; for (let b = 0; b < levels; b++) { r = (r << 1) | (v & 1); v >>= 1; } rev[i] = r; }
-                return function (re, im) {
-                    for (let i = 0; i < n; i++) {
-                        const j = rev[i];
-                        if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
-                    }
-                    for (let size = 2; size <= n; size <<= 1) {
-                        const half = size >> 1, step = n / size;
-                        for (let i = 0; i < n; i += size) {
-                            for (let j = i, k = 0; j < i + half; j++, k += step) {
-                                const l = j + half;
-                                const tre = re[l] * cs[k] + im[l] * sn[k];
-                                const tim = -re[l] * sn[k] + im[l] * cs[k];
-                                re[l] = re[j] - tre; im[l] = im[j] - tim; re[j] += tre; im[j] += tim;
-                            }
-                        }
-                    }
-                };
-            }
-            const len = x.length, durSec = len / fs;
-
-            // ===== 1) onset strength (log spectral flux) =====
-            const N = 512, HOP = 128, hopSec = HOP / fs;
-            const biasSec = (N * 0.5) / fs + 0.009;   // calibrated on synthetic click tracks
-            const fft = makeFFT(N);
-            const win = new Float32Array(N);
-            for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
-            const onsetLen = Math.min(len, Math.floor((opts.onsetSec || 120) * fs));
-            const nF = Math.max(0, Math.floor((onsetLen - N) / HOP));
-            const binHz = fs / N;
-            const kLo = 2, kHi = Math.min(N / 2 - 1, Math.floor(5000 / binHz));
-            const kLow = Math.max(3, Math.floor(160 / binHz));
-            const prev = new Float32Array(N / 2);
-            const flux = new Float32Array(nF), lowF = new Float32Array(nF);
-            const re = new Float32Array(N), im = new Float32Array(N);
-            for (let f = 0; f < nF; f++) {
-                const base = f * HOP;
-                for (let i = 0; i < N; i++) { re[i] = x[base + i] * win[i]; im[i] = 0; }
-                fft(re, im);
-                let s = 0, sl = 0;
-                for (let k = kLo; k <= kHi; k++) {
-                    const m = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
-                    const l = Math.log(1 + 100 * m);
-                    const d = l - prev[k]; prev[k] = l;
-                    if (d > 0) { s += d; if (k <= kLow) sl += d; }
-                }
-                flux[f] = s; lowF[f] = sl;
-            }
-            function shape(a) {
-                const n = a.length, w = Math.max(3, Math.round(0.5 / hopSec));
-                const cs = new Float64Array(n + 1);
-                for (let i = 0; i < n; i++) cs[i + 1] = cs[i] + a[i];
-                const o = new Float32Array(n);
-                for (let i = 0; i < n; i++) {
-                    const lo = Math.max(0, i - w), hi = Math.min(n, i + w + 1);
-                    const v = a[i] - (cs[hi] - cs[lo]) / (hi - lo);
-                    o[i] = v > 0 ? v : 0;
-                }
-                const sm = new Float32Array(n);
-                let ss = 0;
-                for (let i = 0; i < n; i++) {
-                    const v = 0.25 * o[Math.max(0, i - 1)] + 0.5 * o[i] + 0.25 * o[Math.min(n - 1, i + 1)];
-                    sm[i] = v; ss += v * v;
-                }
-                const sd = Math.sqrt(ss / Math.max(1, n)) || 1;
-                for (let i = 0; i < n; i++) sm[i] /= sd;
-                return sm;
-            }
-            const env = shape(flux), low = shape(lowF);
-            const comb = new Float32Array(nF);
-            for (let i = 0; i < nF; i++) comb[i] = env[i] + 0.6 * low[i];
-
-            // ===== 2) tempo: autocorrelation + metrical enhancement + prior, then fine comb refinement =====
-            let bpm = 120, t0 = 0, bar = 0, tDown0 = 0;
-            if (nF > 300) {
-                const lagMin = Math.max(2, Math.floor(60 / 215 / hopSec)), lagMax = Math.ceil(60 / 55 / hopSec);
-                const maxL = Math.min(nF - 2, lagMax * 4 + 2);
-                const acf = new Float32Array(maxL + 1);
-                for (let lag = lagMin; lag <= maxL; lag++) {
-                    let s = 0;
-                    for (let i = 0; i + lag < nF; i++) s += comb[i] * comb[i + lag];
-                    acf[lag] = s / (nF - lag);
-                }
-                const score = new Float32Array(lagMax + 2);
-                let bestL = lagMin;
-                for (let L = lagMin; L <= lagMax; L++) {
-                    let v = acf[L] + (2 * L <= maxL ? 0.5 * acf[2 * L] : 0) + (4 * L <= maxL ? 0.25 * acf[4 * L] : 0);
-                    const b = 60 / (L * hopSec);
-                    const o = Math.log(b / 118) / Math.LN2 / 0.85;
-                    v *= Math.exp(-0.5 * o * o);
-                    score[L] = v;
-                    if (v > score[bestL]) bestL = L;
-                }
-                let Lf = bestL;
-                if (bestL > lagMin && bestL < lagMax) {
-                    const a = score[bestL - 1], b = score[bestL], c = score[bestL + 1];
-                    const den = a - 2 * b + c;
-                    if (den !== 0) Lf = bestL + 0.5 * (a - c) / den;
-                }
-                bpm = 60 / (Lf * hopSec);
-                bpm = rhRefineTempo(comb, low, hopSec, biasSec, bpm);
-                const ph = rhPhaseFromEnv(comb, low, hopSec, biasSec, bpm);
-                t0 = ph.t0; bar = ph.bar; tDown0 = ph.tDown0;
-            }
-            const beatLen = 60 / bpm;
-
-            // ===== 3) where does the music actually start? =====
-            let startSec = 0;
-            {
-                const w = Math.max(1, Math.floor(0.25 * fs)), rms = [];
-                for (let i = 0; i + w <= len; i += w) {
-                    let s = 0; for (let j = 0; j < w; j++) s += x[i + j] * x[i + j];
-                    rms.push(Math.sqrt(s / w));
-                }
-                const sorted = rms.slice().sort(function (a, b) { return a - b; });
-                const p90 = sorted.length ? sorted[Math.floor(sorted.length * 0.9)] : 0;
-                for (let i = 0; i < rms.length; i++) { if (rms[i] > 0.3 * p90 && p90 > 1e-4) { startSec = i * 0.25; break; } }
-            }
-
-            // ===== 4) chroma, tuning, key, chords (whole song) =====
-            const CN = 4096, CH = 2048, cbin = fs / CN;
-            const cfft = makeFFT(CN);
-            const cwin = new Float32Array(CN);
-            for (let i = 0; i < CN; i++) cwin[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / CN);
-            const chordLen = Math.min(len, Math.floor((opts.chordSec || 400) * fs));
-            const nC = chordLen >= CN ? Math.floor((chordLen - CN) / CH) + 1 : 0;
-            const kA = Math.max(2, Math.ceil(70 / cbin)), kB = Math.min(CN / 2 - 2, Math.floor(1200 / cbin));
-            const pkM = [], pkW = [], pkStart = new Int32Array(nC + 1);
-            const mag = new Float32Array(kB + 3);
-            const cre = new Float32Array(CN), cim = new Float32Array(CN);
-            for (let f = 0; f < nC; f++) {
-                const base = f * CH;
-                for (let i = 0; i < CN; i++) { cre[i] = x[base + i] * cwin[i]; cim[i] = 0; }
-                cfft(cre, cim);
-                let mx = 0;
-                for (let k = kA - 1; k <= kB + 1; k++) { const m = Math.sqrt(cre[k] * cre[k] + cim[k] * cim[k]); mag[k] = m; if (m > mx) mx = m; }
-                pkStart[f] = pkM.length;
-                const thr = mx * 0.06;
-                for (let k = kA; k <= kB; k++) {
-                    const b = mag[k];
-                    if (b > thr && b > mag[k - 1] && b >= mag[k + 1]) {
-                        const a = mag[k - 1], c = mag[k + 1], den = a - 2 * b + c;
-                        const d = den !== 0 ? 0.5 * (a - c) / den : 0;
-                        const freq = (k + d) * cbin;
-                        pkM.push(69 + 12 * Math.log2(freq / 440));
-                        pkW.push(Math.sqrt(b));
+        function softNormalizeBuffer(buffer, targetPeak) {
+            try {
+                let peak = 0;
+                for (let c = 0; c < buffer.numberOfChannels; c++) {
+                    let d = buffer.getChannelData(c);
+                    for (let i = 0; i < d.length; i++) {
+                        let a = Math.abs(d[i]);
+                        if (a > peak) peak = a;
                     }
                 }
-            }
-            pkStart[nC] = pkM.length;
-            // tuning (circular mean of the fractional semitone)
-            let sx = 0, sy = 0, sw = 0;
-            for (let i = 0; i < pkM.length; i++) {
-                const fr = pkM[i] - Math.round(pkM[i]);
-                sx += pkW[i] * Math.cos(2 * Math.PI * fr); sy += pkW[i] * Math.sin(2 * Math.PI * fr); sw += pkW[i];
-            }
-            let tune = 0, tuneConf = 0;
-            if (sw > 0) { tune = Math.atan2(sy, sx) / (2 * Math.PI); tuneConf = Math.sqrt(sx * sx + sy * sy) / sw; }
-            if (tune > 0.4) tune = 0.4; if (tune < -0.4) tune = -0.4;
-            const chroma = new Float32Array(nC * 12), bass = new Float32Array(nC * 12);
-            for (let f = 0; f < nC; f++) {
-                let tot = 0;
-                for (let i = pkStart[f]; i < pkStart[f + 1]; i++) {
-                    const m = pkM[i] - tune, r = Math.round(m);
-                    const dist = Math.abs(m - r);
-                    const w = pkW[i] * Math.max(0, 1 - dist * 1.8) * (m > 82 ? 0.55 : 1);
-                    const pc = ((r % 12) + 12) % 12;
-                    chroma[f * 12 + pc] += w; tot += w;
-                    if (m < 55) bass[f * 12 + pc] += pkW[i] * Math.max(0, 1 - dist * 1.8);
-                }
-                if (tot > 0) for (let c = 0; c < 12; c++) chroma[f * 12 + c] /= tot;
-            }
-            // key (Krumhansl-Schmuckler, major + minor)
-            const MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
-            const MIN = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
-            const tot12 = new Float32Array(12);
-            for (let f = 0; f < nC; f++) for (let c = 0; c < 12; c++) tot12[c] += chroma[f * 12 + c];
-            function corr(a, b) {
-                let ma = 0, mb = 0; for (let i = 0; i < 12; i++) { ma += a[i]; mb += b[i]; } ma /= 12; mb /= 12;
-                let sab = 0, saa = 0, sbb = 0;
-                for (let i = 0; i < 12; i++) { const da = a[i] - ma, db = b[i] - mb; sab += da * db; saa += da * da; sbb += db * db; }
-                return sab / (Math.sqrt(saa * sbb) || 1);
-            }
-            let key = { root: 0, minor: false, score: -2 };
-            for (let r = 0; r < 12; r++) {
-                const rot = new Float32Array(12);
-                for (let i = 0; i < 12; i++) rot[i] = tot12[(i + r) % 12];
-                const cM = corr(rot, MAJ), cm = corr(rot, MIN);
-                if (cM > key.score) key = { root: r, minor: false, score: cM };
-                if (cm > key.score) key = { root: r, minor: true, score: cm };
-            }
-            const diatonic = {};
-            if (key.minor) {
-                [[0, 1], [3, 0], [5, 1], [7, 1], [7, 0], [8, 0], [10, 0]].forEach(function (d) { diatonic[((key.root + d[0]) % 12) + 12 * d[1]] = 1; });
-            } else {
-                [[0, 0], [2, 1], [4, 1], [5, 0], [7, 0], [9, 1]].forEach(function (d) { diatonic[((key.root + d[0]) % 12) + 12 * d[1]] = 1; });
-            }
-            // chord templates
-            const tmpl = [];
-            for (let q = 0; q < 2; q++) for (let r = 0; r < 12; r++) {
-                const v = new Float32Array(12);
-                v[r] = 1; v[(r + (q ? 3 : 4)) % 12] = 0.85; v[(r + 7) % 12] = 0.75;
-                let nn = 0; for (let i = 0; i < 12; i++) nn += v[i] * v[i]; nn = Math.sqrt(nn);
-                for (let i = 0; i < 12; i++) v[i] /= nn;
-                tmpl[r + 12 * q] = v;
-            }
-            // beat-synchronous segments (2 beats), Viterbi smoothing
-            const chords = [];
-            if (nC > 4) {
-                const segLen = 2 * beatLen;
-                const chordEnd = (nC * CH + CN) / fs;
-                let a0 = (tDown0 % segLen) - segLen;
-                const segs = [];
-                let fptr = 0;
-                for (let a = a0; a < chordEnd; a += segLen) {
-                    const b = a + segLen;
-                    const c = new Float32Array(12), bs = new Float32Array(12);
-                    let cnt = 0;
-                    while (fptr < nC && (fptr * CH + CN / 2) / fs < a) fptr++;
-                    let g = fptr;
-                    while (g < nC && (g * CH + CN / 2) / fs < b) {
-                        for (let k = 0; k < 12; k++) { c[k] += chroma[g * 12 + k]; bs[k] += bass[g * 12 + k]; }
-                        cnt++; g++;
-                    }
-                    segs.push({ a: a, b: b, c: c, bs: bs, cnt: cnt });
-                }
-                const energies = segs.map(function (s) { let e = 0; for (let k = 0; k < 12; k++) e += s.c[k]; return e; });
-                const nz = energies.filter(function (e) { return e > 0; }).sort(function (p, q) { return p - q; });
-                const med = nz.length ? nz[Math.floor(nz.length / 2)] : 0;
-                const T = segs.length, S = 24, PEN = 0.13;
-                const delta = new Float32Array(T * S), back = new Int8Array(T * S);
-                for (let t = 0; t < T; t++) {
-                    const s = segs[t];
-                    const silent = s.cnt === 0 || energies[t] < 0.1 * med;
-                    const emis = new Float32Array(S);
-                    if (!silent) {
-                        let nc = 0; for (let k = 0; k < 12; k++) nc += s.c[k] * s.c[k]; nc = Math.sqrt(nc) || 1;
-                        let bsum = 0; for (let k = 0; k < 12; k++) bsum += s.bs[k]; bsum = bsum || 1;
-                        for (let st = 0; st < S; st++) {
-                            const v = tmpl[st]; let dot = 0;
-                            for (let k = 0; k < 12; k++) dot += v[k] * s.c[k];
-                            emis[st] = dot / nc + 0.25 * (s.bs[st % 12] / bsum) + (diatonic[st] ? 0.05 : 0);
-                        }
-                    }
-                    if (t === 0) { for (let st = 0; st < S; st++) { delta[st] = emis[st]; back[st] = st; } continue; }
-                    let bi = 0; for (let st = 1; st < S; st++) if (delta[(t - 1) * S + st] > delta[(t - 1) * S + bi]) bi = st;
-                    const bm = delta[(t - 1) * S + bi] - PEN;
-                    for (let st = 0; st < S; st++) {
-                        const stay = delta[(t - 1) * S + st];
-                        if (stay >= bm) { delta[t * S + st] = stay + emis[st]; back[t * S + st] = st; }
-                        else { delta[t * S + st] = bm + emis[st]; back[t * S + st] = bi; }
-                    }
-                }
-                let cur = 0; for (let st = 1; st < S; st++) if (delta[(T - 1) * S + st] > delta[(T - 1) * S + cur]) cur = st;
-                const path = new Int8Array(T);
-                for (let t = T - 1; t >= 0; t--) { path[t] = cur; cur = back[t * S + cur]; }
-                for (let t = 0; t < T; t++) {
-                    const root = path[t] % 12, minor = path[t] >= 12;
-                    const ta = Math.max(0, segs[t].a), tb = Math.min(durSec, segs[t].b);
-                    if (tb <= ta) continue;
-                    const last = chords[chords.length - 1];
-                    if (last && last.root === root && last.minor === minor) last.t1 = tb;
-                    else chords.push({ t0: ta, t1: tb, root: root, minor: minor });
-                }
-                // drop a spurious chord guessed over the silent intro
-                while (chords.length > 1 && chords[0].t1 - chords[0].t0 < 0.9) chords.shift();
-                if (chords.length) { chords[0].t0 = 0; chords[chords.length - 1].t1 = durSec; }
-            }
-
-            return {
-                bpm: bpm, t0: t0, bar: bar, tDown0: tDown0, hopSec: hopSec, biasSec: biasSec,
-                env: comb, low: low, start: startSec, dur: durSec,
-                key: { root: key.root, minor: key.minor, score: key.score },
-                tune: tuneConf > 0.35 ? tune : 0, tuneConf: tuneConf, chords: chords
-            };
-        }
-
-        // ---------- run analysis (Worker first, main-thread fallback) ----------
-        function rhRunAnalysis(x, fs) {
-            return new Promise(function (resolve, reject) {
-                let finished = false;
-                function fallback() {
-                    if (finished) return; finished = true;
-                    rhYield().then(function () { resolve(rhAnalyzeCore(x, fs, {})); }).catch(reject);
-                }
-                try {
-                    if (typeof Worker === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return fallback();
-                    const src = 'var rhPhaseFromEnv=' + rhPhaseFromEnv.toString() +
-                        ';var rhRefineTempo=' + rhRefineTempo.toString() +
-                        ';var core=' + rhAnalyzeCore.toString() +
-                        ';self.onmessage=function(e){try{self.postMessage({ok:true,r:core(e.data.x,e.data.fs,{})});}catch(err){self.postMessage({ok:false,e:String(err&&err.message||err)});}};';
-                    const url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
-                    const w = new Worker(url);
-                    const cleanup = function () { try { w.terminate(); } catch (e) {} try { URL.revokeObjectURL(url); } catch (e) {} };
-                    w.onmessage = function (ev) {
-                        if (finished) return;
-                        cleanup();
-                        if (ev.data && ev.data.ok) { finished = true; resolve(ev.data.r); } else fallback();
-                    };
-                    w.onerror = function () { cleanup(); fallback(); };
-                    w.postMessage({ x: x, fs: fs });
-                } catch (e) { fallback(); }
-            });
-        }
-
-        async function rhAnalyzeBuffer(buffer) {
-            const sr = buffer.sampleRate;
-            const D = Math.max(1, Math.round(sr / 11025));
-            const fs = sr / D;
-            const maxLen = Math.min(buffer.length, Math.floor(RH_MAX_SECONDS * sr));
-            const n = Math.floor(maxLen / D);
-            const x = new Float32Array(n);
-            const c0 = buffer.getChannelData(0);
-            const c1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : c0;
-            for (let i = 0; i < n; i++) {
-                let s = 0; const b = i * D;
-                for (let j = 0; j < D; j++) s += c0[b + j] + c1[b + j];
-                x[i] = s / (2 * D);
-            }
-            return await rhRunAnalysis(x, fs);
-        }
-
-        // ---------- small DSP helpers ----------
-        function rhBiquadCoef(type, f0, q, gainDb, sr) {
-            const w0 = 2 * Math.PI * f0 / sr, cosw = Math.cos(w0), sinw = Math.sin(w0), alpha = sinw / (2 * q);
-            const A = Math.pow(10, (gainDb || 0) / 40);
-            let b0, b1, b2, a0, a1, a2;
-            if (type === 'lowpass') { b0 = (1 - cosw) / 2; b1 = 1 - cosw; b2 = (1 - cosw) / 2; a0 = 1 + alpha; a1 = -2 * cosw; a2 = 1 - alpha; }
-            else if (type === 'highpass') { b0 = (1 + cosw) / 2; b1 = -(1 + cosw); b2 = (1 + cosw) / 2; a0 = 1 + alpha; a1 = -2 * cosw; a2 = 1 - alpha; }
-            else if (type === 'bandpass') { b0 = alpha; b1 = 0; b2 = -alpha; a0 = 1 + alpha; a1 = -2 * cosw; a2 = 1 - alpha; }
-            else { b0 = 1 + alpha * A; b1 = -2 * cosw; b2 = 1 - alpha * A; a0 = 1 + alpha / A; a1 = -2 * cosw; a2 = 1 - alpha / A; }
-            return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
-        }
-        function rhBiquad(x, c) {
-            let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-            for (let i = 0; i < x.length; i++) {
-                const xi = x[i];
-                const y = c.b0 * xi + c.b1 * x1 + c.b2 * x2 - c.a1 * y1 - c.a2 * y2;
-                x2 = x1; x1 = xi; y2 = y1; y1 = y; x[i] = y;
-            }
-            return x;
-        }
-        function rhPeakNorm(x, peak) {
-            let m = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > m) m = a; }
-            if (m > 0) { const g = peak / m; for (let i = 0; i < x.length; i++) x[i] *= g; }
-            return x;
-        }
-
-        // ---------- drum / percussion voices (one-shots) ----------
-        function rhVoice(name, sr, seed) {
-            const rnd = rhRng(seed || 1);
-            const mk = function (sec) { return new Float32Array(Math.max(32, Math.floor(sec * sr))); };
-            const noise = function (n) { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = rnd() * 2 - 1; return a; };
-            let x, n, t;
-            switch (name) {
-                case 'kick': {
-                    x = mk(0.5); n = x.length; let ph = 0;
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr; ph += 2 * Math.PI * (46 + 125 * Math.exp(-t / 0.03)) / sr;
-                        x[i] = Math.sin(ph) * Math.exp(-t / 0.17);
-                    }
-                    for (let i = 0; i < Math.floor(0.004 * sr) && i < n; i++) x[i] += (rnd() * 2 - 1) * 0.35 * (1 - i / (0.004 * sr));
-                    for (let i = 0; i < n; i++) x[i] = Math.tanh(1.7 * x[i]);
-                    break;
-                }
-                case 'snare': {
-                    x = mk(0.35); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('highpass', 600, 0.7, 0, sr));
-                    rhBiquad(nz, rhBiquadCoef('lowpass', 8000, 0.7, 0, sr));
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr;
-                        const body = Math.sin(2 * Math.PI * (175 + 60 * Math.exp(-t / 0.015)) * t) * Math.exp(-t / 0.055) * 0.7 +
-                                     Math.sin(2 * Math.PI * 330 * t) * Math.exp(-t / 0.035) * 0.35;
-                        x[i] = nz[i] * Math.exp(-t / 0.075) * 0.9 + body;
-                    }
-                    break;
-                }
-                case 'clap': {
-                    x = mk(0.3); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('bandpass', 1300, 1.2, 0, sr));
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr;
-                        let e = Math.exp(-t / 0.11) * 0.7;
-                        for (let b = 0; b < 3; b++) { const d = t - b * 0.011; if (d >= 0 && d < 0.009) e += Math.exp(-d / 0.004); }
-                        x[i] = nz[i] * e;
-                    }
-                    break;
-                }
-                case 'hat': case 'ohat': {
-                    const open = name === 'ohat';
-                    x = mk(open ? 0.6 : 0.12); n = x.length;
-                    const fr = [205.3, 304.4, 369.6, 522.7, 540.0, 800.0];
-                    const nz = noise(n);
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr; let m = 0;
-                        for (let f = 0; f < 6; f++) m += Math.sin(2 * Math.PI * fr[f] * 2.6 * t) > 0 ? 1 : -1;
-                        x[i] = (m / 6 * 0.6 + nz[i] * 0.5) * Math.exp(-t / (open ? 0.15 : 0.02));
-                    }
-                    rhBiquad(x, rhBiquadCoef('highpass', 6500, 0.7, 0, sr));
-                    break;
-                }
-                case 'shaker': {
-                    x = mk(0.2); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('highpass', 5000, 0.7, 0, sr));
-                    for (let i = 0; i < n; i++) { t = i / sr; x[i] = nz[i] * Math.min(1, t / 0.012) * Math.exp(-t / 0.045); }
-                    break;
-                }
-                case 'rim': {
-                    x = mk(0.12); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('bandpass', 2500, 1.5, 0, sr));
-                    for (let i = 0; i < n; i++) { t = i / sr; x[i] = (Math.sin(2 * Math.PI * 520 * t) * 0.8 + nz[i] * 0.5) * Math.exp(-t / 0.018); }
-                    break;
-                }
-                case 'ge': {   // bayan (dha bass): deeper membrane + slow bend, less "synth beep"
-                    x = mk(0.7); n = x.length; let ph = 0, ph2 = 0;
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr;
-                        const f = 68 + 55 * Math.exp(-t / 0.045) + 12 * Math.exp(-t / 0.18);
-                        ph += 2 * Math.PI * f / sr;
-                        ph2 += 2 * Math.PI * (f * 1.98) / sr;
-                        const env = Math.exp(-t / 0.32) * (1 - 0.25 * Math.exp(-t / 0.01));
-                        x[i] = (Math.sin(ph) * 0.85 + Math.sin(ph2) * 0.18 + Math.sin(3 * ph) * 0.06) * env;
-                    }
-                    // soft palm noise attack
-                    for (let i = 0; i < Math.floor(0.006 * sr) && i < n; i++) {
-                        const a = 1 - i / (0.006 * sr);
-                        x[i] += (rnd() * 2 - 1) * 0.28 * a * a;
-                    }
-                    rhBiquad(x, rhBiquadCoef('lowpass', 420, 0.7, 0, sr));
-                    break;
-                }
-                case 'ka': {   // closed bayan / sharp edge
-                    x = mk(0.12); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('lowpass', 900, 0.9, 0, sr));
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr;
-                        x[i] = nz[i] * Math.exp(-t / 0.022) * 1.2
-                             + Math.sin(2 * Math.PI * 110 * t) * Math.exp(-t / 0.02) * 0.45;
-                    }
-                    break;
-                }
-                case 'na': case 'tin': case 'ti': {   // dayan: ring + skin noise (tabla-like, not pure sine)
-                    const soft = name === 'ti';
-                    const ring = name === 'tin';
-                    const f0 = soft ? 310 : (ring ? 365 : 295);
-                    x = mk(soft ? 0.18 : (ring ? 0.55 : 0.38)); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('bandpass', ring ? 2400 : 1600, 1.4, 0, sr));
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr;
-                        const env = Math.exp(-t / (soft ? 0.045 : (ring ? 0.2 : 0.11)));
-                        const body = Math.sin(2 * Math.PI * f0 * t) * 0.5
-                                   + Math.sin(2 * Math.PI * f0 * 2.05 * t) * 0.22
-                                   + Math.sin(2 * Math.PI * f0 * 3.15 * t) * 0.1
-                                   + Math.sin(2 * Math.PI * f0 * 4.2 * t) * 0.05;
-                        const click = nz[i] * Math.exp(-t / 0.018) * (soft ? 0.35 : 0.55);
-                        x[i] = (body * env + click);
-                    }
-                    rhBiquad(x, rhBiquadCoef('highpass', 120, 0.7, 0, sr));
-                    break;
-                }
-                case 'dagga': {   // dhol bass head
-                    x = mk(0.6); n = x.length; let ph = 0;
-                    for (let i = 0; i < n; i++) {
-                        t = i / sr; ph += 2 * Math.PI * (52 + 38 * Math.exp(-t / 0.05)) / sr;
-                        x[i] = Math.tanh(1.6 * Math.sin(ph) * Math.exp(-t / 0.3));
-                    }
-                    break;
-                }
-                case 'tilli': {   // dhol treble stick
-                    x = mk(0.2); n = x.length;
-                    const nz = noise(n);
-                    rhBiquad(nz, rhBiquadCoef('bandpass', 3200, 1.0, 0, sr));
-                    for (let i = 0; i < n; i++) { t = i / sr; x[i] = nz[i] * Math.exp(-t / 0.04) * 1.3 + Math.sin(2 * Math.PI * 420 * t) * Math.exp(-t / 0.05) * 0.6; }
-                    break;
-                }
-                default: x = mk(0.1);
-            }
-            return rhPeakNorm(x, 0.9);
-        }
-
-        const RH_VOICE_GAIN = { kick: 1.0, snare: 0.85, clap: 0.6, hat: 0.38, ohat: 0.4, shaker: 0.42, rim: 0.55, ge: 1.15, ka: 0.7, na: 0.85, tin: 0.8, ti: 0.45, dagga: 1.0, tilli: 0.6 };
-        const RH_VOICE_PAN = { hat: 0.3, ohat: -0.25, shaker: 0.35, rim: 0.15, na: 0.2, tin: 0.25, ti: 0.2, ge: -0.2, ka: -0.15, dagga: -0.1, tilli: 0.25, clap: 0.1 };
-
-        // Patterns: X = accent, x = normal, o = ghost, . = rest.  beats = cycle length in beats, spb = steps per beat.
-        // Indian taals use real bol structure (bayan = ge/ka, dayan = na/tin/ti) on an 8th-note matra grid.
-        const RH_STYLES = {
-            pop:        { beats: 4, spb: 4, swing: 0,    guitar: 'strum', tracks: [['kick', 'X.......X.x.....'], ['snare', '....X.......X...'], ['hat', 'x.o.x.o.x.o.x.o.']] },
-            rock:       { beats: 4, spb: 4, swing: 0,    guitar: 'rock',  tracks: [['kick', 'X.......X.x...x.'], ['snare', '....X.......X...'], ['hat', 'X.x.X.x.X.x.X.x.']] },
-            hiphop:     { beats: 4, spb: 4, swing: 0.16, guitar: 'pick',  tracks: [['kick', 'X..o..x...X.....'], ['snare', '....X.......X..o'], ['hat', 'x.x.x.x.x.x.x.xo']] },
-            dance:      { beats: 4, spb: 4, swing: 0,    guitar: 'strum', tracks: [['kick', 'X...X...X...X...'], ['clap', '....X.......X...'], ['ohat', '..X...X...X...X.'], ['hat', 'o.o.o.o.o.o.o.o.']] },
-            ballad:     { beats: 4, spb: 4, swing: 0,    guitar: 'pick',  tracks: [['kick', 'X.......x.......'], ['rim', '....x.......x...'], ['hat', 'x...x...x...x...']] },
-            percussion: { beats: 4, spb: 4, swing: 0,    guitar: 'pick',  tracks: [['kick', 'X.......x.......'], ['rim', '..x....x..x....x'], ['shaker', 'XoxoXoxoXoxoXoxo']] },
-            keherwa:    { beats: 4, spb: 2, swing: 0,    guitar: 'strum', tracks: [['ge', 'Xo....o.'], ['na', 'x.X.X.xx'], ['ti', '...x....'], ['ka', '.....x..']] },
-            // Dadra feel with kit drums (no tabla) — 3-beat / 6-step school patterns
-            dadra:        { beats: 3, spb: 2, swing: 0, guitar: 'arpeggio', guitarBar: 3, tracks: [
-                ['kick',  'X..X..'],
-                ['snare', '..X..X'],
-                ['hat',   'x.x.x.']
-            ] },
-            dadra_double: { beats: 3, spb: 4, swing: 0, guitar: 'arpeggio', guitarBar: 3, tracks: [
-                ['kick',  'X...x.X...x.'],
-                ['snare', '..X...x.X.x.'],
-                ['hat',   'x.x.x.x.x.x.'],
-                ['clap',  '......X.....']
-            ] },
-            bhajan:     { beats: 4, spb: 2, swing: 0,    guitar: 'pick',  tracks: [['ge', 'X.o.X.o.'], ['na', 'x.X.x.X.'], ['ka', '...x...x']] },
-            bhangra:    { beats: 4, spb: 2, swing: 0,    guitar: 'strum', tracks: [['dagga', 'X..xX.x.'], ['tilli', 'x.xxx.xx']] },
-            teental:    { beats: 8, spb: 2, swing: 0,    guitar: 'strum', tracks: [['ge', 'XxxXXxxXX....xxX'], ['na', 'x..xx..xx..xx..x'], ['tin', '.xx..xx..xx..xx.']] }
-        };
-        ['keherwa', 'bhajan', 'bhangra', 'teental'].forEach(function (k) { RH_STYLES[k].indian = true; });
-        function rhIsIndianStyle(k) { return ['keherwa', 'bhajan', 'bhangra', 'teental'].indexOf(k) >= 0; }
-
-
-        // ---------- YOUR taal: any matra count, tabla or drum-kit sound ----------
-        const RH_TAALS = {
-            6:  { name: 'Dadra',   vib: [3, 3],             bols: 'dha dhin na na tin na' },
-            7:  { name: 'Rupak',   vib: [3, 2, 2],          bols: 'tin tin na dhi na dhi na' },
-            8:  { name: 'Keherwa', vib: [4, 4],             bols: 'dha ge na ti na ka dhi na' },
-            10: { name: 'Jhaptal', vib: [2, 3, 2, 3],       bols: 'dhi na dhi dhi na ti na dhi dhi na' },
-            12: { name: 'Ektal',   vib: [2, 2, 2, 2, 2, 2], bols: 'dhin dhin dha ti tin na kat ta dha ti dhin na' },
-            16: { name: 'Teental', vib: [4, 4, 4, 4],       bols: 'dha dhin dhin dha dha dhin dhin dha dha tin tin ta ta dhin dhin dha' }
-        };
-        function rhTaalInfo(N) {
-            N = Math.max(2, Math.min(32, Math.round(N) || 8));
-            if (RH_TAALS[N]) { const t = RH_TAALS[N]; return { N: N, name: t.name, vib: t.vib.slice(), bols: t.bols.split(' ') }; }
-            const vib = []; let rem = N;
-            while (rem > 0) {
-                if (rem === 5) { vib.push(3, 2); rem = 0; }
-                else if (rem >= 4) { vib.push(4); rem -= 4; }
-                else { vib.push(rem); rem = 0; }
-            }
-            const bols = [];
-            vib.forEach(function (g, v) {
-                const khali = vib.length >= 3 && v === 2;
-                for (let j = 0; j < g; j++) bols.push(khali ? (j % 2 === 0 ? 'ta' : 'tin') : (j % 2 === 0 ? 'dha' : 'dhin'));
-            });
-            return { N: N, name: 'Custom ' + N, vib: vib, bols: bols };
-        }
-        const rhTaalStyleCache = {};
-        function rhTaalStyleCached(N, sound) {
-            const key = N + sound;
-            if (rhTaalStyleCache[key]) return rhTaalStyleCache[key];
-            const info = rhTaalInfo(N); N = info.N;
-            const starts = {}; let acc = 0;
-            info.vib.forEach(function (g) { starts[acc] = 1; acc += g; });
-            const T = function () { return new Array(N).fill('.'); };
-            let tracks;
-            if (sound === 'tabla') {
-                const ge = T(), na = T(), tin = T(), ti = T(), ka = T();
-                info.bols.forEach(function (b, i) {
-                    const m = i === 0 ? 'X' : 'x';
-                    if (b === 'dha') { ge[i] = m; na[i] = 'x'; }
-                    else if (b === 'dhin') { ge[i] = m; tin[i] = 'x'; }
-                    else if (b === 'dhi') { ge[i] = 'o'; ti[i] = 'x'; }
-                    else if (b === 'ge') { ge[i] = m; }
-                    else if (b === 'na' || b === 'ta') { na[i] = i === 0 ? 'X' : 'x'; }
-                    else if (b === 'tin') { tin[i] = 'x'; }
-                    else if (b === 'ti') { ti[i] = 'x'; }
-                    else if (b === 'ka' || b === 'kat') { ka[i] = 'x'; }
-                    else { na[i] = 'o'; }
+                if (peak < 0.05 || peak > 0.99) return buffer;
+                let g = (targetPeak || 0.95) / peak;
+                if (g > 0.98 && g < 1.05) return buffer;
+                let out = new AudioBuffer({
+                    length: buffer.length,
+                    numberOfChannels: buffer.numberOfChannels,
+                    sampleRate: buffer.sampleRate
                 });
-                tracks = [['ge', ge.join('')], ['na', na.join('')], ['tin', tin.join('')], ['ti', ti.join('')], ['ka', ka.join('')]];
-            } else {
-                const kick = T(), snare = T(), hat = T();
-                info.bols.forEach(function (b, i) {
-                    const hasGe = (b === 'dha' || b === 'dhin' || b === 'dhi' || b === 'ge');
-                    hat[i] = starts[i] ? 'x' : 'o';
-                    if (hasGe) kick[i] = i === 0 ? 'X' : (starts[i] ? 'x' : 'o');
-                    else if (starts[i] || b === 'tin' || b === 'ta') snare[i] = starts[i] ? 'x' : 'o';
-                });
-                kick[0] = 'X'; hat[0] = 'x';
-                tracks = [['kick', kick.join('')], ['snare', snare.join('')], ['hat', hat.join('')]];
-            }
-            const st = { taal: true, indian: true, N: N, name: info.name, vib: info.vib, beats: N, spb: 1, swing: 0, guitar: 'taal', tracks: tracks };
-            rhTaalStyleCache[key] = st;
-            return st;
-        }
-        function rhTaalGuitarKind(st, gsel) {
-            if (gsel && gsel !== 'auto') return gsel;
-            return (st.N === 8 || st.N === 16) ? 'strum' : 'arpeggio';
-        }
-        // one slot per matra; chord changes once per cycle
-        function rhTaalGuitarPattern(st, kind) {
-            const N = st.N, starts = {}; let acc = 0;
-            st.vib.forEach(function (g) { starts[acc] = 1; acc += g; });
-            const arp = [0, 2, 3, 4, 3, 2], steps = [];
-            for (let i = 0; i < N; i++) {
-                const sam = i === 0, vs = !!starts[i];
-                if (kind === 'strum') steps.push(sam ? ['D', 1.0] : vs ? ['D', 0.8] : (i % 2 === 0 ? ['D', 0.6] : ['U', 0.5]));
-                else if (kind === 'rock') steps.push((sam || vs) ? ['D', sam ? 1.0 : 0.9] : ['M', 0.7]);
-                else if (kind === 'waltz') steps.push(sam ? ['B', 0.95] : (vs ? ['T', 0.7] : null));
-                else if (kind === 'pick') steps.push(sam ? ['P0', 0.9] : (vs ? ['P1', 0.7] : ['P' + [3, 2, 4][i % 3], 0.55]));
-                else if (kind === 'arpeggio_slow') steps.push(sam ? ['P0', 1.0] : (vs ? ['P2', 0.8] : (i % 2 === 0 ? ['P' + arp[(i >> 1) % 6], 0.7] : null)));
-                else if (kind === 'arpeggio_up') steps.push(sam ? ['P0', 0.95] : ['P' + (1 + ((i - 1) % 4)), vs ? 0.8 : 0.65]);
-                else steps.push(sam ? ['P0', 0.95] : ['P' + arp[i % 6], vs ? 0.8 : 0.65]);
-            }
-            return { barBeats: 0, steps: steps };
-        }
-
-        function rhScheduleDrums(st, bpm, tDown, fromAbs, toAbs, rnd, matraSec) {
-            const beatLen = 60 / bpm;
-            const stepLen = (st.indian && matraSec) ? matraSec : beatLen / st.spb;
-            const cyc = st.tracks[0][1].length;
-            const ev = [];
-            let k = Math.floor((fromAbs - tDown) / stepLen) - 1;
-            for (; ; k++) {
-                const t = tDown + k * stepLen;
-                if (t > toAbs) break;
-                const s = ((k % cyc) + cyc) % cyc;
-                const sw = (st.swing && !st.indian && st.spb === 4 && (s & 1)) ? st.swing * stepLen : 0;
-                for (let i = 0; i < st.tracks.length; i++) {
-                    const c = st.tracks[i][1].charAt(s);
-                    if (c !== '.' && c !== '') ev.push({ t: t + sw + (rnd() - 0.5) * 0.006, v: st.tracks[i][0], vel: c === 'X' ? 1 : (c === 'x' ? 0.74 : 0.4) });
+                for (let c = 0; c < buffer.numberOfChannels; c++) {
+                    let s = buffer.getChannelData(c);
+                    let d = out.getChannelData(c);
+                    for (let i = 0; i < s.length; i++) d[i] = s[i] * g;
                 }
-            }
-            return ev;
-        }
-
-        // ---------- guitar: Karplus-Strong strings, real chord shapes, strum / pick / palm-mute patterns ----------
-        const RH_OPEN_MIDI = [40, 45, 50, 55, 59, 64];
-        const RH_OPEN_SHAPES = {
-            '0': [-1, 3, 2, 0, 1, 0], '2': [-1, -1, 0, 2, 3, 2], '2m': [-1, -1, 0, 2, 3, 1],
-            '4': [0, 2, 2, 1, 0, 0], '4m': [0, 2, 2, 0, 0, 0], '7': [3, 2, 0, 0, 0, 3],
-            '9': [-1, 0, 2, 2, 2, 0], '9m': [-1, 0, 2, 2, 1, 0]
-        };
-        function rhGuitarVoicing(root, minor) {
-            root = ((root % 12) + 12) % 12;
-            const key = root + (minor ? 'm' : '');
-            let frets = RH_OPEN_SHAPES[key];
-            if (!frets) {
-                const fE = (root - 4 + 12) % 12, fA = (root - 9 + 12) % 12;
-                const shape = fE <= fA ? (minor ? [0, 2, 2, 0, 0, 0] : [0, 2, 2, 1, 0, 0]) : (minor ? [-1, 0, 2, 2, 1, 0] : [-1, 0, 2, 2, 2, 0]);
-                const f = fE <= fA ? fE : fA;
-                frets = shape.map(function (v) { return v < 0 ? -1 : v + f; });
-            }
-            const out = [];
-            for (let s = 0; s < 6; s++) if (frets[s] >= 0) out.push({ str: s, midi: RH_OPEN_MIDI[s] + frets[s] });
-            return out;
-        }
-
-        // one plucked string. kind: 'ring' | 'mute'
-        function rhPluck(midi, tuneSemi, sr, seconds, kind, flavor, seed) {
-            const freq = 440 * Math.pow(2, (midi + tuneSemi - 69) / 12);
-            const n = Math.floor(seconds * sr);
-            const out = new Float32Array(n);
-            const rnd = rhRng(seed);
-            const steel = flavor !== 'nylon';
-            const a = kind === 'mute' ? 0.5 : (steel ? 0.56 : 0.5);   // loop low-pass amount (higher = brighter)
-            const D = sr / freq - (1 - a);
-            const M = Math.max(2, Math.floor(D - 0.1));
-            const frac = D - M, c = (1 - frac) / (1 + frac);
-            const t60 = kind === 'mute' ? 0.22 : Math.max(1.1, Math.min(3.0, 2.9 - 0.0028 * (freq - 80)));
-            const g = Math.pow(10, -3 / (t60 * freq));
-            // excitation: softened noise + pick-position comb
-            const e = new Float32Array(M);
-            let lp = 0; const soft = kind === 'mute' ? 0.55 : (steel ? 0.3 : 0.55);
-            for (let i = 0; i < M; i++) { lp = soft * lp + (1 - soft) * (rnd() * 2 - 1); e[i] = lp; }
-            let mean = 0; for (let i = 0; i < M; i++) mean += e[i]; mean /= M;
-            const pk = Math.max(1, Math.round(M * (steel ? 0.14 : 0.23)));
-            const buf = new Float32Array(M);
-            for (let i = 0; i < M; i++) buf[i] = (e[i] - mean) - (e[(i - pk + M) % M] - mean);
-            let idx = 0, prevOut = 0, apX = 0, apY = 0;
-            for (let i = 0; i < n; i++) {
-                const y = buf[idx];
-                out[i] = y;
-                const l = a * y + (1 - a) * prevOut; prevOut = y;
-                const ap = c * l + apX - c * apY; apX = l; apY = ap;
-                buf[idx] = g * ap;
-                if (++idx >= M) idx = 0;
-            }
-            // pick click
-            const nc = Math.floor(0.0025 * sr);
-            for (let i = 0; i < nc && i < n; i++) out[i] += (rnd() * 2 - 1) * 0.1 * (1 - i / nc);
-            rhPeakNorm(out, 0.5);
-            // guitar body: air resonance, top plate, presence, roll-off
-            rhBiquad(out, rhBiquadCoef('peaking', 105, 1.1, 3.5, sr));
-            rhBiquad(out, rhBiquadCoef('peaking', 2400, 0.9, 1.5, sr));
-            rhBiquad(out, rhBiquadCoef('lowpass', kind === 'mute' ? 3500 : 7000, 0.6, 0, sr));
-            return out;
-        }
-
-        function rhParseChords(text) {
-            const out = [];
-            String(text || '').split(/[\s,|\-–>→]+/).forEach(function (tok) {
-                const m = /^([A-Ga-g])([#b♯♭]?)(m(?!aj)|min)?/.exec(tok.trim());
-                if (!m) return;
-                const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1].toUpperCase()];
-                let root = base + (m[2] === '#' || m[2] === '♯' ? 1 : (m[2] === 'b' || m[2] === '♭' ? -1 : 0));
-                out.push({ root: ((root % 12) + 12) % 12, minor: !!m[3] });
-            });
-            return out;
-        }
-
-        function rhBuildChordSegs(an, tDown, barLen, manual, fromAbs, toAbs) {
-            const segs = [];
-            if (manual && manual.length) {
-                let b = Math.floor((fromAbs - tDown) / barLen);
-                for (; ; b++) {
-                    const t0 = tDown + b * barLen;
-                    if (t0 > toAbs) break;
-                    const ch = manual[((b % manual.length) + manual.length) % manual.length];
-                    const last = segs[segs.length - 1];
-                    if (last && last.root === ch.root && last.minor === ch.minor) last.t1 = t0 + barLen;
-                    else segs.push({ t0: t0, t1: t0 + barLen, root: ch.root, minor: ch.minor });
-                }
-                return segs;
-            }
-            if (an && an.chords && an.chords.length) return an.chords;
-            // fallback: I-V-vi-IV (major) or i-VI-III-VII (minor) in the detected key
-            const k = an && an.key ? an.key : { root: 0, minor: false };
-            const prog = k.minor ? [[0, 1], [8, 0], [3, 0], [10, 0]] : [[0, 0], [7, 0], [9, 1], [5, 0]];
-            let b = Math.floor((fromAbs - tDown) / barLen);
-            for (; ; b++) {
-                const t0 = tDown + b * barLen;
-                if (t0 > toAbs) break;
-                const p = prog[((b % 4) + 4) % 4];
-                segs.push({ t0: t0, t1: t0 + barLen, root: (k.root + p[0]) % 12, minor: !!p[1] });
-            }
-            return segs;
-        }
-        function rhSegAt(segs, t) {
-            let lo = 0, hi = segs.length - 1;
-            if (!segs.length) return null;
-            if (t <= segs[0].t0) return segs[0];
-            if (t >= segs[hi].t1) return segs[hi];
-            while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (segs[mid].t0 <= t) lo = mid; else hi = mid - 1; }
-            return segs[lo];
-        }
-
-        const RH_GUITAR_PATTERNS = {
-            strum: { barBeats: 4, steps: [['D', 1.0], null, ['D', 0.8], ['U', 0.6], null, ['U', 0.65], ['D', 0.85], ['U', 0.6]] },
-            rock:  { barBeats: 4, steps: [['D', 1.0], ['M', 0.7], ['M', 0.8], ['M', 0.7], ['D', 0.95], ['M', 0.7], ['M', 0.8], ['M', 0.7]] },
-            pick:  { barBeats: 4, steps: [['P0', 0.9], ['P3', 0.55], ['P2', 0.65], ['P4', 0.6], ['P1', 0.7], ['P3', 0.55], ['P2', 0.65], ['P4', 0.6]] },
-            // Melodic arpeggio: one string at a time through the chord (P0=lowest … P4=highest)
-            arpeggio: { barBeats: 4, steps: [
-                ['P0', 0.95], ['P1', 0.75], ['P2', 0.8], ['P3', 0.7],
-                ['P4', 0.85], ['P3', 0.7], ['P2', 0.75], ['P1', 0.65]
-            ] },
-            arpeggio_up: { barBeats: 4, steps: [
-                ['P0', 0.95], ['P1', 0.75], ['P2', 0.8], ['P3', 0.7],
-                ['P4', 0.85], ['P2', 0.7], ['P3', 0.75], ['P4', 0.8]
-            ] },
-            // Half speed feel: fewer notes, longer sustain (still 8 slots with rests)
-            arpeggio_slow: { barBeats: 4, steps: [
-                ['P0', 1.0], null, ['P2', 0.8], null,
-                ['P4', 0.9], null, ['P3', 0.75], null
-            ] },
-            waltz: { barBeats: 3, steps: [['B', 0.95], null, ['T', 0.65], null, ['T', 0.6], null] }
-        };
-
-
-        // ---------- taal (matra count) detection ----------
-        // Finds (a) how many matras sit inside one detected beat (1, 2 or 3 -> the real "pulse"),
-        // (b) whether accents repeat every 6 (Dadra), 8 (Keherwa) or 16 (Teental) matras.
-        function rhEnvAt(an, t) {
-            const n = an.env.length, i = Math.round((t - an.biasSec) / an.hopSec);
-            if (i < 1 || i >= n - 1) return -1;
-            const c = an.env;
-            return Math.max(c[i - 1], c[i], c[i + 1]);
-        }
-        function rhFoldSam(an, t0, matraSec, C) {
-            const acc = new Float64Array(C), cnt = new Float64Array(C);
-            const n = an.env.length, lowE = an.low;
-            const tEnd = n * an.hopSec - 2 * matraSec;
-            for (let j = 0; ; j++) {
-                const t = t0 + j * matraSec;
-                if (t > tEnd) break;
-                const i = Math.round((t - an.biasSec) / an.hopSec);
-                if (i < 1 || i >= n - 1) continue;
-                const v = Math.max(lowE[i - 1], lowE[i], lowE[i + 1]) + 0.4 * Math.max(an.env[i - 1], an.env[i], an.env[i + 1]);
-                acc[j % C] += v; cnt[j % C]++;
-            }
-            let best = 0, bv = -1;
-            for (let c = 0; c < C; c++) { const v = cnt[c] ? acc[c] / cnt[c] : 0; if (v > bv) { bv = v; best = c; } }
-            const cyc = C * matraSec;
-            const tSam = (t0 + best * matraSec) % cyc;
-            return tSam < 0 ? tSam + cyc : tSam;
-        }
-        const REL_MIN = 0.45;
-        function rhDetectTaal(an) {
-            if (!an || !an.env || an.env.length < 300) return null;
-            const P = 60 / an.bpm, tMax = an.env.length * an.hopSec - 2 * P;
-            // within-beat profile at 1/6-beat resolution
-            const prof = [0, 0, 0, 0, 0, 0], pc = [0, 0, 0, 0, 0, 0];
-            for (let k = 0; ; k++) {
-                const tb = an.t0 + k * P;
-                if (tb > tMax) break;
-                for (let i = 0; i < 6; i++) { const v = rhEnvAt(an, tb + i * P / 6); if (v >= 0) { prof[i] += v; pc[i]++; } }
-            }
-            for (let i = 0; i < 6; i++) prof[i] = pc[i] ? prof[i] / pc[i] : 0;
-            const off = Math.max(1e-6, (prof[1] + prof[5]) / 2);
-            const dup = prof[3] / off, trip = (prof[2] + prof[4]) / 2 / off;
-            // candidate pulse levels in order of evidence; a matra tempo outside ~60-270/min is not plausible
-            const p0 = Math.max(1e-6, prof[0]);
-            const rel2 = prof[3] / p0, rel3 = (prof[2] + prof[4]) / 2 / p0;     // sub-beat strength relative to the beat itself
-            const cand = [];
-            if (dup >= 1.25 && rel2 >= REL_MIN) cand.push(2);
-            if (trip >= 1.25 && rel3 >= REL_MIN) cand.push(3);
-            if (cand.length === 2 && trip > dup * 1.15) cand.reverse();
-            cand.push(1);
-            let m = 1;
-            for (let ci = 0; ci < cand.length; ci++) { const mt = an.bpm * cand[ci]; if (mt <= 270 && mt >= 60) { m = cand[ci]; break; } }
-            const matraSec = P / m;
-            // matra-level accent series and its autocorrelation at taal lengths
-            const a = [];
-            for (let j = 0; ; j++) { const t = an.t0 + j * matraSec; if (t > tMax) break; const v = rhEnvAt(an, t); a.push(v < 0 ? 0 : v); }
-            if (a.length < 40) return null;
-            let mu = 0; for (let i = 0; i < a.length; i++) mu += a[i]; mu /= a.length;
-            let den = 0; for (let i = 0; i < a.length; i++) den += (a[i] - mu) * (a[i] - mu);
-            den = den || 1e-9;
-            const r = function (c) {
-                if (c >= a.length - 8) return 0;
-                let s = 0; for (let i = 0; i + c < a.length; i++) s += (a[i] - mu) * (a[i + c] - mu);
-                return s / den * (a.length / (a.length - c));
-            };
-            const r3 = r(3), r4 = r(4), r6 = r(6), r8 = r(8), r12 = r(12), r16 = r(16);
-            // Score 6-matra (Dadra) vs 8 (Keherwa) vs 16 (Teental)
-            // Boost Dadra when half-cycle (3) and 6-cycle energy is strong
-            const S6 = r6 + 0.55 * r12 + 0.55 * r3 + 0.15 * r(9);
-            const S8 = r8 + 0.45 * r16 + 0.45 * r4 + 0.1 * r(12);
-            const S16 = r16 + 0.35 * r8 + 0.25 * r4;
-            // Matra tempo (matras per minute) helps: Dadra songs often feel ~3-beat bars
-            const matraPerMin = 60 / matraSec;
-            let cycle = 8, score = S8;
-            // Prefer Dadra if 6-cycle wins or is close AND 3-beat structure is clear
-            if (S6 >= S8 - 0.02 && (r3 > r4 * 0.85 || S6 > S8)) {
-                cycle = 6; score = S6;
-            }
-            if (S6 > S8 + 0.02) { cycle = 6; score = S6; }
-            // Strong 16-cycle → Teental-ish
-            if (S16 > score + 0.08 && r16 > 0.2) { cycle = 16; score = S16; }
-            // If still 8 but r6 is competitive and tempo suggests waltz-like 3 groups, lean Dadra
-            if (cycle === 8 && S6 > S8 * 0.92 && r3 >= r4 * 0.95) {
-                cycle = 6; score = S6;
-            }
-            const taal = cycle === 6 ? 'dadra' : cycle === 16 ? 'teental' : 'keherwa';
-            // Confidence: how clearly the winner beats the runner-up
-            const runners = [S6, S8, S16].sort(function (a, b) { return b - a; });
-            const conf = Math.max(0, Math.min(1, (runners[0] - runners[1]) * 2 + runners[0] * 0.5));
-            const tSam0 = rhFoldSam(an, an.t0, matraSec, cycle);
-            return { m: m, matraSec: matraSec, cycle: cycle, taal: taal, conf: conf, S6: S6, S8: S8, r16: r16, dup: dup, trip: trip, tSam0: tSam0, bpmAt: an.bpm, rel2: rel2, rel3: rel3 };
-        }
-
-        // ---------- the mixer: song + drums + guitar -> L/R (in place) ----------
-        function rhAdd(L, R, pos, src, gl, gr, maxLen, fade) {
-            const n = L.length;
-            const cnt = Math.min(src.length, maxLen > 0 ? maxLen : src.length);
-            const i0 = pos < 0 ? -pos : 0;
-            const end = Math.min(cnt, n - pos);
-            const f = Math.min(fade || 0, cnt);
-            const fs0 = cnt - f;
-            for (let i = i0; i < end; i++) {
-                let v = src[i];
-                if (f && i >= fs0) v *= (cnt - i) / f;
-                L[pos + i] += v * gl; R[pos + i] += v * gr;
-            }
-        }
-
-        async function rhRenderMix(p) {
-            const sr = p.sr, L = p.L, R = p.R, n = L.length;
-            const startSec = p.startSec || 0, endAbs = startSec + n / sr;
-            const yld = p.noYield ? function () { return Promise.resolve(); } : rhYield;
-            const say = p.progress || function () {};
-            if (p.songL) {
-                const s0 = Math.floor(startSec * sr), g = p.songVol;
-                for (let i = 0; i < n; i++) { const j = s0 + i; if (j >= p.songL.length) break; L[i] = p.songL[j] * g; R[i] = p.songR[j] * g; }
-            }
-            const bpm = p.bpm, beatLen = 60 / bpm, tDown = p.tDown;
-            const st = p.styleObj || RH_STYLES[p.styleKey] || RH_STYLES.pop;
-
-            if (p.drums) {
-                say('Placing drums...');
-                const rnd = rhRng(777);
-                const ev = rhScheduleDrums(st, bpm, tDown, startSec - 0.6, endAbs + 0.05, rnd, p.matraSec || 0);
-                const cache = {};
-                for (let e = 0; e < ev.length; e++) {
-                    const vn = ev[e].v, key = vn + (e & 1);
-                    const buf = cache[key] || (cache[key] = rhVoice(vn, sr, 11 + (e & 1) * 7 + vn.length));
-                    const pos = Math.round((ev[e].t - startSec) * sr);
-                    if (pos >= n || pos + buf.length < 0) continue;
-                    const g = p.drumVol * (RH_VOICE_GAIN[vn] || 0.7) * ev[e].vel * (0.93 + 0.14 * rnd());
-                    const pan = RH_VOICE_PAN[vn] || 0;
-                    rhAdd(L, R, pos, buf, g * (1 - Math.max(0, pan)), g * (1 + Math.min(0, pan)), 0, 0);
-                    if ((e & 255) === 255) await yld();
-                }
-            }
-
-            if (p.guitar) {
-                say('Playing guitar...');
-                let gkey = (p.guitarStyle && p.guitarStyle !== 'auto' && RH_GUITAR_PATTERNS[p.guitarStyle]) ? p.guitarStyle : st.guitar;
-                let pat;
-                if (st.taal) { gkey = rhTaalGuitarKind(st, p.guitarStyle); pat = rhTaalGuitarPattern(st, gkey); }
-                else pat = RH_GUITAR_PATTERNS[gkey] || RH_GUITAR_PATTERNS.strum;
-                                const stepLen = (st.indian && p.matraSec) ? p.matraSec : beatLen / 2, barSteps = pat.steps.length;
-                const segs = p.segs || [];
-                const rnd = rhRng(4242);
-                const ringLen = Math.max(1.0, Math.min(2.8, stepLen * ((gkey && gkey.indexOf('arpeggio') === 0) ? 8.5 : 6.4)));
-                const flavor = (gkey === 'pick' || gkey === 'arpeggio' || gkey === 'arpeggio_up' || gkey === 'arpeggio_slow') ? 'nylon' : 'steel';
-                const tune = p.tune || 0;
-                const cache = {};
-                function note(midi, kind, variant) {
-                    const key = midi + kind + variant;
-                    return cache[key] || (cache[key] = rhPluck(midi, tune, sr, kind === 'mute' ? 0.3 : ringLen, kind, flavor, midi * 31 + variant * 977 + (kind === 'mute' ? 5 : 0)));
-                }
-                const strumDelay = stepLen < 0.22 ? 0.007 : 0.011;
-                let count = 0;
-                function play(t, midi, vel, kind, strIdx, nextChange) {
-                    const pos = Math.round((t - startSec) * sr);
-                    if (pos >= n) return;
-                    const buf = note(midi, kind, count & 1);
-                    if (pos + buf.length < 0) return;
-                    let maxLen = buf.length;
-                    if (kind === 'ring' && isFinite(nextChange)) maxLen = Math.min(maxLen, Math.max(Math.floor(0.25 * sr), Math.floor((nextChange - t + 0.03) * sr)));
-                    const pan = (strIdx - 2.5) / 2.5 * 0.35;
-                    const g = p.guitarVol * 0.95 * vel * (0.92 + 0.16 * rnd());
-                    rhAdd(L, R, pos, buf, g * (1 - Math.max(0, pan)), g * (1 + Math.min(0, pan)), maxLen, 1100);
-                    count++;
-                }
-                let k = Math.floor((startSec - 0.8 - tDown) / stepLen) - 1;
-                for (; ; k++) {
-                    const t = tDown + k * stepLen;
-                    if (t > endAbs) break;
-                    const sIn = ((k % barSteps) + barSteps) % barSteps;
-                    const step = pat.steps[sIn];
-                    if (!step) continue;
-                    const seg = rhSegAt(segs, t + 0.02);
-                    if (!seg) continue;
-                    const nextChange = seg.t1 > t + 0.02 ? seg.t1 : Infinity;
-                    const v = rhGuitarVoicing(seg.root, seg.minor);
-                    const code = step[0], vel = step[1];
-                    const tj = t + (rnd() - 0.5) * 0.008;
-                    if (code === 'D') {
-                        for (let i = 0; i < v.length; i++) play(tj + i * strumDelay, v[i].midi, vel * (1 - 0.035 * i), 'ring', v[i].str, nextChange);
-                    } else if (code === 'U') {
-                        const top = v.slice(Math.max(0, v.length - 4)).reverse();
-                        for (let i = 0; i < top.length; i++) play(tj + i * strumDelay * 0.85, top[i].midi, vel * 0.85, 'ring', top[i].str, nextChange);
-                    } else if (code === 'M') {
-                        const low = v.slice(0, Math.min(3, v.length));
-                        for (let i = 0; i < low.length; i++) play(tj + i * 0.004, low[i].midi, vel * 0.8, 'mute', low[i].str, nextChange);
-                    } else if (code === 'B') {
-                        play(tj, v[0].midi, vel, 'ring', v[0].str, nextChange);
-                        if (v.length > 2) play(tj + 0.004, v[2].midi, vel * 0.5, 'ring', v[2].str, nextChange);
-                    } else if (code === 'T') {
-                        const top = v.slice(Math.max(0, v.length - 4));
-                        for (let i = 0; i < top.length; i++) play(tj + i * strumDelay, top[i].midi, vel * (1 - 0.04 * i), 'ring', top[i].str, nextChange);
-                    } else if (code.charAt(0) === 'P') {
-                        const idx = Math.min(v.length - 1, parseInt(code.charAt(1), 10) || 0);
-                        play(tj, v[idx].midi, vel, 'ring', v[idx].str, nextChange);
-                    }
-                    if ((count & 127) === 127) await yld();
-                }
-            }
-
-            // click check: strong high click = the "1" (sam), medium = start of each vibhag, soft = other matras
-            if (p.click) {
-                const stepSec = (st.indian && p.matraSec) ? p.matraSec : 60 / bpm;
-                const cyc = st.taal ? st.N : 4;
-                const cstarts = {};
-                if (st.taal) { let a = 0; st.vib.forEach(function (g) { cstarts[a] = 1; a += g; }); }
-                let kc = Math.floor((startSec - 0.2 - tDown) / stepSec) - 1;
-                for (; ; kc++) {
-                    const t = tDown + kc * stepSec;
-                    if (t > endAbs) break;
-                    const s = ((kc % cyc) + cyc) % cyc;
-                    const f = s === 0 ? 1600 : (cstarts[s] ? 1100 : 760);
-                    const g = s === 0 ? 0.55 : (cstarts[s] ? 0.4 : 0.26);
-                    const pos = Math.round((t - startSec) * sr);
-                    if (pos >= n) break;
-                    const len = Math.floor(0.03 * sr);
-                    for (let i = Math.max(0, -pos); i < len && pos + i < n; i++) {
-                        const v = Math.sin(2 * Math.PI * f * i / sr) * Math.exp(-i / (0.007 * sr)) * g;
-                        L[pos + i] += v; R[pos + i] += v;
-                    }
-                }
-            }
-
-            // soft limiter so drums + guitar on top of a loud song do not hard-clip
-            let peak = 0;
-            for (let i = 0; i < n; i++) { const a = Math.abs(L[i]), b = Math.abs(R[i]); if (a > peak) peak = a; if (b > peak) peak = b; }
-            if (peak > 1.8) { const g = 1.8 / peak; for (let i = 0; i < n; i++) { L[i] *= g; R[i] *= g; } peak = 1.8; }
-            if (peak > 0.8) {
-                const th = 0.8, kn = 0.18;   // soft knee, ceiling ≈ 0.98 so MP3 encoding keeps headroom
-                for (let i = 0; i < n; i++) {
-                    let a = L[i]; if (a > th) L[i] = th + kn * Math.tanh((a - th) / kn); else if (a < -th) L[i] = -th - kn * Math.tanh((-a - th) / kn);
-                    a = R[i]; if (a > th) R[i] = th + kn * Math.tanh((a - th) / kn); else if (a < -th) R[i] = -th - kn * Math.tanh((-a - th) / kn);
-                }
-            }
-            if (p.fadeEdges) {
-                const f = Math.min(Math.floor(0.01 * sr), n >> 1);
-                for (let i = 0; i < f; i++) { const g = i / f; L[i] *= g; R[i] *= g; L[n - 1 - i] *= g; R[n - 1 - i] *= g; }
-            }
-            return { L: L, R: R };
-        }
-
-        // ---------- UI glue ----------
-        function rhNewAudioBuffer(ch, len, sr) {
-            try { return new AudioBuffer({ numberOfChannels: ch, length: len, sampleRate: sr }); } catch (e) {}
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
-            const b = ac.createBuffer(ch, len, sr);
-            try { ac.close(); } catch (e) {}
-            return b;
-        }
-        function rhEl(id) { return document.getElementById(id); }
-        function rhSay(msg, keep) {
-            const el = rhEl('rhythmLoading');
-            if (!el) return;
-            el.style.display = 'block'; el.innerText = msg;
-            if (!keep) setTimeout(function () { if (el.innerText === msg) el.style.display = 'none'; }, 3500);
-        }
-
-        async function rhythmLoadSong(file) {
-            const token = ++rhythmLoadToken;
-            rhythmSourceBuffer = null; rhythmAnalysis = null; rhythmGridCache = null; rhythmUserLock = null; rhythmTapTimes = [];
-            const lab = rhEl('rhythmFileLabel');
-            if (lab) lab.textContent = file ? ('Selected: ' + file.name) : 'No song selected';
-            const info = rhEl('rhythmAnalysisInfo');
-            if (info) info.textContent = 'Analysis: —';
-            const ci = rhEl('rhythmChordInfo');
-            if (ci) ci.textContent = 'Chords: —';
-            if (!file) return null;
-            rhSay('Loading song...', true);
-            const buf = await readAudioData(file);
-            if (token !== rhythmLoadToken) return null;
-            rhythmSourceBuffer = buf;
-            rhSay('Analysing beat, key and chords...', true);
-            try {
-                const an = await rhAnalyzeBuffer(buf);
-                if (token !== rhythmLoadToken) return null;
-                rhythmAnalysis = an;
-                rhApplyAnalysisToUI(an);
-                rhSay('Analysis done: ' + an.bpm.toFixed(1) + ' BPM');
+                return out;
             } catch (e) {
-                console.warn('analysis failed', e);
-                rhSay('Analysis failed — set BPM manually (tap tempo works).');
+                return buffer;
             }
-            return buf;
         }
 
-        function rhChordSummary(an, maxN) {
-            const seq = [];
-            (an.chords || []).forEach(function (c) {
-                const nm = rhChordName(c.root, c.minor);
-                if (!seq.length || seq[seq.length - 1] !== nm) seq.push(nm);
+        (function bindVideoLabel() {
+            let inp = document.getElementById('videoFile');
+            if (!inp || inp._swBound) return;
+            inp._swBound = true;
+            inp.addEventListener('change', function () {
+                let lab = document.getElementById('videoFileLabel');
+                if (!lab) return;
+                lab.textContent = (inp.files && inp.files[0]) ? ('Selected: ' + inp.files[0].name) : 'No video selected';
             });
-            return seq.slice(0, maxN || 12).join(' → ') + (seq.length > (maxN || 12) ? ' …' : '');
-        }
+        })();
 
-        function rhApplyAnalysisToUI(an) {
-            const bpmEl = rhEl('rhythmBpm');
-            if (bpmEl) bpmEl.value = an.bpm.toFixed(1);
-            const off = rhEl('rhythmOffsetSec'); if (off) off.value = 0;
-            const bs = rhEl('rhythmBarShift'); if (bs) bs.value = 'auto';
-            const keyTxt = RH_NAMES[an.key.root] + (an.key.minor ? ' minor' : ' major');
-            const info = rhEl('rhythmAnalysisInfo');
-            if (info) info.textContent = 'Analysis: ' + an.bpm.toFixed(1) + ' BPM · first beat ' + an.t0.toFixed(2) + ' s · key ' + keyTxt +
-                (Math.abs(an.tune) > 0.05 ? ' · tuning ' + (an.tune > 0 ? '+' : '') + Math.round(an.tune * 100) + ' cents' : '') +
-                '. If the tempo feels half/double, press ½× or 2×.';
-            const ci = rhEl('rhythmChordInfo');
-            if (ci) ci.textContent = 'Chords: ' + (rhChordSummary(an, 12) || '—');
-            rhythmGridCache = null;
-            try { an.taal = rhDetectTaal(an); } catch (e) { console.warn('taal detect failed', e); an.taal = null; }
-            // Do not overwrite user tap lock BPM / grid
-            if (!rhythmUserLock) rhShowTaal();
-            else {
-                const el = rhEl('rhythmTaalInfo');
-                if (el) el.textContent = 'Using YOUR taps (auto taal ignored). Style = dropdown.';
-            }
-        }
-
-        // one line that says exactly what the app will do with YOUR taps / taal (so mistakes are visible)
-        function rhUpdatePlan() {
-            const el = rhEl('rhythmTaalInfo'); if (!el) return;
+        async function decodeVideoAudioFallback(file, loading) {
+            // Create object URL, play muted through Offline path via decode of arrayBuffer again with type hint
+            let ab = await file.arrayBuffer();
+            let ctx = new (window.AudioContext || window.webkitAudioContext)();
             try {
-                const grid = rhGetGrid(false), rs = rhResolveStyle(grid, !!rhythmSourceBuffer);
-                if (rs.st.taal) {
-                    const mpt = Math.max(0.25, parseFloat((rhEl('rhythmMatraPerTap') || {}).value) || 1);
-                    el.innerHTML = '<b>' + rs.st.name + '</b> · ' + rs.st.N + ' matras (' + rs.st.vib.join('+') + ') · matra every <b>' +
-                        rs.matraSec.toFixed(3) + ' s</b> (' + Math.round(60 / rs.matraSec) + ' matra/min) · one cycle = <b>' + (rs.st.N * rs.matraSec).toFixed(2) +
-                        ' s</b><br>Your tap = ' + mpt + ' matra' + (mpt === 1 ? '' : 's') + (grid.fromTap ? ' · 🔒 tap lock' : ' · no tap lock yet (using the speed field)') +
-                        '<br>Press <b>🔔 Click check</b>: the high click must fall on the “1” of your song.';
-                } else {
-                    el.textContent = 'Beat pattern: your tap / speed = 1 beat (' + Math.round(grid.bpm) + ' per min).';
-                }
-            } catch (e) { el.textContent = 'Taal: —'; }
-        }
-        function rhShowTaal() { rhUpdatePlan(); }
-
-        // which style + matra grid + cycle start to use for this render
-        function rhResolveStyle(grid, hasSong) {
-            let key = (rhEl('rhythmStyle') || {}).value || 'taal6';
-            if (key === 'auto') key = 'taal6';
-            let tDown = grid.tDown, matraSec = 0, st;
-            const tm = /^taal(\d+)$/.exec(key);
-            if (tm || key === 'taalN') {
-                const N = key === 'taalN' ? (parseInt((rhEl('rhythmCustomMatras') || {}).value, 10) || 12) : parseInt(tm[1], 10);
-                const sound = (rhEl('rhythmTaalSound') || {}).value || 'kit';
-                st = rhTaalStyleCached(N, sound);
-                // YOUR numbers decide everything: seconds per tap / matras per tap = seconds per matra
-                const mpt = Math.max(0.25, Math.min(64, parseFloat((rhEl('rhythmMatraPerTap') || {}).value) || 1));
-                matraSec = grid.beatLen / mpt;
-                const shift = parseFloat((rhEl('rhythmSamShift') || {}).value) || 0;
-                tDown = grid.tDown + shift * matraSec;
-            } else {
-                st = RH_STYLES[key] || RH_STYLES.pop;
-                if (st.indian) matraSec = grid.beatLen / (st.spb || 2);
-            }
-            return { key: key, st: st, matraSec: matraSec, tDown: tDown, fromTap: !!(grid && grid.fromTap) };
-        }
-
-        async function rhEnsureReady() {
-            if (rhythmLoadPromise) { try { await rhythmLoadPromise; } catch (e) {} }
-            if (!rhythmSourceBuffer) {
-                const input = rhEl('rhythmFile');
-                if (input && input.files && input.files[0]) {
-                    rhythmLoadPromise = rhythmLoadSong(input.files[0]);
-                    try { await rhythmLoadPromise; } finally { rhythmLoadPromise = null; }
-                }
-            }
-            return rhythmSourceBuffer;
-        }
-        // kept for compatibility with older call sites
-        async function loadRhythmFileFromInput() {
-            const input = rhEl('rhythmFile');
-            if (!input || !input.files || !input.files[0]) { alert('Choose a song first.'); return null; }
-            rhythmLoadPromise = rhythmLoadSong(input.files[0]);
-            try { await rhythmLoadPromise; } finally { rhythmLoadPromise = null; }
-            return rhythmSourceBuffer;
-        }
-        function rhythmOnFileChosen() {
-            const input = rhEl('rhythmFile');
-            const f = input && input.files && input.files[0];
-            rhythmLoadPromise = rhythmLoadSong(f || null).catch(function (e) { console.warn(e); rhSay('Could not read this file.'); }).then(function () { rhythmLoadPromise = null; });
-        }
-
-        function rhGetGrid(forSolo) {
-            let bpm = parseFloat((rhEl('rhythmBpm') || {}).value);
-            if (!isFinite(bpm) || bpm <= 0) bpm = 120;
-            bpm = Math.max(10, Math.min(480, bpm));
-            const beatLen = 60 / bpm;
-            const nudge = parseFloat((rhEl('rhythmOffsetSec') || {}).value) || 0;
-            const sel = (rhEl('rhythmBarShift') || {}).value || 'auto';
-
-            // Manual tap lock wins over auto analysis
-            if (rhythmUserLock && isFinite(rhythmUserLock.tDown)) {
-                // tap speed comes from the lock (or from the BPM field if you edited it afterwards) - never folded/clamped
-                const lBeat = rhythmUserLock.tapSec || (60 / rhythmUserLock.bpm);
-                const lbpm = 60 / lBeat;
-                return {
-                    bpm: lbpm,
-                    beatLen: lBeat,
-                    t0: rhythmUserLock.tDown,
-                    bar: 0,
-                    tDown: rhythmUserLock.tDown + nudge,
-                    fromTap: true
-                };
-            }
-
-            const an = rhythmAnalysis;
-            let t0 = 0, bar = 0;
-            if (an && !forSolo) {
-                if (Math.abs(bpm - an.bpm) < 0.05) { t0 = an.t0; bar = an.bar; }
-                else {
-                    if (!rhythmGridCache || Math.abs(rhythmGridCache.bpm - bpm) > 1e-6) {
-                        const ph = rhPhaseFromEnv(an.env, an.low, an.hopSec, an.biasSec, bpm);
-                        rhythmGridCache = { bpm: bpm, t0: ph.t0, bar: ph.bar };
-                    }
-                    t0 = rhythmGridCache.t0; bar = rhythmGridCache.bar;
-                }
-            }
-            if (sel !== 'auto') bar = parseInt(sel, 10) || 0;
-            return { bpm: bpm, beatLen: beatLen, t0: t0, bar: bar, tDown: t0 + nudge + bar * beatLen };
-        }
-
-        function rhythmStyleChanged() { rhShowTaal(); }
-        function rhythmBpmEdited() {
-            rhythmGridCache = null;
-            const el = rhEl('rhythmBpm');
-            if (el) delete el.dataset.detected;
-            // editing the speed AFTER a tap lock now really changes the lock (before, it was silently ignored)
-            if (rhythmUserLock && el) {
-                const b = parseFloat(el.value);
-                if (isFinite(b) && b > 0) rhythmUserLock.tapSec = 60 / Math.max(10, Math.min(480, b));
-            }
-            rhUpdatePlan();
-            if (rhythmAnalysis && !rhythmUserLock) rhSay('Beat grid re-aligned to ' + (parseFloat(el.value) || 0).toFixed(1) + ' BPM');
-        }
-        function rhythmScaleBpm(f) {
-            const el = rhEl('rhythmBpm');
-            let v = (parseFloat(el.value) || 120) * f;
-            v = Math.max(10, Math.min(480, v));
-            el.value = v.toFixed(1);
-            rhythmBpmEdited();
-        }
-        function rhythmUpdateTapInfo(msg) {
-            const el = rhEl('rhythmTapInfo');
-            if (el) el.innerHTML = msg;
-            // Do not speak every tap (TalkBack noise) — only update visual text
-        }
-
-        // Short metronome-style click so you hear if the tap lands on the beat
-        function rhythmPlayTapClick(strong) {
-            try {
-                let ctx = (rhythmTapAlong && rhythmTapAlong.ctx) ? rhythmTapAlong.ctx : null;
-                let own = false;
-                if (!ctx) {
-                    ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    own = true;
-                    if (ctx.state === 'suspended') ctx.resume();
-                }
-                const t = ctx.currentTime;
-                const o = ctx.createOscillator();
-                const g = ctx.createGain();
-                o.type = 'square';
-                o.frequency.value = strong ? 1200 : 880;
-                g.gain.setValueAtTime(0.0001, t);
-                g.gain.exponentialRampToValueAtTime(strong ? 0.35 : 0.22, t + 0.004);
-                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-                o.connect(g); g.connect(ctx.destination);
-                o.start(t); o.stop(t + 0.08);
-                if (own) setTimeout(function () { try { ctx.close(); } catch (e) {} }, 120);
-            } catch (e) { console.warn('tap click', e); }
-        }
-        function rhythmShowTapOverlay() {
-            const ov = rhEl('rhythmTapOverlay');
-            if (!ov) return;
-            ov.classList.add('active');
-            const c = rhEl('rhythmTapOverlayCount');
-            if (c) c.textContent = '0 / 8';
-            const h = rhEl('rhythmTapOverlayHint');
-            if (h) h.innerHTML = 'TalkBack <b>OFF</b>.<br><b>First TAP</b> starts the song + beat 1.<br>Keep tapping on the beat → <b>8 = lock</b>.';
-            ov.ontouchstart = function (e) {
-                if (e.target && e.target.id === 'rhythmTapOverlayExit') return;
-                e.preventDefault();
-                e.stopPropagation();
-                rhythmTapTempo();
-                rhythmRefreshOverlayCount();
-            };
-            ov.onmousedown = function (e) {
-                if (e.target && e.target.id === 'rhythmTapOverlayExit') return;
-                e.preventDefault();
-                rhythmTapTempo();
-                rhythmRefreshOverlayCount();
-            };
-        }
-        function rhythmRefreshOverlayCount() {
-            const n = (rhythmTapAlong && rhythmTapAlong.taps) ? rhythmTapAlong.taps.length : 0;
-            const c = rhEl('rhythmTapOverlayCount');
-            if (c) c.textContent = Math.min(n, 8) + ' / 8';
-            const h = rhEl('rhythmTapOverlayHint');
-            if (!h) return;
-            if (n <= 0) h.innerHTML = 'TalkBack <b>OFF</b>. First TAP starts the song + beat 1.';
-            else if (n < 8) h.textContent = n + ' / 8 — keep tapping on the strong beat…';
-            else h.textContent = 'Locked! Closing…';
-        }
-        function rhythmExitTapOverlay(silent) {
-            const ov = rhEl('rhythmTapOverlay');
-            if (!ov) return;
-            ov.classList.remove('active');
-            ov.ontouchstart = null;
-            ov.onmousedown = null;
-            if (!silent) {
-                if (!rhythmUserLock) {
-                    rhythmStopTapAlongPlayback();
-                    rhythmUpdateTapInfo('Cancelled. Press Ready again when you want to lock the beat.');
-                }
-            }
-        }
-
-        function rhythmApplyTapsFromSongTimes(taps) {
-            // High-precision tempo from taps (linear regression) — reduces drift vs median-only
-            if (!taps || taps.length < 2) return null;
-            const t = taps.slice().filter(function (x) { return isFinite(x) && x >= 0; });
-            if (t.length < 2) return null;
-
-            // Intervals between consecutive taps
-            const intervals = [];
-            for (let i = 1; i < t.length; i++) {
-                const d = t[i] - t[i - 1];
-                if (d > 0.12 && d < 5) intervals.push(d);
-            }
-            if (!intervals.length) return null;
-            intervals.sort(function (a, b) { return a - b; });
-            const med = intervals[Math.floor(intervals.length / 2)];
-
-            // Reject wild intervals (missed taps / double-taps) relative to median
-            const clean = intervals.filter(function (d) {
-                return d > med * 0.55 && d < med * 1.55;
-            });
-            const use = clean.length >= 2 ? clean : intervals;
-            use.sort(function (a, b) { return a - b; });
-            const med2 = use[Math.floor(use.length / 2)];
-
-            // Linear regression: time = a + b * beatIndex  →  period = b
-            // Assign beat indices assuming steady taps (each tap = +1 beat)
-            let period = med2;
-            if (t.length >= 3) {
-                const n = t.length;
-                let sumI = 0, sumT = 0, sumII = 0, sumIT = 0;
-                for (let i = 0; i < n; i++) {
-                    sumI += i; sumT += t[i]; sumII += i * i; sumIT += i * t[i];
-                }
-                const den = n * sumII - sumI * sumI;
-                if (Math.abs(den) > 1e-9) {
-                    const b = (n * sumIT - sumI * sumT) / den;
-                    if (b > 0.12 && b < 5) period = b;
-                }
-            }
-
-            // BPM = 60 / period. Only octave-correct if clearly outside song range.
-            let bpm = 60 / period;
-            // Prefer 70–160; only double/half when far outside (avoid breaking Dadra bar taps wrongly)
-            if (bpm < 40) bpm *= 2;
-            if (bpm < 40) bpm *= 2;
-            if (bpm > 240) bpm /= 2;
-            if (bpm > 240) bpm /= 2;
-            bpm = Math.max(40, Math.min(240, bpm));
-
-            // CRITICAL: keep downbeat on FIRST tap — do not phase-shift (that caused audible drift)
-            let tDown = t[0];
-
-            return { bpm: bpm, tDown: tDown, taps: t.length, medSec: period };
-        }
-
-        function rhythmStopTapAlongPlayback() {
-            if (!rhythmTapAlong) return;
-            try { if (rhythmTapAlong.src) rhythmTapAlong.src.stop(); } catch (e) {}
-            try { if (rhythmTapAlong.ctx) rhythmTapAlong.ctx.close(); } catch (e) {}
-            rhythmTapAlong = null;
-            const b2 = rhEl('rhythmTapAlongBtn');
-            if (b2) b2.textContent = '▶ Ready — then tap to start';
-        }
-
-        function rhythmLockFromTaps(res, autoStop) {
-            if (!res) return;
-            rhythmUserLock = { bpm: res.bpm, tDown: res.tDown };
-            const bpmEl = rhEl('rhythmBpm');
-            if (bpmEl) { bpmEl.value = res.bpm.toFixed(1); bpmEl.dataset.detected = 'tap'; }
-            rhythmGridCache = null;
-            const btn = rhEl('rhythmTapBtn');
-            if (btn) btn.textContent = '🔒 Locked ' + res.bpm.toFixed(0) + ' BPM';
-            rhythmUpdateTapInfo(
-                '🔒 <b>LOCKED</b>: <b>' + res.bpm.toFixed(1) + ' BPM</b> · ' +
-                res.taps + ' taps. Preview mix. ' +
-                'If drums slowly drift: try <b>½×</b> or <b>2×</b>. If always early/late: Beat shift. ' +
-                'Tip: tap every beat (not only bar 1) for less drift.'
-            );
-            rhythmPlayTapClick(true);
-            setTimeout(function () { rhythmPlayTapClick(true); }, 90);
-            if (autoStop) rhythmStopTapAlongPlayback();
-            rhythmExitTapOverlay(true);
-        }
-
-        /** First tap starts audio; later taps record song time. */
-        function rhythmEnsureSongStarted() {
-            if (!rhythmTapAlong || !rhythmTapAlong.ctx || !rhythmTapAlong.buffer) return false;
-            if (rhythmTapAlong.started) return true;
-            try {
-                const ctx = rhythmTapAlong.ctx;
-                const src = ctx.createBufferSource();
-                src.buffer = rhythmTapAlong.buffer;
-                src.connect(ctx.destination);
-                const latency = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
-                const t0 = ctx.currentTime;
-                src.start(t0);
-                rhythmTapAlong.src = src;
-                // t0audio: when sample 0 is heard (approx)
-                rhythmTapAlong.t0audio = t0 + latency;
-                rhythmTapAlong.latency = latency;
-                rhythmTapAlong.started = true;
-                src.onended = function () {
-                    try { ctx.close(); } catch (e) {}
-                    if (rhythmTapAlong && rhythmTapAlong.ctx === ctx) {
-                        if (rhythmTapAlong.taps && rhythmTapAlong.taps.length >= 3) {
-                            const res = rhythmApplyTapsFromSongTimes(rhythmTapAlong.taps);
-                            if (res) rhythmLockFromTaps(res, false);
-                        }
-                        rhythmTapAlong = null;
-                    }
-                    const btn = rhEl('rhythmTapAlongBtn');
-                    if (btn) btn.textContent = '▶ Ready — then tap to start';
-                    rhythmExitTapOverlay(true);
-                };
-                return true;
-            } catch (e) {
-                console.error(e);
-                alert('Could not start song: ' + (e.message || e));
-                return false;
-            }
-        }
-
-        function rhythmTapTempo() {
-            const btn = rhEl('rhythmTapBtn');
-            rhythmPlayTapClick(true);
-
-            // Prepared overlay session (may not have started audio yet)
-            if (rhythmTapAlong && rhythmTapAlong.ctx && rhythmTapAlong.buffer) {
-                try {
-                    if (!rhythmTapAlong.started) {
-                        if (!rhythmEnsureSongStarted()) return;
-                        // First tap = song time 0 (downbeat you chose by starting here)
-                        rhythmTapAlong.taps = [0];
-                        if (btn) btn.textContent = '👆 Tap 1/8';
-                        rhythmUpdateTapInfo('Song started on your first tap. Keep tapping on the beat… 1/8');
-                        rhythmRefreshOverlayCount();
-                        return;
-                    }
-                    // Song position when user taps (latency already folded into t0audio)
-                    let songT = rhythmTapAlong.ctx.currentTime - rhythmTapAlong.t0audio;
-                    if (songT < 0) songT = 0;
-                    rhythmTapAlong.taps.push(songT);
-                    const n = rhythmTapAlong.taps.length;
-                    if (btn) btn.textContent = '👆 Tap ' + n + '/8';
-
-                    if (n >= 8) {
-                        const res = rhythmApplyTapsFromSongTimes(rhythmTapAlong.taps) || {
-                            bpm: parseFloat((rhEl('rhythmBpm') || {}).value) || 120,
-                            tDown: rhythmTapAlong.taps[0],
-                            taps: n
-                        };
-                        rhythmLockFromTaps(res, true);
-                        return;
-                    }
-                    if (n >= 3) {
-                        const res = rhythmApplyTapsFromSongTimes(rhythmTapAlong.taps);
-                        if (res) {
-                            rhythmUserLock = { bpm: res.bpm, tDown: res.tDown };
-                            if (rhEl('rhythmBpm')) rhEl('rhythmBpm').value = res.bpm.toFixed(1);
-                            rhythmUpdateTapInfo('Taps: <b>' + n + '/8</b> · ~' + res.bpm.toFixed(0) + ' BPM — continue to 8 to lock.');
-                        } else {
-                            rhythmUpdateTapInfo('Taps: <b>' + n + '/8</b> — keep going…');
-                        }
-                    } else {
-                        rhythmUpdateTapInfo('Taps: <b>' + n + '/8</b> — keep tapping on the strong beat…');
-                    }
-                    rhythmRefreshOverlayCount();
-                } catch (e) {
-                    console.warn(e);
-                    alert('Tap failed: ' + (e.message || e));
-                }
-                return;
-            }
-
-            // Wall-clock only (no ready session)
-            const now = Date.now();
-            if (rhythmTapTimes.length && now - rhythmTapTimes[rhythmTapTimes.length - 1] > 3000) rhythmTapTimes = [];
-            rhythmTapTimes.push(now);
-            if (rhythmTapTimes.length > 8) rhythmTapTimes.shift();
-            if (rhythmTapTimes.length >= 3) {
-                const iv = (rhythmTapTimes[rhythmTapTimes.length - 1] - rhythmTapTimes[0]) / (rhythmTapTimes.length - 1);
-                const bpm = Math.max(40, Math.min(240, 60000 / iv));
-                rhEl('rhythmBpm').value = bpm.toFixed(1);
-                rhythmGridCache = null;
-                if (btn) btn.textContent = '👆 ' + bpm.toFixed(0) + ' BPM';
-                rhythmUpdateTapInfo('BPM ~' + bpm.toFixed(1) + '. For full lock: Ready → first tap starts song → 8 taps.');
-            } else if (btn) {
-                btn.textContent = '👆 Keep tapping…';
-            }
-        }
-
-        /** Ready only: load buffer, show full screen. Song starts on FIRST tap. */
-        async function rhythmStartTapAlong() {
-            try {
-                stopRhythmPreview();
-                rhythmStopTapAlongPlayback();
-                await rhEnsureReady();
-                if (!rhythmSourceBuffer) {
-                    alert('Load a song first (📁 Or pick any audio file).');
-                    return;
-                }
-                const ctx = new AudioContext();
                 if (ctx.state === 'suspended') await ctx.resume();
-                // Do NOT start playback yet — wait for first screen tap
-                rhythmTapAlong = {
-                    ctx: ctx,
-                    buffer: rhythmSourceBuffer,
-                    src: null,
-                    t0audio: null,
-                    taps: [],
-                    started: false
-                };
-                rhythmTapTimes = [];
-                rhythmUserLock = null;
-                const btn = rhEl('rhythmTapAlongBtn');
-                if (btn) btn.textContent = '⏳ Waiting for first tap…';
-                const tb = rhEl('rhythmTapBtn');
-                if (tb) tb.textContent = '👆 Tap 0/8';
-                rhythmUpdateTapInfo('Ready. Turn <b>TalkBack OFF</b>. First screen-tap starts the song and beat 1. Tap to 8 to lock.');
-                rhythmShowTapOverlay();
-            } catch (e) {
-                console.error(e);
-                alert('Could not prepare: ' + (e.message || e));
-            }
-        }
-
-        function rhythmClearTapLock() {
-            rhythmUserLock = null;
-            rhythmBeatTimes = null;
-            rhythmTapTimes = [];
-            rhythmStopTapAlongPlayback();
-            rhythmExitTapOverlay(true);
-            rhythmGridCache = null;
-            const btn = rhEl('rhythmTapBtn');
-            if (btn) btn.textContent = '👆 Tap beat';
-            const off = rhEl('rhythmOffsetSec');
-            if (off) off.value = '0';
-            rhythmUpdateTapInfo('Reset. Press <b>Play song &amp; tap beats</b>, then tap 8 times on the strong beat.');
-        }
-
-        function rhythmNudgeSec(delta) {
-            const el = rhEl('rhythmOffsetSec');
-            if (!el) return;
-            let v = (parseFloat(el.value) || 0) + delta;
-            v = Math.max(-2, Math.min(2, Math.round(v * 100) / 100));
-            el.value = v.toFixed(2);
-            rhythmUpdateTapInfo('Beat shift: <b>' + (v >= 0 ? '+' : '') + v.toFixed(2) + 's</b> — Preview mix again to hear.');
-        }
-
-        function rhManualChords() { return rhParseChords((rhEl('rhythmChordsManual') || {}).value || ''); }
-
-        // opts: { solo: 'drums'|'guitar'|null, previewSec: number (0 = full song) }
-        async function rhBuildFromUI(opts) {
-            opts = opts || {};
-            const solo = opts.solo || null;
-            const hasSong = !!rhythmSourceBuffer;
-            const grid = rhGetGrid(solo && !hasSong);
-            const rs = rhResolveStyle(grid, hasSong);
-            const styleKey = rs.key;
-            const drumVol = (parseInt(rhEl('rhythmDrumVol').value, 10) || 55) / 100;
-            const songVol = (parseInt(rhEl('rhythmSongVol').value, 10) || 100) / 100;
-            const gOnEl = rhEl('rhythmGuitarOn');
-            const guitarOn = opts.click ? false : (solo ? solo === 'guitar' : !!(gOnEl && gOnEl.checked));
-            const gv = parseInt((rhEl('rhythmGuitarVol') || {}).value, 10);
-            const guitarVol = (isFinite(gv) ? gv : 40) / 100;
-            const dOnEl = rhEl('rhythmDrumsOn');
-            const drumsOn = opts.click ? false : (solo ? solo === 'drums' : !(dOnEl && !dOnEl.checked));
-            const sr = hasSong ? rhythmSourceBuffer.sampleRate : 44100;
-            const an = rhythmAnalysis;
-            const songDur = hasSong ? rhythmSourceBuffer.duration : 12;
-            let startSec = 0, durSec;
-            if (solo) {
-                startSec = (an && hasSong) ? Math.max(0, Math.min(an.start, Math.max(0, songDur - 10))) : 0;
-                durSec = Math.min(10, Math.max(2, songDur - startSec));
-            } else if (opts.previewSec) {
-                if (rhythmUserLock && isFinite(rhythmUserLock.tDown)) {
-                    // Start preview near YOUR first locked beat so you can hear alignment
-                    startSec = Math.max(0, rhythmUserLock.tDown - 0.15);
-                    if (startSec > songDur - 2) startSec = Math.max(0, songDur - opts.previewSec);
-                } else {
-                    startSec = an ? Math.max(0, Math.min(an.start, Math.max(0, songDur - opts.previewSec))) : 0;
-                }
-                durSec = Math.min(opts.previewSec, songDur - startSec);
-            } else {
-                durSec = Math.min(songDur, RH_MAX_SECONDS);
-            }
-            if (!(durSec > 0.1)) throw new Error('Song length invalid. Try another file.');
-            if (!solo && !opts.click && !drumsOn && !(guitarOn && guitarVol > 0)) throw new Error('Drums and guitar are both off - turn one on.');
-            const n = Math.ceil(durSec * sr);
-            const out = rhNewAudioBuffer(2, n, sr);
-            let segs = null, barSecG = grid.beatLen * 4;
-            if (guitarOn && guitarVol > 0) {
-                const st = rs.st;
-                const gsel = (rhEl('rhythmGuitarStyle') || {}).value || 'auto';
-                const gk = (gsel !== 'auto' && RH_GUITAR_PATTERNS[gsel]) ? gsel : st.guitar;
-                const gSteps = st.taal ? st.N : (RH_GUITAR_PATTERNS[gk] || RH_GUITAR_PATTERNS.strum).steps.length;
-                const stepSec = (st.indian && rs.matraSec) ? rs.matraSec : grid.beatLen / 2;
-                barSecG = gSteps * stepSec;
-                segs = rhBuildChordSegs(an && hasSong ? an : (an || null), rs.tDown, barSecG, rhManualChords(), startSec - 1, startSec + durSec + 3);
-                if (!hasSong && !(rhManualChords().length)) {
-                    // demo progression for "test guitar" without a song
-                    const demo = [[9, 1], [5, 0], [0, 0], [7, 0]];
-                    segs = [];
-                    const bl = barSecG;
-                    for (let b = -1; b < Math.ceil(durSec / bl) + 2; b++) { const d = demo[((b % 4) + 4) % 4]; segs.push({ t0: b * bl, t1: (b + 1) * bl, root: d[0], minor: !!d[1] }); }
-                }
-                const ci = rhEl('rhythmChordInfo');
-                if (ci && !(an && an.chords && an.chords.length && !rhManualChords().length)) {
-                    const names = []; segs.forEach(function (s) { const nm = rhChordName(s.root, s.minor); if (!names.length || names[names.length - 1] !== nm) names.push(nm); });
-                    ci.textContent = 'Chords: ' + names.slice(0, 12).join(' → ') + (rhManualChords().length ? '  (manual)' : '  (demo)');
-                }
-            }
-            await rhRenderMix({
-                sr: sr, L: out.getChannelData(0), R: out.getChannelData(1), startSec: startSec,
-                songL: (!solo && hasSong) ? rhythmSourceBuffer.getChannelData(0) : null,
-                songR: (!solo && hasSong) ? (rhythmSourceBuffer.numberOfChannels > 1 ? rhythmSourceBuffer.getChannelData(1) : rhythmSourceBuffer.getChannelData(0)) : null,
-                songVol: songVol, bpm: grid.bpm, tDown: rs.tDown, styleKey: styleKey, styleObj: rs.st, matraSec: rs.matraSec, click: !!opts.click,
-                drums: drumsOn, drumVol: drumVol, guitar: guitarOn && guitarVol > 0, guitarVol: guitarVol,
-                guitarStyle: (rhEl('rhythmGuitarStyle') || {}).value || 'auto', segs: segs || [],
-                tune: (an && hasSong) ? an.tune : 0, fadeEdges: !!(solo || opts.previewSec),
-                progress: function (m) { rhSay(m, true); }
-            });
-            return { buffer: out, truncated: hasSong && !solo && !opts.previewSec && songDur > RH_MAX_SECONDS };
-        }
-
-        function stopRhythmPreview() {
-            try { rhythmPreviewNodes.forEach(function (nd) { try { nd.stop(); } catch (e) {} }); } catch (e) {}
-            rhythmPreviewNodes = [];
-            if (rhythmPreviewCtx) { try { rhythmPreviewCtx.close(); } catch (e) {} rhythmPreviewCtx = null; }
-        }
-        async function rhPlayBuffer(buf) {
-            stopRhythmPreview();
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            if (ctx.state === 'suspended') await ctx.resume();
-            const src = ctx.createBufferSource();
-            src.buffer = buf; src.connect(ctx.destination); src.start(0);
-            rhythmPreviewNodes = [src]; rhythmPreviewCtx = ctx;
-            src.onended = function () { try { ctx.close(); } catch (e) {} if (rhythmPreviewCtx === ctx) rhythmPreviewCtx = null; };
-        }
-
-        // --- Essentia.js (primary beat tracker) ---
-        let essentiaReady = null; // Promise<Essentia|null>
-        let essentiaInst = null;
-
-        function rhythmInitEssentia() {
-            if (essentiaReady) return essentiaReady;
-            essentiaReady = (async function () {
-                try {
-                    if (typeof EssentiaWASM !== 'function' || typeof Essentia === 'undefined') {
-                        console.warn('Essentia scripts missing');
-                        return null;
-                    }
-                    const wasmMod = await EssentiaWASM({
-                        locateFile: function (path) {
-                            // Same folder as index.html (Android assets / browser)
-                            try {
-                                if (typeof location !== 'undefined' && location.href) {
-                                    const base = location.href.replace(/[^/]*$/, '');
-                                    return base + path;
-                                }
-                            } catch (e) {}
-                            return path;
-                        }
-                    });
-                    essentiaInst = new Essentia(wasmMod);
-                    console.log('Essentia ready', essentiaInst && essentiaInst.version ? essentiaInst.version : '');
-                    return essentiaInst;
-                } catch (e) {
-                    console.warn('Essentia init failed', e);
-                    essentiaInst = null;
-                    return null;
-                }
-            })();
-            return essentiaReady;
-        }
-
-        /**
-         * Essentia RhythmExtractor2013 — BPM + beat times (seconds).
-         * Analyses up to ~90s mono for speed on phones.
-         */
-        async function rhythmRunEssentia(buffer) {
-            const es = await rhythmInitEssentia();
-            if (!es) return null;
-            const sr = buffer.sampleRate || 44100;
-            const maxN = Math.min(buffer.length, Math.floor(90 * sr));
-            const ch0 = buffer.getChannelData(0);
-            const ch1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : ch0;
-            const mono = new Float32Array(maxN);
-            for (let i = 0; i < maxN; i++) mono[i] = 0.5 * (ch0[i] + ch1[i]);
-
-            let vec = null;
-            try {
-                vec = es.arrayToVector(mono);
-                // multifeature = more accurate; degara = faster
-                const out = es.RhythmExtractor2013(vec, 208, 'multifeature', 40);
-                let bpm = out && out.bpm != null ? Number(out.bpm) : NaN;
-                let ticks = out && out.ticks != null ? out.ticks : null;
-                // ticks may be VectorFloat
-                if (ticks && typeof ticks === 'object' && !Array.isArray(ticks)) {
-                    try { ticks = es.vectorToArray(ticks); } catch (e1) {
-                        try { ticks = Array.from(ticks); } catch (e2) { ticks = null; }
-                    }
-                }
-                if (ticks && typeof ticks.length === 'number' && !Array.isArray(ticks)) {
-                    ticks = Array.prototype.slice.call(ticks);
-                }
-                if (!Array.isArray(ticks)) ticks = [];
-                ticks = ticks.map(Number).filter(function (t) {
-                    return isFinite(t) && t >= 0 && t < buffer.duration + 0.5;
+                let copy = ab.slice(0);
+                let audioBuf = await new Promise(function (resolve, reject) {
+                    ctx.decodeAudioData(copy, resolve, reject);
                 });
-                if (!isFinite(bpm) || bpm < 40 || bpm > 240) {
-                    // derive from intervals
-                    if (ticks.length >= 4) {
-                        const iv = [];
-                        for (let i = 1; i < ticks.length; i++) {
-                            const d = ticks[i] - ticks[i - 1];
-                            if (d > 0.2 && d < 2) iv.push(d);
+                return audioBuf;
+            } catch (e) {
+                // Last resort: video element + capture stream (browser only; may fail in WebView)
+                return await new Promise(function (resolve, reject) {
+                    let url = URL.createObjectURL(file);
+                    let video = document.createElement('video');
+                    video.preload = 'auto';
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.src = url;
+                    video.onloadedmetadata = async function () {
+                        try {
+                            if (loading) loading.innerText = 'Capturing audio (may take a moment)…';
+                            // WebView often cannot capture; fail clearly
+                            reject(new Error('This video codec needs a common MP4/AAC file.'));
+                        } catch (err) {
+                            reject(err);
+                        } finally {
+                            try { URL.revokeObjectURL(url); } catch (e2) {}
                         }
-                        if (iv.length) {
-                            iv.sort(function (a, b) { return a - b; });
-                            bpm = 60 / iv[Math.floor(iv.length / 2)];
-                        }
-                    }
-                }
-                if (!isFinite(bpm) || ticks.length < 4) return null;
-                const conf = out && out.confidence != null ? Number(out.confidence) : 0;
-                return { bpm: bpm, beats: ticks, confidence: conf, engine: 'essentia' };
-            } catch (e) {
-                console.warn('Essentia RhythmExtractor failed', e);
-                return null;
+                    };
+                    video.onerror = function () {
+                        try { URL.revokeObjectURL(url); } catch (e2) {}
+                        reject(new Error('Video failed to load'));
+                    };
+                });
             } finally {
-                try { if (vec && typeof vec.delete === 'function') vec.delete(); } catch (e) {}
+                try { await ctx.close(); } catch (e) {}
             }
         }
 
-                /**
-         * Beatroot (music-tempo) — best lightweight offline tracker with beat TIMES.
-         * Returns { bpm, beats: number[] seconds } or null.
-         */
-        function rhythmRunBeatroot(buffer) {
-            if (typeof MusicTempo === 'undefined') {
-                console.warn('MusicTempo not loaded');
-                return null;
-            }
-            const sr = buffer.sampleRate || 44100;
-            const n = buffer.length;
-            // Analyse first ~75s (enough for stable tempo; keeps phone responsive)
-            const maxN = Math.min(n, Math.floor(75 * sr));
-            const ch0 = buffer.getChannelData(0);
-            const ch1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : ch0;
-            const mono = new Float32Array(maxN);
-            for (let i = 0; i < maxN; i++) mono[i] = 0.5 * (ch0[i] + ch1[i]);
-            const hop = Math.max(256, Math.round(sr * 0.01)); // ~10 ms frames
-            const mt = new MusicTempo(mono, {
-                hopSize: hop,
-                timeStep: hop / sr,
-                samplingRate: sr,
-                bufferSize: 2048
-            });
-            let bpm = parseFloat(mt.tempo);
-            if (!isFinite(bpm) || bpm < 40 || bpm > 240) return null;
-            // beats are already in seconds (peakIndex * timeStep)
-            let beats = (mt.beats || []).filter(function (t) {
-                return isFinite(t) && t >= 0 && t < buffer.duration;
-            });
-            if (beats.length < 4) return null;
-            const iv = [];
-            for (let i = 1; i < beats.length; i++) {
-                const d = beats[i] - beats[i - 1];
-                if (d > 0.2 && d < 2.0) iv.push(d);
-            }
-            if (iv.length) {
-                iv.sort(function (a, b) { return a - b; });
-                const med = iv[Math.floor(iv.length / 2)];
-                const bpm2 = 60 / med;
-                if (bpm2 >= 50 && bpm2 <= 200) bpm = bpm2;
-            }
-            return { bpm: bpm, beats: beats };
-        }
-
-        async function detectRhythmBpm() {
-            try {
-                await rhEnsureReady();
-                if (!rhythmSourceBuffer) {
-                    alert('Select a song first (📁 Or pick any audio file).');
-                    return;
-                }
-                rhSay('Detecting beats (Essentia)…', true);
-                await new Promise(function (r) { setTimeout(r, 40); });
-
-                let result = null;
-                try {
-                    result = await rhythmRunEssentia(rhythmSourceBuffer);
-                } catch (e) {
-                    console.warn(e);
-                }
-
-                if (!result) {
-                    rhSay('Essentia unavailable — trying Beatroot…', true);
-                    try { result = rhythmRunBeatroot(rhythmSourceBuffer); } catch (e2) { console.warn(e2); }
-                    if (result) result.engine = 'beatroot';
-                }
-
-                if (result && result.beats && result.beats.length >= 4) {
-                    rhythmBeatTimes = result.beats;
-                    const tDown = result.beats[0];
-                    rhythmUserLock = { bpm: result.bpm, tDown: tDown };
-                    const bpmEl = rhEl('rhythmBpm');
-                    if (bpmEl) {
-                        bpmEl.value = Number(result.bpm).toFixed(1);
-                        bpmEl.dataset.detected = result.engine || 'auto';
-                    }
-                    rhythmGridCache = null;
-                    const btn = rhEl('rhythmTapBtn');
-                    if (btn) btn.textContent = '🔒 ' + (result.engine === 'essentia' ? 'Essentia ' : 'Beatroot ') + Number(result.bpm).toFixed(0) + ' BPM';
-                    const eng = result.engine === 'essentia' ? 'Essentia' : 'Beatroot';
-                    const conf = (result.confidence != null && isFinite(result.confidence))
-                        ? (' · conf ' + (result.confidence * 100).toFixed(0) + '%') : '';
-                    rhythmUpdateTapInfo(
-                        '🔒 <b>' + eng + ' lock</b>: <b>' + Number(result.bpm).toFixed(1) + ' BPM</b> · ' +
-                        result.beats.length + ' beats · first @ ' + tDown.toFixed(2) + 's' + conf +
-                        '. Preview mix. Fine-tune: ½× / 2× / Beat shift.'
-                    );
-                    rhSay(eng + ' BPM ≈ ' + Number(result.bpm).toFixed(1) + ' · ' + result.beats.length + ' beats');
-                    return;
-                }
-
-                // Last fallback: built-in analyser (BPM only)
-                if (!rhythmAnalysis) {
-                    rhSay('Running built-in analyser…', true);
-                    rhythmAnalysis = await rhAnalyzeBuffer(rhythmSourceBuffer);
-                }
-                if (rhythmAnalysis) {
-                    rhApplyAnalysisToUI(rhythmAnalysis);
-                    rhSay('BPM ≈ ' + rhythmAnalysis.bpm.toFixed(1) + ' (basic). Better: tap 8 beats.');
-                } else {
-                    alert('Could not detect beats.\nUse: Ready → tap 8 times on the beat.');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Detection failed: ' + (e.message || e));
-            }
-        }
-
-        async function previewAutoRhythm() {
-            if (!rhythmUserLock) {
-                const go = confirm('No beat lock yet.\n\nOK = Detect beats (Beatroot) first is better\nCancel = stop\n\nOr: Ready → tap 8 times.');
-                if (!go) return;
-            }
-            try {
-                stopRhythmPreview();
-                rhSay('Loading song...', true);
-                if (!(await rhEnsureReady())) { alert('Select a song first.\n\nUse: 📁 Or pick any audio file'); rhEl('rhythmLoading').style.display = 'none'; return; }
-                rhSay('Mixing preview (20 s)...', true);
-                const r = await rhBuildFromUI({ previewSec: 20 });
-                await rhPlayBuffer(r.buffer);
-                rhSay('Playing 20 s preview from where the music starts…');
-            } catch (e) {
-                console.error(e); alert('Preview mix failed: ' + (e && e.message ? e.message : e)); rhEl('rhythmLoading').style.display = 'none';
-            }
-        }
-
-        async function saveAutoRhythm() {
-            const btn = rhEl('rhythmSaveBtn');
-            try {
-                if (btn) btn.disabled = true;
-                stopRhythmPreview();
-                rhSay('Loading song...', true);
-                if (!(await rhEnsureReady())) { alert('Select a song first.\n\nUse: 📁 Or pick any audio file'); return; }
-                rhSay('Mixing full song (may take a bit)...', true);
-                const r = await rhBuildFromUI({ previewSec: 0 });
-                rhSay('Encoding...', true);
-                const name = ((rhEl('rhythmOutName') || {}).value || 'Song_With_Rhythm').trim();
-                await downloadAudioBuffer(r.buffer, name);
-                rhSay(r.truncated ? 'Saved (first 6:00 only — longer songs are cut for device safety)' : 'Saved to Music/Swaralay', true);
-            } catch (e) {
-                console.error(e); alert('Mix & Save failed: ' + (e && e.message ? e.message : e)); rhSay('');
-            } finally {
-                if (btn) btn.disabled = false;
-                setTimeout(function () { const el = rhEl('rhythmLoading'); if (el) el.style.display = 'none'; }, 4000);
-            }
-        }
-
-        async function previewClickCheck() {
-            try {
-                stopRhythmPreview();
-                rhSay('Loading song...', true);
-                if (!(await rhEnsureReady())) { alert('Select a song first.'); rhEl('rhythmLoading').style.display = 'none'; return; }
-                rhSay('Making click check...', true);
-                const r = await rhBuildFromUI({ previewSec: 25, click: true });
-                await rhPlayBuffer(r.buffer);
-                rhSay('Click check: HIGH click = the 1 (sam). Not on the 1? change "Cycle shift" or "Beat shift".');
-            } catch (e) { alert('Click check failed: ' + (e.message || e)); rhEl('rhythmLoading').style.display = 'none'; }
-        }
-
-        async function previewDrumsOnly() {
-            try {
-                stopRhythmPreview();
-                await rhEnsureReady();
-                rhSay('Rendering drums...', true);
-                const r = await rhBuildFromUI({ solo: 'drums' });
-                await rhPlayBuffer(r.buffer);
-                rhSay('Drums: ' + ((rhEl('rhythmStyle') || {}).value || '') + ' @ ' + rhGetGrid().bpm.toFixed(1) + ' BPM');
-            } catch (e) { alert('Drum test failed: ' + (e.message || e)); }
-        }
-
-        async function previewGuitarOnly() {
-            try {
-                stopRhythmPreview();
-                await rhEnsureReady();
-                rhSay('Rendering guitar...', true);
-                const r = await rhBuildFromUI({ solo: 'guitar' });
-                await rhPlayBuffer(r.buffer);
-                rhSay('Playing guitar…');
-            } catch (e) { alert('Guitar test failed: ' + (e.message || e)); }
-        }
 
         async function downloadAudioBuffer(buffer, filename) {
             if (!buffer) return alert('No audio to save');
@@ -4308,7 +2260,7 @@
             try {
                 if (exportFormat === 'mp3') {
                     try {
-                        let mp3blob = await audioBufferToMp3(buffer, 320);
+                        let mp3blob = audioBufferToMp3(buffer, getMp3Bitrate());
                         await downloadBlob(mp3blob, base + '.mp3');
                         return;
                     } catch (e) {
@@ -4398,84 +2350,106 @@
 
         // ========== IMPROVED REVERB IMPULSE GENERATOR ==========
         // Categories: room, hall, plate, cathedral
-        function getImpulseBuffer(ctx, amountPercent, type) {
-            let rate = ctx.sampleRate;
-            let duration, decayPower, earlyReflections, density;
+        // Real convolution IRs (CC-BY-SA samples, bundled as short stereo WAV)
+        const IR_FILE = {
+            room: 'ir-room.wav',
+            hall: 'ir-hall.wav',
+            plate: 'ir-plate.wav',
+            cathedral: 'ir-cathedral.wav'
+        };
+        let irDecodedCache = {}; // type -> AudioBuffer (decoded once)
 
-            switch(type) {
-                case 'room':
-                    duration = 0.4 + (amountPercent / 100) * 1.6; // 0.4 - 2.0s
-                    decayPower = 2.8;
-                    earlyReflections = 4;
-                    density = 0.6;
-                    break;
-                case 'hall':
-                    duration = 1.2 + (amountPercent / 100) * 2.8; // 1.2 - 4.0s
-                    decayPower = 2.2;
-                    earlyReflections = 8;
-                    density = 0.85;
-                    break;
-                case 'plate':
-                    duration = 0.8 + (amountPercent / 100) * 2.2; // 0.8 - 3.0s
-                    decayPower = 1.9;
-                    earlyReflections = 6;
-                    density = 0.95;
-                    break;
-                case 'cathedral':
-                    duration = 2.0 + (amountPercent / 100) * 4.5; // 2.0 - 6.5s
-                    decayPower = 1.6;
-                    earlyReflections = 12;
-                    density = 0.75;
-                    break;
-                default:
-                    duration = 1.5;
-                    decayPower = 2.2;
-                    earlyReflections = 6;
-                    density = 0.8;
+        async function loadRealIRBuffer(type) {
+            const key = IR_FILE[type] ? type : 'room';
+            if (irDecodedCache[key]) return irDecodedCache[key];
+            const file = IR_FILE[key] || IR_FILE.room;
+            try {
+                const url = file; // same folder as index.html (android_asset)
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const ab = await res.arrayBuffer();
+                const ac = new (window.AudioContext || window.webkitAudioContext)();
+                const buf = await ac.decodeAudioData(ab.slice(0));
+                try { await ac.close(); } catch (e) {}
+                irDecodedCache[key] = buf;
+                return buf;
+            } catch (e) {
+                console.warn('Real IR load failed', file, e);
+                return null;
             }
-
-            let length = Math.floor(rate * duration);
-            let impulse = ctx.createBuffer(2, length, rate);
-            let left = impulse.getChannelData(0);
-            let right = impulse.getChannelData(1);
-
-            // Early reflections (simple discrete echoes)
-            for (let r = 0; r < earlyReflections; r++) {
-                let delay = Math.floor((0.01 + r * 0.012 + Math.random() * 0.008) * rate);
-                if (delay >= length) continue;
-                let amp = (0.35 / (r + 1)) * (0.7 + Math.random() * 0.3);
-                left[delay] += (Math.random() * 2 - 1) * amp;
-                right[delay] += (Math.random() * 2 - 1) * amp * (0.8 + Math.random() * 0.4);
-            }
-
-            // Dense tail (noise with exponential decay)
-            for (let i = 0; i < length; i++) {
-                let t = i / length;
-                let decay = Math.pow(1 - t, decayPower);
-                // slight stereo difference + density control
-                let noiseL = (Math.random() * 2 - 1) * decay * density;
-                let noiseR = (Math.random() * 2 - 1) * decay * density;
-                left[i] += noiseL;
-                right[i] += noiseR;
-            }
-
-            // Soft normalize
-            let max = 0;
-            for (let i = 0; i < length; i++) {
-                max = Math.max(max, Math.abs(left[i]), Math.abs(right[i]));
-            }
-            if (max > 0.001) {
-                let norm = 0.85 / max;
-                for (let i = 0; i < length; i++) {
-                    left[i] *= norm;
-                    right[i] *= norm;
-                }
-            }
-            return impulse;
         }
 
-        // Soft Noise Gate (applied offline on buffer)
-        // High quality multi-stage noise gate + spectral-ish cleanup
+        /** Copy / resample IR into target context sample rate */
+        function irToContextBuffer(ctx, srcBuf, amountPercent) {
+            if (!srcBuf) return null;
+            const sr = ctx.sampleRate;
+            const srcRate = srcBuf.sampleRate;
+            // length scales with amount (use more of the tail when amount high)
+            const useRatio = 0.45 + 0.55 * Math.min(1, (amountPercent || 50) / 100);
+            const srcLen = Math.floor(srcBuf.length * useRatio);
+            const outLen = Math.max(1, Math.floor(srcLen * sr / srcRate));
+            const ch = Math.min(2, srcBuf.numberOfChannels);
+            const out = ctx.createBuffer(2, outLen, sr);
+            for (let c = 0; c < 2; c++) {
+                const sCh = srcBuf.getChannelData(Math.min(c, ch - 1));
+                const d = out.getChannelData(c);
+                for (let i = 0; i < outLen; i++) {
+                    const srcPos = (i * srcRate / sr);
+                    const j = Math.min(srcLen - 1, Math.floor(srcPos));
+                    const f = srcPos - j;
+                    const a = sCh[j] || 0;
+                    const b = sCh[Math.min(srcLen - 1, j + 1)] || 0;
+                    d[i] = (a + (b - a) * f) * (0.7 + 0.3 * ((amountPercent || 50) / 100));
+                }
+            }
+            return out;
+        }
+
+        /** Synthetic fallback if WAV missing */
+        function getSyntheticImpulseBuffer(ctx, amountPercent, type) {
+            let rate = ctx.sampleRate;
+            let duration, decayPower, earlyN, stereoSpread;
+            switch (type) {
+                case 'room': duration = 0.35 + (amountPercent / 100) * 1.2; decayPower = 3.2; earlyN = 5; stereoSpread = 0.012; break;
+                case 'plate': duration = 0.5 + (amountPercent / 100) * 1.8; decayPower = 2.6; earlyN = 7; stereoSpread = 0.018; break;
+                case 'hall': duration = 0.9 + (amountPercent / 100) * 2.4; decayPower = 2.2; earlyN = 9; stereoSpread = 0.028; break;
+                case 'cathedral': duration = 1.4 + (amountPercent / 100) * 3.5; decayPower = 1.85; earlyN = 12; stereoSpread = 0.04; break;
+                default: duration = 0.6 + (amountPercent / 100) * 1.5; decayPower = 2.5; earlyN = 6; stereoSpread = 0.02;
+            }
+            let len = Math.max(1, Math.floor(rate * duration));
+            let ir = ctx.createBuffer(2, len, rate);
+            let L = ir.getChannelData(0), R = ir.getChannelData(1);
+            for (let e = 0; e < earlyN; e++) {
+                let t = 0.008 + e * (0.012 + e * 0.004);
+                let idx = Math.min(len - 1, Math.floor(t * rate));
+                let amp = (0.35 / (e + 1)) * (0.5 + Math.random() * 0.5);
+                let pan = (e % 2 === 0) ? 0.75 : -0.75;
+                L[idx] += amp * (1 - pan) * 0.5;
+                R[idx] += amp * (1 + pan) * 0.5;
+            }
+            for (let i = 0; i < len; i++) {
+                let t = i / len, env = Math.pow(1 - t, decayPower);
+                let n1 = Math.random() * 2 - 1, n2 = Math.random() * 2 - 1, n3 = Math.random() * 2 - 1;
+                L[i] += ((n1 + n2) * 0.5) * env * 0.55;
+                R[i] += ((n2 + n3) * 0.5) * env * 0.55;
+            }
+            let peak = 1e-6;
+            for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+            let g = 0.9 / peak;
+            for (let i = 0; i < len; i++) { L[i] *= g; R[i] *= g; }
+            return ir;
+        }
+
+        async function getImpulseBuffer(ctx, amountPercent, type) {
+            const real = await loadRealIRBuffer(type || 'room');
+            if (real) {
+                const buf = irToContextBuffer(ctx, real, amountPercent);
+                if (buf) return buf;
+            }
+            return getSyntheticImpulseBuffer(ctx, amountPercent, type || 'room');
+        }
+
+
         function applySoftNoiseGate(buffer, amount) {
             if (amount <= 0) return buffer;
             let strength = amount / 100;
@@ -4683,14 +2657,8 @@
                 // Reverb chain
                 liveConvolver = liveCtx.createConvolver();
                 let reverbType = document.getElementById('fxReverbType').value || 'hall';
-                let impulseSettings = {
-                    room: [1.2, 2.5],
-                    hall: [2.5, 2.0],
-                    plate: [1.5, 3.5],
-                    cathedral: [4.0, 1.8]
-                };
-                let [sec, decay] = impulseSettings[reverbType] || [2.5, 2.0];
-                liveConvolver.buffer = await createLiveImpulse(sec, decay);
+                let amt = parseInt((document.getElementById('fxReverb') || {}).value, 10) || 50;
+                liveConvolver.buffer = await getImpulseBuffer(liveCtx, amt, reverbType);
 
                 liveReverbWet = liveCtx.createGain();
                 liveReverbWet.gain.value = 0;
@@ -4835,17 +2803,8 @@
                 let amount = (parseFloat(document.getElementById('fxReverb').value) || 40) / 100;
                 let conv = offline.createConvolver();
                 let reverbType = document.getElementById('fxReverbType').value || 'hall';
-                let settings = { room: [1.2, 2.5], hall: [2.5, 2.0], plate: [1.5, 3.5], cathedral: [4.0, 1.8] };
-                let [sec, decay] = settings[reverbType] || [2.5, 2.0];
-                let impulseLen = Math.floor(rate * sec);
-                let impulse = offline.createBuffer(2, impulseLen, rate);
-                for (let c = 0; c < 2; c++) {
-                    let ch = impulse.getChannelData(c);
-                    for (let i = 0; i < impulseLen; i++) {
-                        ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impulseLen, decay);
-                    }
-                }
-                conv.buffer = impulse;
+                let amtPct = parseInt((document.getElementById('fxReverb') || {}).value, 10) || 40;
+                conv.buffer = await getImpulseBuffer(offline, amtPct, reverbType);
                 let wet = offline.createGain();
                 wet.gain.value = amount * 0.8;
                 src.connect(conv);
@@ -5278,13 +3237,7 @@
                 try {
                     if (window.AndroidBridge && AndroidBridge.requestRescan) AndroidBridge.requestRescan();
                 } catch (e) {}
-                // Browser / no native list → fall back to normal file picker
-                let inp = document.getElementById(nativePickerTargetId || 'fileInput');
-                if (inp) {
-                    inp.click();
-                    return;
-                }
-                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again\n\nOr use "Pick audio files" button.');
+                alert('Could not load phone music.\n\n1) Grant storage/audio permission\n2) Try again');
                 return;
             }
             renderNativePickerOverlay(list);
@@ -5451,8 +3404,6 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             try { syncExportFormatUI(); } catch(e) {}
-            // rhythmFile: handled by onchange="rhythmOnFileChosen()" in the Auto Rhythm panel
-
             let vf = document.getElementById('videoFile');
             if (vf) {
                 vf.addEventListener('change', function () {
@@ -5714,23 +3665,13 @@
             try {
                 loading.innerText = "Detecting key..."; loading.style.display = "block";
                 let buffer = await readAudioData(f);
-                let bpm = 0, keyNote = '';
-                try {
-                    // shared analyser (same one the Auto Rhythm tab uses): chroma key (major/minor) + refined BPM
-                    const an = await rhAnalyzeBuffer(buffer);
-                    detectedKeyIndex = an.key.minor ? (an.key.root + 3) % 12 : an.key.root;   // relative-major index, as before
-                    bpm = Math.round(an.bpm);
-                    if (an.key.minor) keyNote = '  (' + RH_NAMES[an.key.root] + ' minor)';
-                } catch (anErr) {
-                    console.warn('shared analysis failed, using simple detectors', anErr);
-                    detectedKeyIndex = detectKeyFromBuffer(buffer);
-                    bpm = detectBpmFromBufferSimple(buffer);
-                }
+                detectedKeyIndex = detectKeyFromBuffer(buffer);
+                let bpm = detectBpmFromBuffer(buffer);
                 let box = document.getElementById('detectedKeyBox');
                 let label = document.getElementById('detectedKeyLabel');
                 let bpmLabel = document.getElementById('detectedBpmLabel');
                 if (box) box.style.display = 'block';
-                if (label) label.innerText = NOTE_NAMES[detectedKeyIndex] + keyNote;
+                if (label) label.innerText = NOTE_NAMES[detectedKeyIndex];
                 if (bpmLabel) bpmLabel.innerText = bpm ? (bpm + ' BPM') : '—';
                 document.getElementById('fxTargetKey').value = 'same';
                 document.getElementById('fxPitch').value = 0;
@@ -5784,7 +3725,7 @@
         }
 
         // --- BPM detection (onset envelope autocorrelation) ---
-        function detectBpmFromBufferSimple(buffer) {
+        function detectBpmFromBuffer(buffer) {
             try {
                 let ch = buffer.getChannelData(0);
                 let sr = buffer.sampleRate;
@@ -5908,7 +3849,7 @@
             // - pitchSemitones changes key WITHOUT changing tempo
             if (window.SoundTouchLib && (semitones !== 0 || Math.abs(tempo - 1) > 0.001)) {
                 try {
-                    return await processWithSoundTouch(buffer, tempo, semitones);
+                    return processWithSoundTouch(buffer, tempo, semitones);
                 } catch (e) {
                     console.warn('SoundTouch failed, fallback', e);
                 }
@@ -5920,49 +3861,40 @@
             return result;
         }
 
-        async function processWithSoundTouch(buffer, tempo, pitchSemitones) {
-            // SoundTouchJS v0.2.1: tempo + pitch are independent (pitch change keeps duration, tempo keeps key).
-            // Output is written straight into preallocated Float32Arrays (no JS arrays with millions of push() calls),
-            // the source is padded with silence so the tail is flushed, and the UI is kept responsive.
-            const ST = window.SoundTouchLib;
-            tempo = tempo || 1;
-            const st = new ST.SoundTouch();
-            st.tempo = tempo;
-            st.pitch = Math.pow(2, (pitchSemitones || 0) / 12);
-            const len = buffer.length;
-            const ch0 = buffer.getChannelData(0);
-            const ch1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : ch0;
-            const PAD = 16384;
-            const source = {
-                extract: function (target, numFrames, position) {
-                    let n = 0;
-                    for (; n < numFrames; n++) {
-                        const idx = position + n;
-                        if (idx >= len + PAD) break;
-                        if (idx < len) { target[2 * n] = ch0[idx]; target[2 * n + 1] = ch1[idx]; }
-                        else { target[2 * n] = 0; target[2 * n + 1] = 0; }
-                    }
-                    return n;
-                }
-            };
-            const filter = new ST.SimpleFilter(source, st);
-            const expected = Math.max(1, Math.round(len / tempo));
-            const out0 = new Float32Array(expected + 16384), out1 = new Float32Array(expected + 16384);
-            const chunk = 8192, tmp = new Float32Array(chunk * 2);
-            let written = 0, loops = 0;
-            while (written < expected) {
-                const got = filter.extract(tmp, chunk);
-                if (got <= 0) break;
-                const take = Math.min(got, out0.length - written);
-                for (let i = 0; i < take; i++) { out0[written + i] = tmp[2 * i]; out1[written + i] = tmp[2 * i + 1]; }
-                written += take;
-                if ((++loops & 7) === 0) await new Promise(function (r) { setTimeout(r, 0); });
+        function processWithSoundTouch(buffer, tempo, pitchSemitones) {
+            let ST = window.SoundTouchLib;
+            let soundTouch = new ST.SoundTouch();
+            soundTouch.tempo = tempo || 1;
+            // pitch ratio 1.0 = original; semitones via API
+            if (typeof soundTouch.pitchSemitones !== 'undefined') {
+                soundTouch.pitchSemitones = pitchSemitones || 0;
+            } else {
+                soundTouch.pitch = Math.pow(2, (pitchSemitones || 0) / 12);
             }
-            const frames = Math.min(written, expected);
+            let source = new ST.WebAudioBufferSource(buffer);
+            let filter = new ST.SimpleFilter(source, soundTouch);
+            let chunkFrames = 4096;
+            let samples = new Float32Array(chunkFrames * 2);
+            let left = [];
+            let right = [];
+            let extracted = 0;
+            do {
+                extracted = filter.extract(samples, chunkFrames);
+                for (let i = 0; i < extracted; i++) {
+                    left.push(samples[i * 2]);
+                    right.push(samples[i * 2 + 1]);
+                }
+            } while (extracted > 0);
+
+            let frames = left.length;
             if (frames < 1) return buffer;
-            const out = rhNewAudioBuffer(2, frames, buffer.sampleRate);
-            out.getChannelData(0).set(out0.subarray(0, frames));
-            out.getChannelData(1).set(out1.subarray(0, frames));
+            let outCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, frames, buffer.sampleRate);
+            // OfflineAudioContext.createBuffer not on prototype until constructed - use AudioContext
+            let ac = new (window.AudioContext || window.webkitAudioContext)();
+            let out = ac.createBuffer(2, frames, buffer.sampleRate);
+            try { ac.close(); } catch (e) {}
+            out.getChannelData(0).set(Float32Array.from(left));
+            out.getChannelData(1).set(Float32Array.from(right));
             return out;
         }
 
@@ -5973,8 +3905,12 @@
             let treble = parseInt(document.getElementById('fxTreble').value) || 0;
             let echo = parseInt(document.getElementById('fxEcho').value) / 100;
             let echoDelayMs = parseInt(document.getElementById('fxEchoDelay').value) || 280;
+            let echoStyle = (document.getElementById('fxEchoStyle') || {}).value || 'pingpong';
             let reverb = parseInt(document.getElementById('fxReverb').value) / 100;
             let reverbType = document.getElementById('fxReverbType').value || 'room';
+            let autoPanAmt = (parseInt((document.getElementById('fxAutoPan') || {}).value, 10) || 0) / 100;
+            let autoPanHz = parseFloat((document.getElementById('fxAutoPanSpeed') || {}).value) || 0.35;
+            let stereoWidth = (parseInt((document.getElementById('fxStereoWidth') || {}).value, 10) || 70) / 100;
 
             // Noise gate (pitch/tempo is in separate Pitch panel)
             let processedBuffer = sourceBuffer;
@@ -6039,46 +3975,144 @@
             lastNode.connect(bassFilter);
             bassFilter.connect(trebleFilter);
             
-            // Dry path
-            trebleFilter.connect(ctx.destination);
+            // Dry path — optional stereo width + auto-pan on the main signal
+            let dryOut = trebleFilter;
+            let masterPan = null;
+            if (ctx.createStereoPanner && (autoPanAmt > 0.02 || stereoWidth > 0.05)) {
+                // Mid-side style width: duplicate to two panners
+                let w = Math.max(0, Math.min(1, stereoWidth));
+                let gDry = ctx.createGain();
+                gDry.gain.value = 1;
+                trebleFilter.connect(gDry);
 
-            // --- Improved Echo (filtered feedback delay) ---
-            if (echo > 0.01) {
-                let delayNode = ctx.createDelay(1.0);
-                delayNode.delayTime.value = echoDelayMs / 1000;
-
-                let feedbackGain = ctx.createGain();
-                feedbackGain.gain.value = Math.min(0.65, 0.25 + echo * 0.4);
-
-                let wetGain = ctx.createGain();
-                wetGain.gain.value = echo * 0.9;
-
-                // Lowpass in feedback path for natural decay
-                let echoFilter = ctx.createBiquadFilter();
-                echoFilter.type = "lowpass";
-                echoFilter.frequency.value = 3500;
-
-                trebleFilter.connect(delayNode);
-                delayNode.connect(echoFilter);
-                echoFilter.connect(feedbackGain);
-                feedbackGain.connect(delayNode); // feedback loop
-                delayNode.connect(wetGain);
-                wetGain.connect(ctx.destination);
+                if (autoPanAmt > 0.02 && ctx.createStereoPanner) {
+                    masterPan = ctx.createStereoPanner();
+                    masterPan.pan.value = 0;
+                    gDry.connect(masterPan);
+                    masterPan.connect(ctx.destination);
+                    dryOut = masterPan;
+                    // Schedule L↔R rotation for full file length (works in OfflineAudioContext too)
+                    try {
+                        let dur = Math.max(0.5, sourceBuffer.duration || 30);
+                        let depth = Math.min(1, autoPanAmt * 0.95);
+                        let n = Math.min(800, Math.max(32, Math.floor(dur * autoPanHz * 16)));
+                        let curve = new Float32Array(n);
+                        for (let i = 0; i < n; i++) {
+                            let t = i / (n - 1);
+                            curve[i] = Math.sin(2 * Math.PI * autoPanHz * t * dur) * depth;
+                        }
+                        masterPan.pan.setValueCurveAtTime(curve, ctx.currentTime || 0, dur);
+                    } catch (ePan) {
+                        console.warn('auto-pan curve', ePan);
+                        masterPan.pan.value = 0;
+                    }
+                } else if (w > 0.05 && ctx.createStereoPanner) {
+                    let pL = ctx.createStereoPanner();
+                    let pR = ctx.createStereoPanner();
+                    let splitG = ctx.createGain();
+                    splitG.gain.value = 0.707;
+                    gDry.connect(splitG);
+                    splitG.connect(pL);
+                    splitG.connect(pR);
+                    pL.pan.value = -w;
+                    pR.pan.value = w;
+                    pL.connect(ctx.destination);
+                    pR.connect(ctx.destination);
+                    dryOut = gDry;
+                } else {
+                    gDry.connect(ctx.destination);
+                }
+            } else {
+                trebleFilter.connect(ctx.destination);
             }
 
-            // --- Improved Reverb (category based) ---
+            // --- Echo: normal OR ping-pong (L then R) ---
+            if (echo > 0.01) {
+                let dSec = Math.min(0.95, Math.max(0.05, echoDelayMs / 1000));
+                let fb = Math.min(0.62, 0.22 + echo * 0.42);
+                let wet = echo * 0.85;
+                let lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 4200;
+                lp.Q.value = 0.7;
+
+                if (echoStyle === 'pingpong' && ctx.createStereoPanner) {
+                    // Left delay → Right delay → cross feedback (classic ping-pong)
+                    let delayL = ctx.createDelay(1.0);
+                    let delayR = ctx.createDelay(1.0);
+                    delayL.delayTime.value = dSec;
+                    delayR.delayTime.value = dSec;
+                    let fbL = ctx.createGain();
+                    let fbR = ctx.createGain();
+                    fbL.gain.value = fb;
+                    fbR.gain.value = fb;
+                    let wetL = ctx.createGain();
+                    let wetR = ctx.createGain();
+                    wetL.gain.value = wet;
+                    wetR.gain.value = wet;
+                    let panL = ctx.createStereoPanner();
+                    let panR = ctx.createStereoPanner();
+                    panL.pan.value = -0.92; // almost full left
+                    panR.pan.value = 0.92;  // almost full right
+
+                    trebleFilter.connect(lp);
+                    lp.connect(delayL);
+                    delayL.connect(wetL);
+                    wetL.connect(panL);
+                    panL.connect(ctx.destination);
+                    // cross to right
+                    delayL.connect(fbL);
+                    fbL.connect(delayR);
+                    delayR.connect(wetR);
+                    wetR.connect(panR);
+                    panR.connect(ctx.destination);
+                    // cross back to left
+                    delayR.connect(fbR);
+                    fbR.connect(delayL);
+                } else {
+                    let delayNode = ctx.createDelay(1.0);
+                    delayNode.delayTime.value = dSec;
+                    let feedbackGain = ctx.createGain();
+                    feedbackGain.gain.value = fb;
+                    let wetGain = ctx.createGain();
+                    wetGain.gain.value = wet;
+                    trebleFilter.connect(lp);
+                    lp.connect(delayNode);
+                    delayNode.connect(feedbackGain);
+                    feedbackGain.connect(delayNode);
+                    delayNode.connect(wetGain);
+                    wetGain.connect(ctx.destination);
+                }
+            }
+
+            // --- Reverb: wide stereo IR + fixed L/R placement ---
             if (reverb > 0.01) {
                 let convNode = ctx.createConvolver();
-                convNode.buffer = getImpulseBuffer(ctx, reverb * 100, reverbType);
-
+                convNode.buffer = await getImpulseBuffer(ctx, reverb * 100, reverbType);
                 let reverbGain = ctx.createGain();
-                // slightly higher wet for longer categories
-                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.6 : 1.35;
-                reverbGain.gain.value = reverb * wetBoost;
-
+                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.4 : 1.2;
+                reverbGain.gain.value = Math.min(1.15, reverb * wetBoost);
                 trebleFilter.connect(convNode);
                 convNode.connect(reverbGain);
-                reverbGain.connect(ctx.destination);
+                if (ctx.createStereoPanner) {
+                    let spread = 0.25 + stereoWidth * 0.55;
+                    let pL = ctx.createStereoPanner();
+                    let pR = ctx.createStereoPanner();
+                    let gL = ctx.createGain();
+                    let gR = ctx.createGain();
+                    gL.gain.value = 0.85;
+                    gR.gain.value = 0.85;
+                    reverbGain.connect(gL);
+                    reverbGain.connect(gR);
+                    gL.connect(pL);
+                    gR.connect(pR);
+                    pL.pan.value = -spread;
+                    pR.pan.value = spread;
+                    pL.connect(ctx.destination);
+                    pR.connect(ctx.destination);
+                } else {
+                    reverbGain.connect(ctx.destination);
+                }
             }
 
             return source;
@@ -6288,14 +4322,5 @@
         });
 
     </script>
-
-    <!-- Full-screen tap layer: any touch = beat (use with TalkBack OFF) -->
-    <div id="rhythmTapOverlay" role="application" aria-label="Beat tap screen">
-        <p class="tap-hint" style="color:var(--accent); font-weight:700;">TAP ANYWHERE ON THE BEAT</p>
-        <div class="tap-count" id="rhythmTapOverlayCount">0 / 8</div>
-        <p class="tap-hint" id="rhythmTapOverlayHint">TalkBack OFF. First TAP starts the song.<br>Then tap each strong beat — at 8 it locks.</p>
-        <button type="button" class="tap-exit" id="rhythmTapOverlayExit" onclick="event.stopPropagation(); rhythmExitTapOverlay(false);">Cancel</button>
-    </div>
-
 </body>
 </html>
