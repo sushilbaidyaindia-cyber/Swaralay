@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private AudioTrack monitorTrack;
     private volatile float monitorGain = 1.6f;
     private volatile float monitorEcho = 0f;
+    private volatile float monitorReverb = 0f;
     private AudioManager audioManager;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
@@ -694,7 +695,7 @@ public class MainActivity extends AppCompatActivity {
 
         // ---- Live mic monitor (AudioRecord → AudioTrack). Works with Bluetooth better than WebView getUserMedia. ----
         @JavascriptInterface
-        public synchronized String startNativeMonitor(int gainPercent, int echoPercent) {
+        public synchronized String startNativeMonitor(int gainPercent, int echoPercent, int reverbPercent) {
             try {
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -710,8 +711,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 stopNativeMonitorInternal();
 
-                monitorGain = Math.max(0.2f, Math.min(3.5f, gainPercent / 100f * 2.2f));
-                monitorEcho = Math.max(0f, Math.min(0.7f, echoPercent / 100f * 0.55f));
+                applyMonitorLevels(gainPercent, echoPercent, reverbPercent);
 
                 final int sr = 44100;
                 final int channelIn = AudioFormat.CHANNEL_IN_MONO;
@@ -777,11 +777,20 @@ public class MainActivity extends AppCompatActivity {
 
                 final AudioRecord fRec = rec;
                 final AudioTrack fTrack = track;
-                final int delaySamples = (int) (sr * 0.28); // ~280ms echo
                 monitorThread = new Thread(() -> {
                     short[] buffer = new short[buf / 2];
-                    short[] delayBuf = new short[Math.max(delaySamples, 1)];
-                    int delayIdx = 0;
+                    // Echo delay ~300ms + multi-tap reverb taps
+                    final int echoLen = Math.max((int) (sr * 0.30), 1);
+                    final int r1 = Math.max((int) (sr * 0.029), 1);
+                    final int r2 = Math.max((int) (sr * 0.037), 1);
+                    final int r3 = Math.max((int) (sr * 0.053), 1);
+                    final int r4 = Math.max((int) (sr * 0.079), 1);
+                    short[] echoBuf = new short[echoLen];
+                    short[] rev1 = new short[r1];
+                    short[] rev2 = new short[r2];
+                    short[] rev3 = new short[r3];
+                    short[] rev4 = new short[r4];
+                    int ei = 0, i1 = 0, i2 = 0, i3 = 0, i4 = 0;
                     try {
                         fRec.startRecording();
                         fTrack.play();
@@ -789,19 +798,37 @@ public class MainActivity extends AppCompatActivity {
                             int n = fRec.read(buffer, 0, buffer.length);
                             if (n <= 0) continue;
                             float g = monitorGain;
-                            float e = monitorEcho;
+                            float eAmt = monitorEcho;
+                            float rAmt = monitorReverb;
                             for (int i = 0; i < n; i++) {
                                 float dry = buffer[i];
-                                float delayed = delayBuf[delayIdx];
-                                float mixed = dry * g + delayed * e;
-                                // soft clip
+                                // --- Echo (single long delay, feedback only when eAmt > 0) ---
+                                float echoSamp = echoBuf[ei];
+                                float echoOut = echoSamp * eAmt;
+                                float echoFeed = (eAmt > 0.01f)
+                                        ? (dry * 0.85f + echoSamp * (0.25f + eAmt * 0.45f))
+                                        : 0f;
+                                if (echoFeed > 32767f) echoFeed = 32767f;
+                                if (echoFeed < -32768f) echoFeed = -32768f;
+                                echoBuf[ei] = (short) echoFeed;
+                                ei++; if (ei >= echoLen) ei = 0;
+
+                                // --- Reverb-ish: 4 comb taps ---
+                                float t1 = rev1[i1], t2 = rev2[i2], t3 = rev3[i3], t4 = rev4[i4];
+                                float revOut = (t1 * 0.35f + t2 * 0.30f + t3 * 0.22f + t4 * 0.18f) * rAmt;
+                                float rf = (rAmt > 0.01f) ? (dry * 0.55f + (t1 + t2 + t3 + t4) * 0.12f * rAmt) : 0f;
+                                if (rf > 32767f) rf = 32767f;
+                                if (rf < -32768f) rf = -32768f;
+                                short rfs = (short) rf;
+                                rev1[i1] = rfs; i1++; if (i1 >= r1) i1 = 0;
+                                rev2[i2] = rfs; i2++; if (i2 >= r2) i2 = 0;
+                                rev3[i3] = rfs; i3++; if (i3 >= r3) i3 = 0;
+                                rev4[i4] = rfs; i4++; if (i4 >= r4) i4 = 0;
+
+                                float mixed = dry * g + echoOut + revOut;
                                 if (mixed > 32767f) mixed = 32767f;
                                 if (mixed < -32768f) mixed = -32768f;
-                                short out = (short) mixed;
-                                delayBuf[delayIdx] = (short) (dry * 0.7f + delayed * 0.35f);
-                                delayIdx++;
-                                if (delayIdx >= delayBuf.length) delayIdx = 0;
-                                buffer[i] = out;
+                                buffer[i] = (short) mixed;
                             }
                             fTrack.write(buffer, 0, n);
                         }
@@ -822,10 +849,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public synchronized void setNativeMonitorLevels(int gainPercent, int echoPercent) {
-            monitorGain = Math.max(0.2f, Math.min(3.5f, gainPercent / 100f * 2.2f));
-            monitorEcho = Math.max(0f, Math.min(0.7f, echoPercent / 100f * 0.55f));
+        private void applyMonitorLevels(int gainPercent, int echoPercent, int reverbPercent) {
+            // Volume: 0–150 UI → clear gain range
+            float vol = Math.max(0, Math.min(150, gainPercent)) / 100f;
+            monitorGain = Math.max(0.15f, Math.min(3.2f, vol * 1.9f));
+            // Echo / Reverb: 0 = silence FX, 100 = strong (clearly audible steps)
+            float e = Math.max(0, Math.min(100, echoPercent)) / 100f;
+            float r = Math.max(0, Math.min(100, reverbPercent)) / 100f;
+            monitorEcho = e * e * 0.95f + e * 0.35f;   // stronger curve so 20%+ is obvious
+            monitorReverb = r * r * 0.90f + r * 0.40f;
+            if (e < 0.01f) monitorEcho = 0f;
+            if (r < 0.01f) monitorReverb = 0f;
         }
+
+        @JavascriptInterface
+        public synchronized void setNativeMonitorLevels(int gainPercent, int echoPercent, int reverbPercent) {
+            applyMonitorLevels(gainPercent, echoPercent, reverbPercent);
+        }
+
 
         @JavascriptInterface
         public synchronized String stopNativeMonitor() {
