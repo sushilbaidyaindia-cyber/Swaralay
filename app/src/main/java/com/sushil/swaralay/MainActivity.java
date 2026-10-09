@@ -16,6 +16,10 @@ import java.io.OutputStream;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.media.MediaRecorder;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
@@ -52,6 +56,13 @@ public class MainActivity extends AppCompatActivity {
     private MediaRecorder nativeRecorder;
     private File nativeRecordFile;
     private boolean isNativeRecording = false;
+    private volatile boolean monitorRunning = false;
+    private Thread monitorThread;
+    private AudioRecord monitorRecord;
+    private AudioTrack monitorTrack;
+    private volatile float monitorGain = 1.6f;
+    private volatile float monitorEcho = 0f;
+    private AudioManager audioManager;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -680,7 +691,179 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // ---- Save audio from WebView (chunked, avoids Binder 1MB limit) ----
+
+        // ---- Live mic monitor (AudioRecord → AudioTrack). Works with Bluetooth better than WebView getUserMedia. ----
+        @JavascriptInterface
+        public synchronized String startNativeMonitor(int gainPercent, int echoPercent) {
+            try {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    runOnUiThread(() -> ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE));
+                    return "NEED_PERMISSION";
+                }
+                if (isNativeRecording) {
+                    return "ERROR:stop_recording_first";
+                }
+                if (monitorRunning) {
+                    return "OK:already_on";
+                }
+                stopNativeMonitorInternal();
+
+                monitorGain = Math.max(0.2f, Math.min(3.5f, gainPercent / 100f * 2.2f));
+                monitorEcho = Math.max(0f, Math.min(0.7f, echoPercent / 100f * 0.55f));
+
+                final int sr = 44100;
+                final int channelIn = AudioFormat.CHANNEL_IN_MONO;
+                final int channelOut = AudioFormat.CHANNEL_OUT_MONO;
+                final int encoding = AudioFormat.ENCODING_PCM_16BIT;
+                int minRec = AudioRecord.getMinBufferSize(sr, channelIn, encoding);
+                int minPlay = AudioTrack.getMinBufferSize(sr, channelOut, encoding);
+                if (minRec <= 0 || minPlay <= 0) return "ERROR:bad_buffer";
+                int buf = Math.max(minRec, minPlay) * 2;
+
+                int[] sources = new int[] {
+                        MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                        MediaRecorder.AudioSource.MIC,
+                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                        MediaRecorder.AudioSource.DEFAULT
+                };
+                AudioRecord rec = null;
+                Exception last = null;
+                for (int src : sources) {
+                    try {
+                        rec = new AudioRecord(src, sr, channelIn, encoding, buf);
+                        if (rec.getState() == AudioRecord.STATE_INITIALIZED) break;
+                        rec.release();
+                        rec = null;
+                    } catch (Exception e) {
+                        last = e;
+                        if (rec != null) { try { rec.release(); } catch (Exception ignored) {} rec = null; }
+                    }
+                }
+                if (rec == null) {
+                    return "ERROR:cannot_open_mic:" + (last != null ? last.getMessage() : "unknown");
+                }
+
+                AudioTrack track = new AudioTrack(
+                        AudioManager.STREAM_MUSIC,
+                        sr,
+                        channelOut,
+                        encoding,
+                        buf,
+                        AudioTrack.MODE_STREAM
+                );
+                if (track.getState() != AudioTrack.STATE_INITIALIZED) {
+                    rec.release();
+                    return "ERROR:cannot_open_speaker";
+                }
+
+                monitorRecord = rec;
+                monitorTrack = track;
+                monitorRunning = true;
+
+                runOnUiThread(() -> {
+                    try {
+                        if (audioManager == null) {
+                            audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                        }
+                        if (audioManager != null) {
+                            // Prefer media path to Bluetooth speaker (A2DP); communication mode can force SCO
+                            audioManager.setMode(AudioManager.MODE_NORMAL);
+                            audioManager.setSpeakerphoneOn(false);
+                        }
+                    } catch (Exception ignored) {}
+                });
+
+                final AudioRecord fRec = rec;
+                final AudioTrack fTrack = track;
+                final int delaySamples = (int) (sr * 0.28); // ~280ms echo
+                monitorThread = new Thread(() -> {
+                    short[] buffer = new short[buf / 2];
+                    short[] delayBuf = new short[Math.max(delaySamples, 1)];
+                    int delayIdx = 0;
+                    try {
+                        fRec.startRecording();
+                        fTrack.play();
+                        while (monitorRunning) {
+                            int n = fRec.read(buffer, 0, buffer.length);
+                            if (n <= 0) continue;
+                            float g = monitorGain;
+                            float e = monitorEcho;
+                            for (int i = 0; i < n; i++) {
+                                float dry = buffer[i];
+                                float delayed = delayBuf[delayIdx];
+                                float mixed = dry * g + delayed * e;
+                                // soft clip
+                                if (mixed > 32767f) mixed = 32767f;
+                                if (mixed < -32768f) mixed = -32768f;
+                                short out = (short) mixed;
+                                delayBuf[delayIdx] = (short) (dry * 0.7f + delayed * 0.35f);
+                                delayIdx++;
+                                if (delayIdx >= delayBuf.length) delayIdx = 0;
+                                buffer[i] = out;
+                            }
+                            fTrack.write(buffer, 0, n);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        try { fRec.stop(); } catch (Exception ignored) {}
+                        try { fTrack.stop(); } catch (Exception ignored) {}
+                    }
+                }, "SwaralayMonitor");
+                monitorThread.start();
+                return "OK";
+            } catch (Exception e) {
+                e.printStackTrace();
+                stopNativeMonitorInternal();
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized void setNativeMonitorLevels(int gainPercent, int echoPercent) {
+            monitorGain = Math.max(0.2f, Math.min(3.5f, gainPercent / 100f * 2.2f));
+            monitorEcho = Math.max(0f, Math.min(0.7f, echoPercent / 100f * 0.55f));
+        }
+
+        @JavascriptInterface
+        public synchronized String stopNativeMonitor() {
+            stopNativeMonitorInternal();
+            return "OK";
+        }
+
+        @JavascriptInterface
+        public synchronized boolean isNativeMonitorOn() {
+            return monitorRunning;
+        }
+
+        private void stopNativeMonitorInternal() {
+            monitorRunning = false;
+            try {
+                if (monitorThread != null) {
+                    monitorThread.join(500);
+                }
+            } catch (Exception ignored) {}
+            monitorThread = null;
+            try {
+                if (monitorRecord != null) {
+                    try { monitorRecord.stop(); } catch (Exception ignored) {}
+                    try { monitorRecord.release(); } catch (Exception ignored) {}
+                }
+            } catch (Exception ignored) {}
+            monitorRecord = null;
+            try {
+                if (monitorTrack != null) {
+                    try { monitorTrack.stop(); } catch (Exception ignored) {}
+                    try { monitorTrack.release(); } catch (Exception ignored) {}
+                }
+            } catch (Exception ignored) {}
+            monitorTrack = null;
+        }
+
+
+                // ---- Save audio from WebView (chunked, avoids Binder 1MB limit) ----
         private transient ByteArrayOutputStream saveBuffer = null;
         private transient String saveFileName = null;
 
@@ -811,6 +994,23 @@ public class MainActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) webView.goBack();
         else super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        try {
+            // stop monitor if Activity is destroyed
+            monitorRunning = false;
+            if (monitorRecord != null) {
+                try { monitorRecord.stop(); } catch (Exception ignored) {}
+                try { monitorRecord.release(); } catch (Exception ignored) {}
+            }
+            if (monitorTrack != null) {
+                try { monitorTrack.stop(); } catch (Exception ignored) {}
+                try { monitorTrack.release(); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
+        super.onDestroy();
     }
 }
 
