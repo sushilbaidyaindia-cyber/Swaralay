@@ -433,18 +433,18 @@ public class MainActivity extends AppCompatActivity {
                 }
                 stopNativeRecorderQuiet();
                 nativeRecordFile = new File(getCacheDir(), "swaralay_rec_" + System.currentTimeMillis() + ".m4a");
-                // Mic-only (monitor never mixed in). Try best speech/studio sources first.
+                // Studio clarity: UNPROCESSED / MIC first (no AGC pumping). Fallback to voice sources.
                 int[] sources;
                 if (android.os.Build.VERSION.SDK_INT >= 24) {
                     sources = new int[]{
                             MediaRecorder.AudioSource.UNPROCESSED,
-                            MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                            MediaRecorder.AudioSource.MIC
+                            MediaRecorder.AudioSource.MIC,
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION
                     };
                 } else {
                     sources = new int[]{
-                            MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                            MediaRecorder.AudioSource.MIC
+                            MediaRecorder.AudioSource.MIC,
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION
                     };
                 }
                 MediaRecorder r = null;
@@ -456,8 +456,9 @@ public class MainActivity extends AppCompatActivity {
                         r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
                         r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
                         r.setAudioChannels(1);
-                        r.setAudioEncodingBitRate(192000);
-                        r.setAudioSamplingRate(44100);
+                        // High quality default: 48 kHz AAC 256 kbps (studio-friendly on phone mic)
+                        r.setAudioEncodingBitRate(256000);
+                        r.setAudioSamplingRate(48000);
                         r.setOutputFile(nativeRecordFile.getAbsolutePath());
                         r.prepare();
                         r.start();
