@@ -693,19 +693,19 @@
                 <label style="font-size:12px; color:#aaa; display:block;">Monitor volume %</label>
                 <div class="stepper-group" style="margin-bottom:10px;">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonVol', -5); updateMicMonitorLevels()" aria-label="Decrease monitor volume">➖</button>
-                    <input type="number" id="micMonVol" value="85" min="0" max="150" aria-label="Monitor volume" onchange="updateMicMonitorLevels()">
+                    <input type="number" id="micMonVol" value="85" min="0" max="150" aria-label="Monitor volume" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonVol', 5); updateMicMonitorLevels()" aria-label="Increase monitor volume">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Live Echo %</label>
                 <div class="stepper-group" style="margin-bottom:10px;">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', -5); updateMicMonitorLevels()" aria-label="Decrease live echo">➖</button>
-                    <input type="number" id="micMonEcho" value="0" min="0" max="100" aria-label="Live echo" onchange="updateMicMonitorLevels()">
+                    <input type="number" id="micMonEcho" value="0" min="0" max="100" aria-label="Live echo" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', 5); updateMicMonitorLevels()" aria-label="Increase live echo">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Live Reverb %</label>
                 <div class="stepper-group" style="margin-bottom:8px;">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', -5); updateMicMonitorLevels()" aria-label="Decrease live reverb">➖</button>
-                    <input type="number" id="micMonRev" value="25" min="0" max="100" aria-label="Live reverb" onchange="updateMicMonitorLevels()">
+                    <input type="number" id="micMonRev" value="0" min="0" max="100" aria-label="Live reverb" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', 5); updateMicMonitorLevels()" aria-label="Increase live reverb">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Reverb type</label>
@@ -715,7 +715,8 @@
                     <option value="plate">Plate</option>
                     <option value="cathedral">Cathedral</option>
                 </select>
-                <p id="micMonStatus" style="font-size:12px; color:#888; text-align:center; margin:0;" aria-live="polite">Monitor off</p>
+                <p style="font-size:11px; color:#6a8a7a; text-align:center; margin:8px 0 0;">Echo &amp; Reverb start at 0 — raise them while monitor is ON to hear the change.</p>
+                <p id="micMonStatus" style="font-size:12px; color:#888; text-align:center; margin:6px 0 0;" aria-live="polite">Monitor off</p>
             </div>
 
             <!-- File picker for Live FX preview (shares the same fxFile input used in FX Studio) -->
@@ -2695,7 +2696,7 @@
                 let echo = parseInt((document.getElementById('micMonEcho') || {}).value, 10) || 0;
                 let rev = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 0;
                 if (window.AndroidBridge && typeof AndroidBridge.setNativeMonitorLevels === 'function' && micMonNative) {
-                    AndroidBridge.setNativeMonitorLevels(vol, echo);
+                    AndroidBridge.setNativeMonitorLevels(vol, echo, rev);
                 }
                 if (micMonPreamp) micMonPreamp.gain.value = Math.max(0.5, Math.min(3.5, 1.8 * Math.max(0.4, vol / 100)));
                 if (micMonDry) micMonDry.gain.value = Math.max(0, Math.min(1.5, vol / 100));
@@ -2705,7 +2706,7 @@
                 let st = document.getElementById('micMonStatus');
                 if (st) {
                     st.textContent = (micMonNative ? 'Native monitor' : 'Web monitor') +
-                        ' · Vol ' + vol + '% · Echo ' + echo + '%' + (micMonNative ? '' : (' · Rev ' + rev + '%'));
+                        ' · Vol ' + vol + '% · Echo ' + echo + '% · Rev ' + rev + '%';
                     st.style.color = 'var(--success)';
                 }
             } catch (e) { console.warn(e); }
@@ -2767,7 +2768,8 @@
             // 1) Prefer native Android loopback (works with Bluetooth when WebView fails)
             if (window.AndroidBridge && typeof AndroidBridge.startNativeMonitor === 'function') {
                 try {
-                    let r = String(AndroidBridge.startNativeMonitor(vol, echo) || '');
+                    let rev0 = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 0;
+                    let r = String(AndroidBridge.startNativeMonitor(vol, echo, rev0) || '');
                     if (r === 'NEED_PERMISSION') {
                         if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
                         alert('Allow Microphone, then press Start Live Monitor again.');
