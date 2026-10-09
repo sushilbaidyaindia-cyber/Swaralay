@@ -555,21 +555,29 @@
                     <button class="stepper-btn" onclick="adjustInputVal('fxEchoDelay', 10)" aria-label="Increase Echo Delay">➕</button>
                 </div>
 
-                <label class="fx-label reverb">🏟️ Reverb Amount (%)</label>
-                <div class="stepper-group" style="margin-bottom:8px;">
-                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', -1)" aria-label="Decrease Reverb">➖</button>
-                    <input type="number" id="fxReverb" value="0" min="0" max="100" aria-label="Reverb amount">
-                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', 1)" aria-label="Increase Reverb">➕</button>
-                </div>
-
-                <label style="font-size:12px; color:#aaa; display:block; margin-top:8px;">Reverb Type</label>
-                <select id="fxReverbType" aria-label="Select Reverb Category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:4px;">
+                <label style="font-size:12px; color:#aaa; display:block; margin-top:8px;">Reverb type (character stays the same)</label>
+                <select id="fxReverbType" aria-label="Select Reverb Category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
                     <option value="room">Room — real IR (natural small space)</option>
                     <option value="hall">Hall — real IR (wide hall)</option>
                     <option value="plate">Plate — real IR (studio plate)</option>
                     <option value="cathedral">Cathedral — real IR (long tail)</option>
                 </select>
-                <p style="font-size:11px; color:#666; margin:6px 0 0;">Uses <b>real convolution IR</b> files (studio-style). Falls back to synthetic if a file is missing.</p>
+
+                <label class="fx-label reverb">🏟️ Reverb volume / wet (%)</label>
+                <div class="stepper-group" style="margin-bottom:8px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', -1)" aria-label="Decrease reverb volume">➖</button>
+                    <input type="number" id="fxReverb" value="0" min="0" max="100" aria-label="Reverb volume wet">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxReverb', 1)" aria-label="Increase reverb volume">➕</button>
+                </div>
+                <p style="font-size:11px; color:#888; margin:0 0 10px 0;">Only the reverb sound goes up/down. Type/IR stays the same (studio send/return style).</p>
+
+                <label class="fx-label" style="color:#7bed9f;">🎤 Dry volume — original voice/music (%)</label>
+                <div class="stepper-group" style="margin-bottom:4px;">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxDry', -1)" aria-label="Decrease dry volume">➖</button>
+                    <input type="number" id="fxDry" value="100" min="0" max="100" aria-label="Dry volume">
+                    <button class="stepper-btn" onclick="adjustInputVal('fxDry', 1)" aria-label="Increase dry volume">➕</button>
+                </div>
+                <p style="font-size:11px; color:#666; margin:6px 0 0;">Keep Dry ~100 so the ear stays full; raise Reverb volume for more space without drowning the original.</p>
 
                 <label style="font-size:12px; color:#aaa; display:block; margin-top:14px;">Echo style</label>
                 <select id="fxEchoStyle" aria-label="Echo style" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
@@ -621,6 +629,7 @@
                     1) Record → Stop → <b>Add to project</b><br>
                     2) Record again = overdub while hearing previous layers<br>
                     3) Only the mic is recorded (monitor is not mixed in)<br>
+                    4) High quality record: 48 kHz / 256 kbps, studio mic mode (clear — speak closer for best result)<br>
                     4) Use <b>headphones</b> to avoid speaker bleed<br>
                     5) Finally <b>Mix & Save</b>
                 </p>
@@ -669,6 +678,44 @@
                     <div id="projectTracksList" style="max-height:150px; overflow-y:auto;"></div>
                     <button onclick="clearProject()" style="margin-top:8px; background:#555; color:#fff; font-size:12px; padding:8px;">Clear project</button>
                 </div>
+            </div>
+
+            <!-- ========== LIVE MIC MONITOR (Bluetooth / speaker) ========== -->
+            <div style="background:#0f2a1a; border:1px solid var(--success); border-radius:10px; padding:15px; margin:15px 0;">
+                <h3 style="margin:0 0 8px 0; color:var(--success); text-align:center; font-size:16px;">🎧 Live Mic Monitor</h3>
+                <p style="font-size:12px; color:#a8c5b0; margin:0 0 12px 0; line-height:1.45; text-align:center;">
+                    Speak at <b>normal phone-call distance</b> (not only right on the mic). Sound goes to <b>Bluetooth / speaker</b> with live Echo &amp; Reverb.<br>
+                    <b>Tip:</b> Headphones = best. Loud speaker near mic may whistle — lower Monitor volume.
+                </p>
+                <button type="button" id="micMonBtn" onclick="toggleMicMonitor()" style="width:100%; background:var(--success); color:#000; margin:0 0 12px 0; padding:14px; font-weight:bold;">
+                    🎧 Start Live Monitor
+                </button>
+                <label style="font-size:12px; color:#aaa; display:block;">Monitor volume %</label>
+                <div class="stepper-group" style="margin-bottom:10px;">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonVol', -5); updateMicMonitorLevels()" aria-label="Decrease monitor volume">➖</button>
+                    <input type="number" id="micMonVol" value="85" min="0" max="150" aria-label="Monitor volume" onchange="updateMicMonitorLevels()">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonVol', 5); updateMicMonitorLevels()" aria-label="Increase monitor volume">➕</button>
+                </div>
+                <label style="font-size:12px; color:#aaa; display:block;">Live Echo %</label>
+                <div class="stepper-group" style="margin-bottom:10px;">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', -5); updateMicMonitorLevels()" aria-label="Decrease live echo">➖</button>
+                    <input type="number" id="micMonEcho" value="0" min="0" max="100" aria-label="Live echo" onchange="updateMicMonitorLevels()">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', 5); updateMicMonitorLevels()" aria-label="Increase live echo">➕</button>
+                </div>
+                <label style="font-size:12px; color:#aaa; display:block;">Live Reverb %</label>
+                <div class="stepper-group" style="margin-bottom:8px;">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', -5); updateMicMonitorLevels()" aria-label="Decrease live reverb">➖</button>
+                    <input type="number" id="micMonRev" value="25" min="0" max="100" aria-label="Live reverb" onchange="updateMicMonitorLevels()">
+                    <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', 5); updateMicMonitorLevels()" aria-label="Increase live reverb">➕</button>
+                </div>
+                <label style="font-size:12px; color:#aaa; display:block;">Reverb type</label>
+                <select id="micMonRevType" aria-label="Monitor reverb type" onchange="rebuildMicMonitorReverb()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
+                    <option value="room">Room</option>
+                    <option value="hall" selected>Hall</option>
+                    <option value="plate">Plate</option>
+                    <option value="cathedral">Cathedral</option>
+                </select>
+                <p id="micMonStatus" style="font-size:12px; color:#888; text-align:center; margin:0;" aria-live="polite">Monitor off</p>
             </div>
 
             <!-- File picker for Live FX preview (shares the same fxFile input used in FX Studio) -->
@@ -747,8 +794,8 @@
                 <label style="display:block; margin:10px 0 4px; color:#aaa;">MP3 quality (minimum 128 kbps)</label>
                 <select id="mp3Bitrate" aria-label="MP3 bitrate" onchange="setMp3Bitrate(this.value)" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
                     <option value="128">128 kbps — smaller file</option>
-                    <option value="192" selected>192 kbps — clear (recommended)</option>
-                    <option value="256">256 kbps — high</option>
+                    <option value="192">192 kbps — clear</option>
+                    <option value="256" selected>256 kbps — high (default)</option>
                     <option value="320">320 kbps — maximum</option>
                 </select>
                 <span style="font-size:12px; color:#888; display:block; margin-top:8px;">Record / cut / mix / FX / video export all use this setting. Default MP3 ≥ 128 kbps.</span>
@@ -778,8 +825,8 @@
         let skipTime = 10;
         let volStep = 10;
         let exportFormat = localStorage.getItem('swaralay_export_format') || 'mp3';
-        let mp3Bitrate = parseInt(localStorage.getItem('swaralay_mp3_bitrate') || '192', 10);
-        if (![128, 192, 256, 320].includes(mp3Bitrate)) mp3Bitrate = 192;
+        let mp3Bitrate = parseInt(localStorage.getItem('swaralay_mp3_bitrate') || '256', 10);
+        if (![128, 192, 256, 320].includes(mp3Bitrate)) mp3Bitrate = 256;
         function setMp3Bitrate(v) {
             let n = parseInt(v, 10);
             if (![128, 192, 256, 320].includes(n)) n = 192;
@@ -787,7 +834,7 @@
             try { localStorage.setItem('swaralay_mp3_bitrate', String(n)); } catch (e) {}
         }
         function getMp3Bitrate() {
-            return Math.max(128, mp3Bitrate || 192);
+            return Math.max(128, mp3Bitrate || 256);
         }
  // 'mp3' | 'wav'
 
@@ -857,6 +904,19 @@
         let liveIsPlaying = false;
         let liveEchoOn = false;
         let liveReverbOn = false;
+
+        // Live mic → speaker/Bluetooth monitor (Web Audio, no server)
+        let micMonOn = false;
+        let micMonCtx = null;
+        let micMonStream = null;
+        let micMonSource = null;
+        let micMonDry = null;
+        let micMonPreamp = null;
+        let micMonEchoDelay = null;
+        let micMonEchoFb = null;
+        let micMonEchoWet = null;
+        let micMonConv = null;
+        let micMonRevWet = null;
         let liveBuffer = null;
         let liveStartTime = 0;
         let liveAutomation = [];   // [{t, echo, reverb}]
@@ -1251,32 +1311,53 @@
                     console.warn('Native record failed, trying WebView:', r);
                 }
 
-                // Fallback: WebView getUserMedia
+                // Fallback: WebView getUserMedia — highest practical quality for music
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('Mic recording not supported. Install a new APK (with MainActivity update).');
-                    return;
+                    throw new Error('Recording not supported in this WebView');
                 }
-                if (projectTracks.length > 0) await startMonitorPlayback();
-
+                // Music mode: no AGC/NS (keeps dynamics); prefer 48 kHz
+                // Studio clarity for RECORD: no AGC/NS (avoids muddy / pumping audio)
+                const musicAudio = {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    channelCount: 1,
+                    sampleRate: 48000
+                };
                 try {
-                    currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                } catch (e1) {
-                    currentStream = await navigator.mediaDevices.getUserMedia({
-                        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-                    });
+                    currentStream = await navigator.mediaDevices.getUserMedia({ audio: musicAudio });
+                } catch (e0) {
+                    try {
+                        currentStream = await navigator.mediaDevices.getUserMedia({
+                            audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+                        });
+                    } catch (e1) {
+                        currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
                 }
 
                 let mimeType = '';
-                let candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+                let candidates = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/mp4;codecs=mp4a.40.2',
+                    'audio/mp4',
+                    'audio/ogg;codecs=opus'
+                ];
                 for (let t of candidates) {
                     if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
                 }
-                let recOpts = { audioBitsPerSecond: 128000 };
+                // 256 kbps capture (was 128) — final save still uses Settings MP3 bitrate
+                let recOpts = { audioBitsPerSecond: 256000 };
                 if (mimeType) recOpts.mimeType = mimeType;
                 try {
                     mediaRecorder = new MediaRecorder(currentStream, recOpts);
                 } catch (e1) {
-                    mediaRecorder = new MediaRecorder(currentStream);
+                    try {
+                        mediaRecorder = new MediaRecorder(currentStream, { audioBitsPerSecond: 192000 });
+                    } catch (e2) {
+                        mediaRecorder = new MediaRecorder(currentStream);
+                    }
                 }
 
                 audioChunks = [];
@@ -2604,6 +2685,152 @@
             return impulse;
         }
 
+        
+        function updateMicMonitorLevels() {
+            if (!micMonOn) return;
+            try {
+                let vol = (parseInt((document.getElementById('micMonVol') || {}).value, 10) || 0) / 100;
+                let echo = (parseInt((document.getElementById('micMonEcho') || {}).value, 10) || 0) / 100;
+                let rev = (parseInt((document.getElementById('micMonRev') || {}).value, 10) || 0) / 100;
+                if (micMonPreamp) micMonPreamp.gain.value = Math.max(0.5, Math.min(3.5, 1.8 * Math.max(0.4, vol)));
+                if (micMonDry) micMonDry.gain.value = Math.max(0, Math.min(1.5, vol));
+                if (micMonEchoWet) micMonEchoWet.gain.value = echo * 0.75 * Math.max(0.3, vol);
+                if (micMonRevWet) micMonRevWet.gain.value = rev * 0.85 * Math.max(0.3, vol);
+                if (micMonEchoFb) micMonEchoFb.gain.value = Math.min(0.55, 0.2 + echo * 0.4);
+                let st = document.getElementById('micMonStatus');
+                if (st) {
+                    st.textContent = 'Monitoring · Vol ' + Math.round(vol * 100) + '% · Echo ' + Math.round(echo * 100) + '% · Rev ' + Math.round(rev * 100) + '%';
+                    st.style.color = 'var(--success)';
+                }
+            } catch (e) { console.warn(e); }
+        }
+
+        async function rebuildMicMonitorReverb() {
+            if (!micMonOn || !micMonCtx || !micMonConv) return;
+            try {
+                let t = (document.getElementById('micMonRevType') || {}).value || 'hall';
+                let amt = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 40;
+                micMonConv.buffer = await getImpulseBuffer(micMonCtx, Math.max(30, amt), t);
+                updateMicMonitorLevels();
+            } catch (e) { console.warn(e); }
+        }
+
+        async function stopMicMonitor() {
+            micMonOn = false;
+            try {
+                if (micMonSource) { try { micMonSource.disconnect(); } catch (e) {} micMonSource = null; }
+                if (micMonStream) {
+                    micMonStream.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) {} });
+                    micMonStream = null;
+                }
+                if (micMonCtx) {
+                    try { await micMonCtx.close(); } catch (e) {}
+                    micMonCtx = null;
+                }
+            } catch (e) {}
+            micMonDry = micMonPreamp = micMonEchoDelay = micMonEchoFb = micMonEchoWet = micMonConv = micMonRevWet = null;
+            let btn = document.getElementById('micMonBtn');
+            if (btn) {
+                btn.textContent = '🎧 Start Live Monitor';
+                btn.style.background = 'var(--success)';
+                btn.style.color = '#000';
+            }
+            let st = document.getElementById('micMonStatus');
+            if (st) { st.textContent = 'Monitor off'; st.style.color = '#888'; }
+        }
+
+        async function toggleMicMonitor() {
+            if (micMonOn) {
+                await stopMicMonitor();
+                return;
+            }
+            if (isRecording) {
+                alert('Stop recording first, then start Live Monitor.\\n(Or use headphones while recording layers.)');
+                return;
+            }
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Mic not available in this WebView');
+                }
+                // Far-voice friendly: AGC + light NS (like phone call distance)
+                const farVoice = {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    channelCount: 1,
+                    sampleRate: 48000
+                };
+                try {
+                    micMonStream = await navigator.mediaDevices.getUserMedia({ audio: farVoice });
+                } catch (e0) {
+                    try {
+                        micMonStream = await navigator.mediaDevices.getUserMedia({
+                            audio: { echoCancellation: true, autoGainControl: true, noiseSuppression: true }
+                        });
+                    } catch (e1) {
+                        micMonStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
+                }
+                micMonCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+                if (micMonCtx.state === 'suspended') await micMonCtx.resume();
+                micMonSource = micMonCtx.createMediaStreamSource(micMonStream);
+
+                // Preamp so quieter / farther speech is audible on BT speaker
+                micMonPreamp = micMonCtx.createGain();
+                micMonPreamp.gain.value = 1.8;
+                micMonSource.connect(micMonPreamp);
+
+                micMonDry = micMonCtx.createGain();
+                micMonDry.gain.value = 0.85;
+
+                // Echo
+                micMonEchoDelay = micMonCtx.createDelay(1.0);
+                micMonEchoDelay.delayTime.value = 0.28;
+                micMonEchoFb = micMonCtx.createGain();
+                micMonEchoFb.gain.value = 0.3;
+                micMonEchoWet = micMonCtx.createGain();
+                micMonEchoWet.gain.value = 0;
+                let echoLp = micMonCtx.createBiquadFilter();
+                echoLp.type = 'lowpass';
+                echoLp.frequency.value = 4000;
+                micMonPreamp.connect(micMonEchoDelay);
+                micMonEchoDelay.connect(echoLp);
+                echoLp.connect(micMonEchoFb);
+                micMonEchoFb.connect(micMonEchoDelay);
+                micMonEchoDelay.connect(micMonEchoWet);
+
+                // Reverb (real IR when available)
+                micMonConv = micMonCtx.createConvolver();
+                let rtype = (document.getElementById('micMonRevType') || {}).value || 'hall';
+                let ramt = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 25;
+                micMonConv.buffer = await getImpulseBuffer(micMonCtx, Math.max(30, ramt), rtype);
+                micMonRevWet = micMonCtx.createGain();
+                micMonRevWet.gain.value = 0;
+                micMonPreamp.connect(micMonConv);
+                micMonConv.connect(micMonRevWet);
+
+                // Dry + wets → speaker / Bluetooth (system default output)
+                micMonPreamp.connect(micMonDry);
+                micMonDry.connect(micMonCtx.destination);
+                micMonEchoWet.connect(micMonCtx.destination);
+                micMonRevWet.connect(micMonCtx.destination);
+
+                micMonOn = true;
+                updateMicMonitorLevels();
+                let btn = document.getElementById('micMonBtn');
+                if (btn) {
+                    btn.textContent = '⏹ Stop Live Monitor';
+                    btn.style.background = '#ff4757';
+                    btn.style.color = '#fff';
+                }
+            } catch (err) {
+                console.error(err);
+                await stopMicMonitor();
+                alert('Live Monitor failed: ' + (err && err.message ? err.message : err) +
+                    '\\n\\nAllow Microphone permission. Connect Bluetooth speaker in phone Settings, then try again.');
+            }
+        }
+
         async function toggleLivePlay() {
             if (liveIsPlaying) {
                 stopLivePlay();
@@ -2907,6 +3134,7 @@
         }
 
         function stopAllPreviews() {
+            try { if (typeof micMonOn !== 'undefined' && micMonOn) stopMicMonitor(); } catch (e) {}
             try { stopMonitorPlayback(); } catch (e) {}
             try { stopLivePlay(); } catch (e) {}
             if (currentMasterSource) { 
@@ -3908,6 +4136,9 @@
             let echoStyle = (document.getElementById('fxEchoStyle') || {}).value || 'pingpong';
             let reverb = parseInt(document.getElementById('fxReverb').value) / 100;
             let reverbType = document.getElementById('fxReverbType').value || 'room';
+            let dryLevel = (parseInt((document.getElementById('fxDry') || {}).value, 10));
+            if (!isFinite(dryLevel)) dryLevel = 100;
+            dryLevel = Math.max(0, Math.min(100, dryLevel)) / 100;
             let autoPanAmt = (parseInt((document.getElementById('fxAutoPan') || {}).value, 10) || 0) / 100;
             let autoPanHz = parseFloat((document.getElementById('fxAutoPanSpeed') || {}).value) || 0.35;
             let stereoWidth = (parseInt((document.getElementById('fxStereoWidth') || {}).value, 10) || 70) / 100;
@@ -3975,15 +4206,19 @@
             lastNode.connect(bassFilter);
             bassFilter.connect(trebleFilter);
             
-            // Dry path — optional stereo width + auto-pan on the main signal
-            let dryOut = trebleFilter;
+            // Dry path — independent dry level (studio parallel: dry stays full, only wet changes)
+            let dryGainNode = ctx.createGain();
+            dryGainNode.gain.value = dryLevel; // 0..1, default 1.0 — ear stays full
+            trebleFilter.connect(dryGainNode);
+
+            let dryOut = dryGainNode;
             let masterPan = null;
             if (ctx.createStereoPanner && (autoPanAmt > 0.02 || stereoWidth > 0.05)) {
                 // Mid-side style width: duplicate to two panners
                 let w = Math.max(0, Math.min(1, stereoWidth));
                 let gDry = ctx.createGain();
                 gDry.gain.value = 1;
-                trebleFilter.connect(gDry);
+                dryGainNode.connect(gDry);
 
                 if (autoPanAmt > 0.02 && ctx.createStereoPanner) {
                     masterPan = ctx.createStereoPanner();
@@ -4023,7 +4258,7 @@
                     gDry.connect(ctx.destination);
                 }
             } else {
-                trebleFilter.connect(ctx.destination);
+                dryGainNode.connect(ctx.destination);
             }
 
             // --- Echo: normal OR ping-pong (L then R) ---
@@ -4089,10 +4324,14 @@
             if (reverb > 0.01) {
                 let convNode = ctx.createConvolver();
                 convNode.buffer = await getImpulseBuffer(ctx, reverb * 100, reverbType);
+                // Wet only — does not lower dry (dryGainNode already set separately)
                 let reverbGain = ctx.createGain();
-                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.4 : 1.2;
-                reverbGain.gain.value = Math.min(1.15, reverb * wetBoost);
-                trebleFilter.connect(convNode);
+                // Gentle curve so low % is audible, high % not harsh
+                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.35 : 1.15;
+                let wetCurve = reverb * reverb * wetBoost; // smoother at low settings
+                if (reverb > 0.01) wetCurve = Math.max(wetCurve, reverb * 0.35 * wetBoost);
+                reverbGain.gain.value = Math.min(1.2, wetCurve);
+                trebleFilter.connect(convNode); // send from pre-dry-gain = full send, mix at output
                 convNode.connect(reverbGain);
                 if (ctx.createStereoPanner) {
                     let spread = 0.25 + stereoWidth * 0.55;
