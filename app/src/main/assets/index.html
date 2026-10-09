@@ -684,7 +684,7 @@
             <div style="background:#0f2a1a; border:1px solid var(--success); border-radius:10px; padding:15px; margin:15px 0;">
                 <h3 style="margin:0 0 8px 0; color:var(--success); text-align:center; font-size:16px;">🎧 Live Mic Monitor</h3>
                 <p style="font-size:12px; color:#a8c5b0; margin:0 0 12px 0; line-height:1.45; text-align:center;">
-                    Speak at <b>normal phone-call distance</b> (not only right on the mic). Sound goes to <b>Bluetooth / speaker</b> with live Echo &amp; Reverb.<br>
+                    Uses <b>Native monitor</b> on Android (works with Bluetooth). Speak at <b>phone-call distance</b> (not only right on the mic). Sound goes to <b>Bluetooth / speaker</b> with live Echo &amp; Reverb.<br>
                     <b>Tip:</b> Headphones = best. Loud speaker near mic may whistle — lower Monitor volume.
                 </p>
                 <button type="button" id="micMonBtn" onclick="toggleMicMonitor()" style="width:100%; background:var(--success); color:#000; margin:0 0 12px 0; padding:14px; font-weight:bold;">
@@ -907,6 +907,7 @@
 
         // Live mic → speaker/Bluetooth monitor (Web Audio, no server)
         let micMonOn = false;
+        let micMonNative = false;
         let micMonCtx = null;
         let micMonStream = null;
         let micMonSource = null;
@@ -2689,24 +2690,29 @@
         function updateMicMonitorLevels() {
             if (!micMonOn) return;
             try {
-                let vol = (parseInt((document.getElementById('micMonVol') || {}).value, 10) || 0) / 100;
-                let echo = (parseInt((document.getElementById('micMonEcho') || {}).value, 10) || 0) / 100;
-                let rev = (parseInt((document.getElementById('micMonRev') || {}).value, 10) || 0) / 100;
-                if (micMonPreamp) micMonPreamp.gain.value = Math.max(0.5, Math.min(3.5, 1.8 * Math.max(0.4, vol)));
-                if (micMonDry) micMonDry.gain.value = Math.max(0, Math.min(1.5, vol));
-                if (micMonEchoWet) micMonEchoWet.gain.value = echo * 0.75 * Math.max(0.3, vol);
-                if (micMonRevWet) micMonRevWet.gain.value = rev * 0.85 * Math.max(0.3, vol);
-                if (micMonEchoFb) micMonEchoFb.gain.value = Math.min(0.55, 0.2 + echo * 0.4);
+                let vol = parseInt((document.getElementById('micMonVol') || {}).value, 10);
+                if (!isFinite(vol)) vol = 85;
+                let echo = parseInt((document.getElementById('micMonEcho') || {}).value, 10) || 0;
+                let rev = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 0;
+                if (window.AndroidBridge && typeof AndroidBridge.setNativeMonitorLevels === 'function' && micMonNative) {
+                    AndroidBridge.setNativeMonitorLevels(vol, echo);
+                }
+                if (micMonPreamp) micMonPreamp.gain.value = Math.max(0.5, Math.min(3.5, 1.8 * Math.max(0.4, vol / 100)));
+                if (micMonDry) micMonDry.gain.value = Math.max(0, Math.min(1.5, vol / 100));
+                if (micMonEchoWet) micMonEchoWet.gain.value = (echo / 100) * 0.75 * Math.max(0.3, vol / 100);
+                if (micMonRevWet) micMonRevWet.gain.value = (rev / 100) * 0.85 * Math.max(0.3, vol / 100);
+                if (micMonEchoFb) micMonEchoFb.gain.value = Math.min(0.55, 0.2 + (echo / 100) * 0.4);
                 let st = document.getElementById('micMonStatus');
                 if (st) {
-                    st.textContent = 'Monitoring · Vol ' + Math.round(vol * 100) + '% · Echo ' + Math.round(echo * 100) + '% · Rev ' + Math.round(rev * 100) + '%';
+                    st.textContent = (micMonNative ? 'Native monitor' : 'Web monitor') +
+                        ' · Vol ' + vol + '% · Echo ' + echo + '%' + (micMonNative ? '' : (' · Rev ' + rev + '%'));
                     st.style.color = 'var(--success)';
                 }
             } catch (e) { console.warn(e); }
         }
 
         async function rebuildMicMonitorReverb() {
-            if (!micMonOn || !micMonCtx || !micMonConv) return;
+            if (!micMonOn || micMonNative || !micMonCtx || !micMonConv) return;
             try {
                 let t = (document.getElementById('micMonRevType') || {}).value || 'hall';
                 let amt = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 40;
@@ -2717,6 +2723,12 @@
 
         async function stopMicMonitor() {
             micMonOn = false;
+            try {
+                if (micMonNative && window.AndroidBridge && typeof AndroidBridge.stopNativeMonitor === 'function') {
+                    AndroidBridge.stopNativeMonitor();
+                }
+            } catch (e) {}
+            micMonNative = false;
             try {
                 if (micMonSource) { try { micMonSource.disconnect(); } catch (e) {} micMonSource = null; }
                 if (micMonStream) {
@@ -2745,45 +2757,73 @@
                 return;
             }
             if (isRecording) {
-                alert('Stop recording first, then start Live Monitor.\\n(Or use headphones while recording layers.)');
+                alert('Stop recording first, then start Live Monitor.');
                 return;
             }
+            let vol = parseInt((document.getElementById('micMonVol') || {}).value, 10);
+            if (!isFinite(vol)) vol = 85;
+            let echo = parseInt((document.getElementById('micMonEcho') || {}).value, 10) || 0;
+
+            // 1) Prefer native Android loopback (works with Bluetooth when WebView fails)
+            if (window.AndroidBridge && typeof AndroidBridge.startNativeMonitor === 'function') {
+                try {
+                    let r = String(AndroidBridge.startNativeMonitor(vol, echo) || '');
+                    if (r === 'NEED_PERMISSION') {
+                        if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
+                        alert('Allow Microphone, then press Start Live Monitor again.');
+                        return;
+                    }
+                    if (r.indexOf('OK') === 0) {
+                        micMonOn = true;
+                        micMonNative = true;
+                        let btn = document.getElementById('micMonBtn');
+                        if (btn) {
+                            btn.textContent = '⏹ Stop Live Monitor';
+                            btn.style.background = '#ff4757';
+                            btn.style.color = '#fff';
+                        }
+                        updateMicMonitorLevels();
+                        let st = document.getElementById('micMonStatus');
+                        if (st) st.textContent = 'Native monitor on · speak & listen on BT/speaker';
+                        return;
+                    }
+                    console.warn('Native monitor:', r);
+                } catch (ne) {
+                    console.warn(ne);
+                }
+            }
+
+            // 2) WebView fallback — try simple constraints (BT often breaks complex constraints)
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Mic not available in this WebView');
+                    throw new Error('Could not start audio source');
                 }
-                // Far-voice friendly: AGC + light NS (like phone call distance)
-                const farVoice = {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    channelCount: 1,
-                    sampleRate: 48000
-                };
-                try {
-                    micMonStream = await navigator.mediaDevices.getUserMedia({ audio: farVoice });
-                } catch (e0) {
+                const tries = [
+                    { audio: true },
+                    { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }
+                ];
+                let lastErr = null;
+                micMonStream = null;
+                for (let i = 0; i < tries.length; i++) {
                     try {
-                        micMonStream = await navigator.mediaDevices.getUserMedia({
-                            audio: { echoCancellation: true, autoGainControl: true, noiseSuppression: true }
-                        });
-                    } catch (e1) {
-                        micMonStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        micMonStream = await navigator.mediaDevices.getUserMedia(tries[i]);
+                        if (micMonStream) break;
+                    } catch (e) {
+                        lastErr = e;
                     }
                 }
-                micMonCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+                if (!micMonStream) {
+                    throw lastErr || new Error('Could not start audio source');
+                }
+                micMonCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (micMonCtx.state === 'suspended') await micMonCtx.resume();
                 micMonSource = micMonCtx.createMediaStreamSource(micMonStream);
-
-                // Preamp so quieter / farther speech is audible on BT speaker
                 micMonPreamp = micMonCtx.createGain();
                 micMonPreamp.gain.value = 1.8;
                 micMonSource.connect(micMonPreamp);
-
                 micMonDry = micMonCtx.createGain();
                 micMonDry.gain.value = 0.85;
-
-                // Echo
                 micMonEchoDelay = micMonCtx.createDelay(1.0);
                 micMonEchoDelay.delayTime.value = 0.28;
                 micMonEchoFb = micMonCtx.createGain();
@@ -2798,24 +2838,21 @@
                 echoLp.connect(micMonEchoFb);
                 micMonEchoFb.connect(micMonEchoDelay);
                 micMonEchoDelay.connect(micMonEchoWet);
-
-                // Reverb (real IR when available)
                 micMonConv = micMonCtx.createConvolver();
-                let rtype = (document.getElementById('micMonRevType') || {}).value || 'hall';
-                let ramt = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 25;
-                micMonConv.buffer = await getImpulseBuffer(micMonCtx, Math.max(30, ramt), rtype);
+                try {
+                    let rtype = (document.getElementById('micMonRevType') || {}).value || 'hall';
+                    let ramt = parseInt((document.getElementById('micMonRev') || {}).value, 10) || 25;
+                    micMonConv.buffer = await getImpulseBuffer(micMonCtx, Math.max(30, ramt), rtype);
+                } catch (e) {}
                 micMonRevWet = micMonCtx.createGain();
                 micMonRevWet.gain.value = 0;
-                micMonPreamp.connect(micMonConv);
-                micMonConv.connect(micMonRevWet);
-
-                // Dry + wets → speaker / Bluetooth (system default output)
+                try { micMonPreamp.connect(micMonConv); micMonConv.connect(micMonRevWet); } catch (e) {}
                 micMonPreamp.connect(micMonDry);
                 micMonDry.connect(micMonCtx.destination);
                 micMonEchoWet.connect(micMonCtx.destination);
-                micMonRevWet.connect(micMonCtx.destination);
-
+                try { micMonRevWet.connect(micMonCtx.destination); } catch (e) {}
                 micMonOn = true;
+                micMonNative = false;
                 updateMicMonitorLevels();
                 let btn = document.getElementById('micMonBtn');
                 if (btn) {
@@ -2827,7 +2864,7 @@
                 console.error(err);
                 await stopMicMonitor();
                 alert('Live Monitor failed: ' + (err && err.message ? err.message : err) +
-                    '\\n\\nAllow Microphone permission. Connect Bluetooth speaker in phone Settings, then try again.');
+                    '\\n\\n1) Allow Microphone\\n2) Stop recording if active\\n3) Connect Bluetooth, set media audio on\\n4) Upload latest MainActivity.java for Native Monitor');
             }
         }
 
