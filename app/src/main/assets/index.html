@@ -254,7 +254,7 @@
     <h1 class="header">Swaralay<span class="header-sub">SWARALAY</span></h1>
 
     <!-- 🎵 PLAYER TAB -->
-    <div id="player" class="content active">
+    <div id="player" class="content">
         <div class="card">
             <h2>🎵 Player</h2>
             <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
@@ -297,7 +297,7 @@
     </div>
 
     <!-- ✂️ EDITOR TAB -->
-    <div id="editor" class="content">
+    <div id="editor" class="content active">
         
         <div class="editor-nav" role="tablist" aria-label="Editor Tools">
             <button type="button" class="editor-sub-tab" role="tab" aria-selected="false" aria-controls="panel-cut" onclick="openEditorPanel('panel-cut', this)">✂️ Cut</button>
@@ -599,10 +599,10 @@
                     <option value="1.2">Very fast</option>
                 </select>
 
-                <label class="fx-label" style="color:var(--accent); margin-top:12px;">↔️ Stereo width %</label>
+                <label class="fx-label" style="color:var(--accent); margin-top:12px;">↔️ Stereo width % (100 = original, 0 = mono)</label>
                 <div class="stepper-group" style="margin-bottom:4px;">
                     <button class="stepper-btn" onclick="adjustInputVal('fxStereoWidth', -5)" aria-label="Decrease stereo width">➖</button>
-                    <input type="number" id="fxStereoWidth" value="70" min="0" max="100" aria-label="Stereo width">
+                    <input type="number" id="fxStereoWidth" value="100" min="0" max="100" aria-label="Stereo width">
                     <button class="stepper-btn" onclick="adjustInputVal('fxStereoWidth', 5)" aria-label="Increase stereo width">➕</button>
                 </div>
                 <p style="font-size:11px; color:#666; margin:6px 0 0;">Width / ping-pong / auto-pan make left &amp; right speakers feel separate — like guitar one side, vocal the other.</p>
@@ -685,7 +685,7 @@
                 <h3 style="margin:0 0 8px 0; color:var(--success); text-align:center; font-size:16px;">🎧 Live Mic Monitor</h3>
                 <p style="font-size:12px; color:#a8c5b0; margin:0 0 12px 0; line-height:1.45; text-align:center;">
                     Uses <b>Native monitor</b> on Android (works with Bluetooth). Speak at <b>phone-call distance</b> (not only right on the mic). Sound goes to <b>Bluetooth / speaker</b> with live Echo &amp; Reverb.<br>
-                    <b>Tip:</b> Headphones = best. Loud speaker near mic may whistle — lower Monitor volume.<br><b>Record while monitoring:</b> start Live Monitor first, then press Record above — only the dry mic input is recorded (no echo / reverb / monitor sound). Add effects later in FX.
+                    <b>Tip:</b> Headphones = best. Loud speaker near mic may whistle — lower Monitor volume.<br><b>Record while monitoring:</b> start Live Monitor first, then press Record above. By default only the raw mic input is recorded; tick <b>Record with effects</b> below to record your Echo / Reverb too (stereo).
                 </p>
                 <button type="button" id="micMonBtn" onclick="toggleMicMonitor()" style="width:100%; background:var(--success); color:#000; margin:0 0 12px 0; padding:14px; font-weight:bold;">
                     🎧 Start Live Monitor
@@ -715,7 +715,18 @@
                     <option value="plate">Plate</option>
                     <option value="cathedral">Cathedral</option>
                 </select>
-                <p style="font-size:11px; color:#6a8a7a; text-align:center; margin:8px 0 0;">Raise <b>Reverb</b> to 40–70 while monitor is ON — you should hear a clear hall-like tail. Echo is a single repeat.</p>
+                <div role="group" aria-label="Monitor sound options" style="margin:12px 0 4px 0; padding:12px; border:1px solid #2e5a40; border-radius:8px;">
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#cfe8d8; margin:0 0 10px 0;"><input type="checkbox" id="micMonRecFx" onchange="applyMicMonitorOptions()" style="width:22px; height:22px; flex:0 0 auto; margin:2px 0 0 0;"><span><b>Record with effects (FX).</b> রেকর্ডে মনিটরের Echo / Reverb সহ গলা রেকর্ড হবে (স্টিরিও)। বন্ধ থাকলে শুধু কাঁচা মাইক রেকর্ড হয়। Live Monitor চালু থাকলে তবেই কাজ করে।</span></label>
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#cfe8d8; margin:0 0 10px 0;"><input type="checkbox" id="micMonLowCut" checked onchange="applyMicMonitorOptions()" style="width:22px; height:22px; flex:0 0 auto; margin:2px 0 0 0;"><span><b>Low-cut (90 Hz).</b> ফুঁ, বাতাস আর গুনগুন আওয়াজ কমায়।</span></label>
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#cfe8d8; margin:0 0 10px 0;"><input type="checkbox" id="micMonGate" onchange="applyMicMonitorOptions()" style="width:22px; height:22px; flex:0 0 auto; margin:2px 0 0 0;"><span><b>Noise gate.</b> চুপ থাকলে হিস (চি চি) আওয়াজ কমায়।</span></label>
+                    <label for="micMonMode" style="font-size:12px; color:#aaa; display:block;">Mic mode</label>
+                    <select id="micMonMode" aria-label="Mic mode" onchange="applyMicMonitorOptions()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:10px;">
+                        <option value="clear" selected>Clear — raw microphone (best quality)</option>
+                        <option value="voice">Voice filtered — phone noise suppression</option>
+                    </select>
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#cfe8d8; margin:0;"><input type="checkbox" id="micMonSafe" onchange="applyMicMonitorOptions()" style="width:22px; height:22px; flex:0 0 auto; margin:2px 0 0 0;"><span><b>Safe latency.</b> আওয়াজ কেটে কেটে গেলে চালু করুন (একটু দেরিতে শোনা যাবে)।</span></label>
+                </div>
+                <p style="font-size:11px; color:#6a8a7a; text-align:center; margin:8px 0 0;">Raise <b>Reverb</b> to 40–70 while the monitor is ON. Reverb uses your <b>ir-room / ir-hall / ir-plate / ir-cathedral</b> files, in stereo. Echo bounces left ↔ right.</p>
                 <p id="micMonStatus" style="font-size:12px; color:#888; text-align:center; margin:6px 0 0;" aria-live="polite">Monitor off</p>
             </div>
 
@@ -816,8 +827,8 @@
 
     <!-- NAVIGATION TABS (Bottom) -->
     <div class="tabs" role="tablist" aria-label="Main Navigation">
-        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="player" onclick="openMainTab('player', this)" aria-label="Player">🎵<br>Player</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="editor" onclick="openMainTab('editor', this)" aria-label="Editor">✂️<br>Editor</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="player" onclick="openMainTab('player', this)" aria-label="Player">🎵<br>Player</button>
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="editor" onclick="openMainTab('editor', this)" aria-label="Editor">✂️<br>Editor</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="settings" onclick="openMainTab('settings', this)" aria-label="Settings">⚙️<br>Settings</button>
     </div>
 
@@ -872,6 +883,7 @@
         let currentRowBtn = null;
         let currentMasterSource = null;
         let isPreviewingMaster = false;
+        let fxPreviewCtx = null; // AudioContext used by FX preview (closed when preview stops)
         let currentPreviewType = ''; 
         let cutterPlayer = document.getElementById('cutterAudioPlayer');
         let isPreviewingCut = false; 
@@ -977,7 +989,9 @@
             let input = document.getElementById(inputId);
             let val = parseFloat(input.value) || 0;
             let step = volStep;
-            if (inputId === 'fxEchoDelay') step = 10;
+            // These buttons already pass the full amount (±10 ms / ±5 %) in `direction`
+            if (inputId === 'fxEchoDelay' || inputId === 'fxAutoPan' || inputId === 'fxStereoWidth'
+                || inputId === 'micMonVol' || inputId === 'micMonEcho' || inputId === 'micMonRev') step = 1;
             else if (inputId === 'fxSpeed') step = 5;
             else if (inputId === 'fxPitch') step = 1;
             let newVal = val + (step * direction);
@@ -2450,9 +2464,25 @@
             const file = IR_FILE[key] || IR_FILE.room;
             try {
                 const url = file; // same folder as index.html (android_asset)
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const ab = await res.arrayBuffer();
+                let ab;
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    ab = await res.arrayBuffer();
+                } catch (fe) {
+                    // Some WebViews refuse fetch() on file:///android_asset — XHR works there
+                    ab = await new Promise(function (resolve, reject) {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', url, true);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.onload = function () {
+                            if (xhr.response && xhr.response.byteLength > 44) resolve(xhr.response);
+                            else reject(new Error('empty IR response (status ' + xhr.status + ')'));
+                        };
+                        xhr.onerror = function () { reject(new Error('XHR failed')); };
+                        xhr.send();
+                    });
+                }
                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                 const buf = await ac.decodeAudioData(ab.slice(0));
                 try { await ac.close(); } catch (e) {}
@@ -2690,6 +2720,60 @@
         }
 
         
+        // ---- Live monitor options: talkback / low-cut / gate / mic mode / safe latency ----
+        function getMicMonOptions() {
+            const chk = function (id, def) { const el = document.getElementById(id); return el ? !!el.checked : def; };
+            const modeEl = document.getElementById('micMonMode');
+            return {
+                recFx: chk('micMonRecFx', false),
+                lowCut: chk('micMonLowCut', true),
+                gate: chk('micMonGate', false),
+                mode: (modeEl && modeEl.value === 'voice') ? 'voice' : 'clear',
+                safe: chk('micMonSafe', false)
+            };
+        }
+
+        function pushMicMonOptionsToNative() {
+            try {
+                if (window.AndroidBridge && typeof AndroidBridge.setNativeMonitorOptions === 'function') {
+                    const o = getMicMonOptions();
+                    return String(AndroidBridge.setNativeMonitorOptions(o.lowCut, o.gate, o.mode, o.safe, o.recFx) || '');
+                }
+            } catch (e) { console.warn('setNativeMonitorOptions', e); }
+            return '';
+        }
+
+        function irStatusText() {
+            try {
+                if (window.AndroidBridge && typeof AndroidBridge.getNativeMonitorInfo === 'function') {
+                    const i = JSON.parse(String(AndroidBridge.getNativeMonitorInfo() || '{}'));
+                    if (i.on) {
+                        return i.irOk ? (' · IR reverb: ' + i.type + ' ✓')
+                                      : (' · ir-' + i.type + '.wav not found in assets → basic reverb');
+                    }
+                }
+            } catch (e) {}
+            return '';
+        }
+
+        async function applyMicMonitorOptions() {
+            if (!micMonOn) return;
+            if (micMonNative) {
+                const r = pushMicMonOptionsToNative();
+                if (r === 'NEEDS_RESTART') {
+                    if (isRecording) {
+                        const st = document.getElementById('micMonStatus');
+                        if (st) st.textContent = 'Mic mode / Safe latency will apply the next time you start the monitor (recording is running).';
+                        return;
+                    }
+                    await stopMicMonitor();
+                    await toggleMicMonitor();
+                    return;
+                }
+            }
+            updateMicMonitorLevels();
+        }
+
         function updateMicMonitorLevels() {
             if (!micMonOn) return;
             try {
@@ -2714,8 +2798,12 @@
                 if (micMonEchoFb) micMonEchoFb.gain.value = Math.min(0.55, 0.2 + (echo / 100) * 0.4);
                 let st = document.getElementById('micMonStatus');
                 if (st) {
-                    st.textContent = (micMonNative ? 'Native monitor' : 'Web monitor') +
+                    let mo = getMicMonOptions();
+                    let txt = (micMonNative ? 'Native monitor' : 'Web monitor') +
                         ' · Vol ' + vol + '% · Echo ' + echo + '% · Rev ' + rev + '%';
+                    if (micMonNative && rev > 0) txt += irStatusText();
+                    if (mo.recFx) txt += ' · Recording will include effects';
+                    st.textContent = txt;
                     st.style.color = 'var(--success)';
                 }
             } catch (e) { console.warn(e); }
@@ -2726,6 +2814,7 @@
                 try {
                     if (window.AndroidBridge && AndroidBridge.setNativeMonitorReverbType) {
                         AndroidBridge.setNativeMonitorReverbType(String((document.getElementById('micMonRevType') || {}).value || 'hall'));
+                        setTimeout(updateMicMonitorLevels, 600);
                     }
                 } catch (e) { console.warn(e); }
                 return;
@@ -2795,6 +2884,7 @@
                             AndroidBridge.setNativeMonitorReverbType(String((document.getElementById('micMonRevType') || {}).value || 'hall'));
                         }
                     } catch (te) {}
+                    pushMicMonOptionsToNative();
                     let r = String(AndroidBridge.startNativeMonitor(vol, echo, rev0) || '');
                     if (r === 'NEED_PERMISSION') {
                         if (AndroidBridge.requestMicPermission) AndroidBridge.requestMicPermission();
@@ -2812,7 +2902,7 @@
                         }
                         updateMicMonitorLevels();
                         let st = document.getElementById('micMonStatus');
-                        if (st) st.textContent = 'Native monitor on · speak & listen on BT/speaker';
+                        if (st) st.textContent += ' · speak & listen on headphones / BT';
                         return;
                     }
                     if (r.indexOf('ERROR:record_active') === 0) {
@@ -3210,6 +3300,7 @@
                 try { currentMasterSource.disconnect(); } catch(e){}
                 currentMasterSource = null; 
             }
+            if (fxPreviewCtx) { try { fxPreviewCtx.close(); } catch (e) {} fxPreviewCtx = null; }
             isPreviewingMaster = false;
             if (rowAudioPlayer && !rowAudioPlayer.paused) { 
                 rowAudioPlayer.pause(); 
@@ -4194,6 +4285,67 @@
             return out;
         }
 
+        // ---- FX helpers ----
+        let _fxLimiterCurve = null;
+        /** Transparent below 80 % of full scale, smooth knee above, never exceeds 1.0 (input range -2..2). */
+        function getFxLimiterCurve() {
+            if (_fxLimiterCurve) return _fxLimiterCurve;
+            const n = 4097;
+            const c = new Float32Array(n);
+            for (let i = 0; i < n; i++) {
+                const x = ((i / (n - 1)) * 2 - 1) * 2;
+                const a = Math.abs(x);
+                const y = a < 0.8 ? a : 0.8 + 0.2 * Math.tanh((a - 0.8) / 0.2);
+                c[i] = x < 0 ? -y : y;
+            }
+            _fxLimiterCurve = c;
+            return c;
+        }
+
+        /** Mid/side width: 1 = original stereo, 0 = mono. Unity gain for centred sound. Mono input works too. */
+        function addStereoWidth(ctx, node, w) {
+            const up = ctx.createGain();
+            up.channelCount = 2;
+            up.channelCountMode = 'explicit';
+            up.channelInterpretation = 'speakers'; // mono -> L=R, stereo untouched
+            node.connect(up);
+            const split = ctx.createChannelSplitter(2);
+            const merge = ctx.createChannelMerger(2);
+            up.connect(split);
+            const a = (1 + w) / 2, b = (1 - w) / 2;
+            const mk = (g) => { const n = ctx.createGain(); n.gain.value = g; return n; };
+            const gLL = mk(a), gRL = mk(b), gLR = mk(b), gRR = mk(a);
+            split.connect(gLL, 0); split.connect(gLR, 0);
+            split.connect(gRL, 1); split.connect(gRR, 1);
+            gLL.connect(merge, 0, 0); gRL.connect(merge, 0, 0);
+            gLR.connect(merge, 0, 1); gRR.connect(merge, 0, 1);
+            return merge;
+        }
+
+        /** How long the echo / reverb keeps ringing after the song ends (seconds). */
+        function fxTailSeconds() {
+            const val = (id) => parseInt((document.getElementById(id) || {}).value, 10) || 0;
+            const reverbAmount = val('fxReverb');
+            const reverbType = (document.getElementById('fxReverbType') || {}).value;
+            const echoPct = val('fxEcho');
+            const delayMs = val('fxEchoDelay') || 280;
+            let tail = 1.5;
+            if (reverbAmount > 0) {
+                if (reverbType === 'room') tail = 2.0 + (reverbAmount / 100) * 1.5;
+                else if (reverbType === 'plate') tail = 2.5 + (reverbAmount / 100) * 2.0;
+                else if (reverbType === 'hall') tail = 3.5 + (reverbAmount / 100) * 2.5;
+                else if (reverbType === 'cathedral') tail = 5.0 + (reverbAmount / 100) * 3.5;
+            }
+            if (echoPct > 1) {
+                const e = Math.min(100, echoPct) / 100;
+                const fb = Math.min(0.62, 0.22 + e * 0.42);
+                const dSec = Math.min(0.95, Math.max(0.05, delayMs / 1000));
+                const repeats = Math.ceil(Math.log(0.003) / Math.log(fb)); // until ~ -50 dB
+                tail = Math.max(tail, Math.min(10, dSec * repeats));
+            }
+            return tail;
+        }
+
         // ========== IMPROVED FX GRAPH ==========
         async function buildFxGraph(ctx, sourceBuffer, isOffline = false) {
             let noiseReduc = parseInt(document.getElementById('fxNoise').value) || 0;
@@ -4209,7 +4361,9 @@
             dryLevel = Math.max(0, Math.min(100, dryLevel)) / 100;
             let autoPanAmt = (parseInt((document.getElementById('fxAutoPan') || {}).value, 10) || 0) / 100;
             let autoPanHz = parseFloat((document.getElementById('fxAutoPanSpeed') || {}).value) || 0.35;
-            let stereoWidth = (parseInt((document.getElementById('fxStereoWidth') || {}).value, 10) || 70) / 100;
+            let stereoWidth = parseInt((document.getElementById('fxStereoWidth') || {}).value, 10);
+            if (!isFinite(stereoWidth)) stereoWidth = 100;
+            stereoWidth = Math.max(0, Math.min(100, stereoWidth)) / 100;
 
             // Noise gate (pitch/tempo is in separate Pitch panel)
             let processedBuffer = sourceBuffer;
@@ -4223,6 +4377,17 @@
 
             let source = ctx.createBufferSource();
             source.buffer = processedBuffer;
+
+            // Master bus: bass/treble boost + dry + echo + reverb can add past 0 dBFS.
+            // Transparent below 80 %, soft knee above, never exceeds full scale.
+            let master = ctx.createGain();
+            let limiterIn = ctx.createGain();
+            limiterIn.gain.value = 0.5;
+            let limiter = ctx.createWaveShaper();
+            limiter.curve = getFxLimiterCurve();
+            master.connect(limiterIn);
+            limiterIn.connect(limiter);
+            limiter.connect(ctx.destination);
 
             let lastNode = source;
 
@@ -4279,23 +4444,17 @@
             dryGainNode.gain.value = dryLevel; // 0..1, default 1.0 — ear stays full
             trebleFilter.connect(dryGainNode);
 
-            let dryOut = dryGainNode;
-            let masterPan = null;
-            if (ctx.createStereoPanner && (autoPanAmt > 0.02 || stereoWidth > 0.05)) {
-                // Mid-side style width: duplicate to two panners
-                let w = Math.max(0, Math.min(1, stereoWidth));
-                let gDry = ctx.createGain();
-                gDry.gain.value = 1;
-                dryGainNode.connect(gDry);
+            // Stereo width acts on the dry signal only: 100 = original stereo, 0 = mono
+            let dryTail = dryGainNode;
+            if (stereoWidth < 0.995) dryTail = addStereoWidth(ctx, dryTail, stereoWidth);
 
-                if (autoPanAmt > 0.02 && ctx.createStereoPanner) {
-                    masterPan = ctx.createStereoPanner();
-                    masterPan.pan.value = 0;
-                    gDry.connect(masterPan);
-                    masterPan.connect(ctx.destination);
-                    dryOut = masterPan;
-                    // Schedule L↔R rotation for full file length (works in OfflineAudioContext too)
-                    try {
+            if (ctx.createStereoPanner && autoPanAmt > 0.02) {
+                let masterPan = ctx.createStereoPanner();
+                masterPan.pan.value = 0;
+                dryTail.connect(masterPan);
+                masterPan.connect(master);
+                try {
+                    // Schedule L↔R rotation for the full file length (works offline too)
                         let dur = Math.max(0.5, sourceBuffer.duration || 30);
                         let depth = Math.min(1, autoPanAmt * 0.95);
                         let n = Math.min(800, Math.max(32, Math.floor(dur * autoPanHz * 16)));
@@ -4305,28 +4464,12 @@
                             curve[i] = Math.sin(2 * Math.PI * autoPanHz * t * dur) * depth;
                         }
                         masterPan.pan.setValueCurveAtTime(curve, ctx.currentTime || 0, dur);
-                    } catch (ePan) {
-                        console.warn('auto-pan curve', ePan);
-                        masterPan.pan.value = 0;
-                    }
-                } else if (w > 0.05 && ctx.createStereoPanner) {
-                    let pL = ctx.createStereoPanner();
-                    let pR = ctx.createStereoPanner();
-                    let splitG = ctx.createGain();
-                    splitG.gain.value = 0.707;
-                    gDry.connect(splitG);
-                    splitG.connect(pL);
-                    splitG.connect(pR);
-                    pL.pan.value = -w;
-                    pR.pan.value = w;
-                    pL.connect(ctx.destination);
-                    pR.connect(ctx.destination);
-                    dryOut = gDry;
-                } else {
-                    gDry.connect(ctx.destination);
+                } catch (ePan) {
+                    console.warn('auto-pan curve', ePan);
+                    masterPan.pan.value = 0;
                 }
             } else {
-                dryGainNode.connect(ctx.destination);
+                dryTail.connect(master);
             }
 
             // --- Echo: normal OR ping-pong (L then R) ---
@@ -4362,13 +4505,13 @@
                     lp.connect(delayL);
                     delayL.connect(wetL);
                     wetL.connect(panL);
-                    panL.connect(ctx.destination);
+                    panL.connect(master);
                     // cross to right
                     delayL.connect(fbL);
                     fbL.connect(delayR);
                     delayR.connect(wetR);
                     wetR.connect(panR);
-                    panR.connect(ctx.destination);
+                    panR.connect(master);
                     // cross back to left
                     delayR.connect(fbR);
                     fbR.connect(delayL);
@@ -4384,7 +4527,7 @@
                     delayNode.connect(feedbackGain);
                     feedbackGain.connect(delayNode);
                     delayNode.connect(wetGain);
-                    wetGain.connect(ctx.destination);
+                    wetGain.connect(master);
                 }
             }
 
@@ -4402,7 +4545,7 @@
                 trebleFilter.connect(convNode); // send from pre-dry-gain = full send, mix at output
                 convNode.connect(reverbGain);
                 if (ctx.createStereoPanner) {
-                    let spread = 0.25 + stereoWidth * 0.55;
+                    let spread = 0.25 + stereoWidth * 0.385;
                     let pL = ctx.createStereoPanner();
                     let pR = ctx.createStereoPanner();
                     let gL = ctx.createGain();
@@ -4415,10 +4558,10 @@
                     gR.connect(pR);
                     pL.pan.value = -spread;
                     pR.pan.value = spread;
-                    pL.connect(ctx.destination);
-                    pR.connect(ctx.destination);
+                    pL.connect(master);
+                    pR.connect(master);
                 } else {
-                    reverbGain.connect(ctx.destination);
+                    reverbGain.connect(master);
                 }
             }
 
@@ -4483,6 +4626,7 @@
                 loading.innerText = "Applying FX... Please wait."; loading.style.display = "block";
                 let buffer = await readAudioData(f1);
                 let playCtx = new AudioContext();
+                fxPreviewCtx = playCtx;
                 
                 currentMasterSource = await buildFxGraph(playCtx, buffer, false);
                 currentMasterSource.start();
@@ -4493,7 +4637,16 @@
                 btn.style.background = '#ff4757';
                 loading.style.display = "none";
                 
-                currentMasterSource.onended = () => { stopAllPreviews(); };
+                const mySource = currentMasterSource;
+                currentMasterSource.onended = () => {
+                    if (currentMasterSource !== mySource) return; // user already stopped it
+                    // Song finished: reset the UI now, but keep the context alive so echo / reverb ring out
+                    const tailCtx = playCtx;
+                    const tailMs = Math.round(fxTailSeconds() * 1000);
+                    fxPreviewCtx = null;
+                    stopAllPreviews();
+                    setTimeout(() => { try { tailCtx.close(); } catch (e) {} }, tailMs);
+                };
             } catch(e) { 
                 alert("Error applying FX!"); 
                 console.error(e); 
@@ -4513,17 +4666,11 @@
                 loading.innerText = "Rendering High Quality FX..."; loading.style.display = "block";
                 let buffer = await readAudioData(f1);
 
-                // Dynamic tail based on reverb category & amount
-                let tailSeconds = 1.5;
-                if (reverbAmount > 0) {
-                    if (reverbType === 'room') tailSeconds = 2.0 + (reverbAmount / 100) * 1.5;
-                    else if (reverbType === 'plate') tailSeconds = 2.5 + (reverbAmount / 100) * 2.0;
-                    else if (reverbType === 'hall') tailSeconds = 3.5 + (reverbAmount / 100) * 2.5;
-                    else if (reverbType === 'cathedral') tailSeconds = 5.0 + (reverbAmount / 100) * 3.5;
-                }
+                // Tail = longest of reverb tail and echo repeats, so nothing is cut off at the end
+                let tailSeconds = fxTailSeconds();
 
                 let offlineCtx = new OfflineAudioContext(
-                    buffer.numberOfChannels, 
+                    Math.max(2, buffer.numberOfChannels), // mono files must still render stereo echo / reverb / pan
                     buffer.length + Math.floor(buffer.sampleRate * tailSeconds), 
                     buffer.sampleRate
                 );
@@ -4568,6 +4715,92 @@
                 return;
             }
         }
+
+        // ========== NATIVE MEDIA SESSION BRIDGE (TalkBack two-finger double-tap, headset buttons) ==========
+        function isAnyPlaying() {
+            try {
+                return !!((isPreviewingMaster && currentMasterSource) ||
+                          (cutterPlayer && !cutterPlayer.paused && cutterPlayer.src) ||
+                          (rowAudioPlayer && !rowAudioPlayer.paused && rowAudioPlayer.src) ||
+                          (audio && audio.src && !audio.paused && !audio.ended));
+            } catch (e) { return false; }
+        }
+        function currentMediaTitle() {
+            try {
+                if (audio && audio.src && !audio.paused) return (files[currentTrackIndex] && files[currentTrackIndex].name) || 'Swaralay';
+                if (isAnyPlaying()) return 'Swaralay — Editor preview';
+                if (audio && audio.src && files[currentTrackIndex]) return files[currentTrackIndex].name;
+            } catch (e) {}
+            return 'Swaralay';
+        }
+        let __lastMediaSig = '';
+        function reportMediaState(force) {
+            try {
+                if (!window.AndroidBridge || typeof AndroidBridge.setMediaState !== 'function') return;
+                const playing = isAnyPlaying();
+                const title = currentMediaTitle();
+                const sig = (playing ? '1|' : '0|') + title;
+                if (!force && sig === __lastMediaSig) return;
+                __lastMediaSig = sig;
+                const pos = (audio && isFinite(audio.currentTime)) ? audio.currentTime : 0;
+                const dur = (audio && isFinite(audio.duration)) ? audio.duration : 0;
+                AndroidBridge.setMediaState(playing, title, pos, dur);
+            } catch (e) {}
+        }
+        // Commands from the native MediaSession: play | pause | toggle | next | prev | stop
+        window.__swaralayMedia = function (cmd) {
+            try {
+                const playing = isAnyPlaying();
+                if (cmd === 'play') {
+                    if (!playing && audio && audio.src) togglePlay();
+                } else if (cmd === 'pause') {
+                    if (playing) toggleAnyPlayback();
+                } else if (cmd === 'toggle') {
+                    toggleAnyPlayback();
+                } else if (cmd === 'stop') {
+                    if (audio && !audio.paused) { audio.pause(); setPlayPauseBtnState(false); }
+                    try { stopAllPreviews(); } catch (e) {}
+                } else if (cmd === 'next') {
+                    if (files && files.length) nextTrack();
+                } else if (cmd === 'prev') {
+                    if (files && files.length) prevTrack();
+                }
+            } catch (e) { console.warn('__swaralayMedia', e); }
+            setTimeout(function () { reportMediaState(true); }, 150);
+        };
+        ['play', 'pause', 'ended', 'loadedmetadata', 'emptied'].forEach(function (ev) {
+            [audio, cutterPlayer, rowAudioPlayer].forEach(function (p) {
+                if (p) p.addEventListener(ev, function () { reportMediaState(false); });
+            });
+        });
+        // Web Audio previews (editor / FX / pitch) have no media-element events — poll cheaply
+        setInterval(function () { reportMediaState(false); }, 700);
+        window.addEventListener('load', function () { reportMediaState(true); });
+
+        // ========== OPEN WITH… (audio opened from a file manager / other app) ==========
+        window.__openExternalAudio = function (uri, name) {
+            try {
+                if (!window.AndroidBridge || typeof AndroidBridge.readUriAsBase64 !== 'function') return;
+                const b64 = String(AndroidBridge.readUriAsBase64(uri) || '');
+                if (!b64 || b64.indexOf('ERROR:') === 0) { alert('ফাইল খোলা যায়নি: ' + b64); return; }
+                const bin = atob(b64);
+                const arr = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                name = name || 'audio';
+                let mime = 'audio/mpeg';
+                if (/\.wav$/i.test(name)) mime = 'audio/wav';
+                else if (/\.(ogg|opus)$/i.test(name)) mime = 'audio/ogg';
+                else if (/\.(m4a|aac)$/i.test(name)) mime = 'audio/mp4';
+                else if (/\.flac$/i.test(name)) mime = 'audio/flac';
+                const file = new File([arr], name, { type: mime });
+                isDbPlaylistView = false;
+                currentBrowseFolder = null;
+                files = [file];
+                renderTrackList('📂 Opened file');
+                openMainTab('player');
+                playTrack(0, true);
+            } catch (e) { alert('অডিও খোলা যায়নি: ' + e); }
+        };
 
         // Media Session — headset / lock-screen / some system TalkBack media actions
         if ('mediaSession' in navigator) {
