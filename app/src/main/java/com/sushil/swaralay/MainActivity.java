@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private AudioManager audioManager;
 
     // ---- Monitor DSP / capture state ----
+    private volatile int monitorRevPreMs = 0, monitorRevPanPct = 0;
+    private volatile float monitorRevPanHz = 0.3f;
     private volatile int monitorRevType = 1; // 0 room, 1 hall, 2 plate, 3 cathedral
     private volatile boolean monitorCapturing = false;
     private boolean recordingViaMonitor = false;
@@ -572,6 +574,11 @@ public class MainActivity extends AppCompatActivity {
             StereoConvolver conv;
             final Freeverb fv;
             boolean revActive = false;
+            // reverb pre-delay + L<->R movement of the reverb
+            final float[] pd;
+            final int pdLen;
+            int pdw = 0, preSamp = 0;
+            float panDepthT = 0f, panDepth = 0f, panInc = 0f, panPhase = 0f;
             final int echoLen;
             final float[] eL, eR;
             int ei = 0;
@@ -588,6 +595,8 @@ public class MainActivity extends AppCompatActivity {
                 echoLen = Math.max((int) (sr * 0.32), 1);
                 eL = new float[echoLen];
                 eR = new float[echoLen];
+                pdLen = Math.max((int) (sr * 0.16), 8);
+                pd = new float[pdLen];
                 lpA = (float) (1.0 - Math.exp(-2.0 * Math.PI * 4000.0 / sr));
                 hp = Biquad.highpass(sr, 90.0, 0.7071);
                 fv = new Freeverb(sr);
@@ -601,6 +610,12 @@ public class MainActivity extends AppCompatActivity {
                 conv = c;
                 if (c != null) c.reset();
                 fv.reset();
+            }
+
+            void setRevExtras(int preMs, int panPct, float panHz) {
+                preSamp = Math.max(0, Math.min(pdLen - 1, (int) (preMs * sr / 1000f)));
+                panDepthT = Math.max(0f, Math.min(1f, panPct / 100f));
+                panInc = (float) (2.0 * Math.PI * Math.max(0.02f, Math.min(3f, panHz)) / sr);
             }
 
             void setParams(float gain, float echo, float rev, int type, boolean lowCut, boolean gate) {
@@ -681,18 +696,35 @@ public class MainActivity extends AppCompatActivity {
                     if (!revOn && revActive) {
                         if (cv != null) cv.reset();
                         fv.reset();
+                        java.util.Arrays.fill(pd, 0f);
                         revActive = false;
                     }
                     if (revOn) {
                         revActive = true;
+                        float xin = x;
+                        if (preSamp > 0) {
+                            pd[pdw] = x;
+                            int rp = pdw - preSamp;
+                            if (rp < 0) rp += pdLen;
+                            xin = pd[rp];
+                            if (++pdw >= pdLen) pdw = 0;
+                        }
                         if (cv != null) {
-                            cv.push(x);
+                            cv.push(xin);
                             wl = cv.wetL * r;
                             wr = cv.wetR * r;
                         } else {
-                            float w = fv.process(x) * r;
+                            float w = fv.process(xin) * r;
                             wl = w;
                             wr = w;
+                        }
+                        panDepth += (panDepthT - panDepth) * sm;
+                        if (panDepth > 0.002f) {
+                            panPhase += panInc;
+                            if (panPhase > 6.2831853f) panPhase -= 6.2831853f;
+                            float ang = (panDepth * (float) Math.sin(panPhase) + 1f) * 0.7853982f;
+                            wl *= (float) Math.cos(ang) * 1.4142135f;
+                            wr *= (float) Math.sin(ang) * 1.4142135f;
                         }
                     }
 
@@ -709,6 +741,81 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     // END MonitorDsp
+
+    // ===== Keep the live monitor alive with the screen off =====
+    // A foreground service (type: microphone) + a CPU wake lock. Without it Android silences the mic
+    // and freezes the app a few seconds after the screen turns off.
+    public static class MonitorService extends android.app.Service {
+        private static final String CHANNEL_ID = "swaralay_monitor";
+        private android.os.PowerManager.WakeLock wakeLock;
+
+        @Override
+        public android.os.IBinder onBind(Intent intent) { return null; }
+
+        @Override
+        public int onStartCommand(Intent intent, int flags, int startId) {
+            try {
+                android.app.NotificationManager nm =
+                        (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (Build.VERSION.SDK_INT >= 26 && nm != null) {
+                    android.app.NotificationChannel ch = new android.app.NotificationChannel(
+                            CHANNEL_ID, "Live monitor", android.app.NotificationManager.IMPORTANCE_LOW);
+                    ch.setShowBadge(false);
+                    nm.createNotificationChannel(ch);
+                }
+                Intent open = new Intent(this, MainActivity.class);
+                open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                android.app.PendingIntent pi = android.app.PendingIntent.getActivity(
+                        this, 0, open, android.app.PendingIntent.FLAG_IMMUTABLE | android.app.PendingIntent.FLAG_UPDATE_CURRENT);
+                android.app.Notification.Builder nb = (Build.VERSION.SDK_INT >= 26)
+                        ? new android.app.Notification.Builder(this, CHANNEL_ID)
+                        : new android.app.Notification.Builder(this);
+                nb.setContentTitle("Swaralay — live monitor on")
+                  .setContentText("Microphone monitor is running. Tap to open.")
+                  .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                  .setOngoing(true)
+                  .setContentIntent(pi);
+                android.app.Notification n = nb.build();
+                if (Build.VERSION.SDK_INT >= 29) {
+                    startForeground(7101, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+                } else {
+                    startForeground(7101, n);
+                }
+            } catch (Exception e) {
+                // notification / permission problem: the monitor itself keeps running while the app is open
+            }
+            try {
+                if (wakeLock == null) {
+                    android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                    if (pm != null) {
+                        wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "Swaralay:monitor");
+                        wakeLock.setReferenceCounted(false);
+                    }
+                }
+                if (wakeLock != null && !wakeLock.isHeld()) wakeLock.acquire();
+            } catch (Exception ignored) {}
+            return START_NOT_STICKY;
+        }
+
+        @Override
+        public void onDestroy() {
+            try { if (wakeLock != null && wakeLock.isHeld()) wakeLock.release(); } catch (Exception ignored) {}
+            wakeLock = null;
+            try { stopForeground(true); } catch (Exception ignored) {}
+            super.onDestroy();
+        }
+    }
+
+    private void startMonitorService() {
+        try {
+            Intent i = new Intent(this, MonitorService.class);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
+        } catch (Exception ignored) {}
+    }
+
+    private void stopMonitorService() {
+        try { stopService(new Intent(this, MonitorService.class)); } catch (Exception ignored) {}
+    }
 
     // ===== Native MediaSession (TalkBack two-finger double-tap, headset buttons) =====
     private MediaSession mediaSession;
@@ -1023,6 +1130,10 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             need.add(Manifest.permission.RECORD_AUDIO);
         }
+        if (Build.VERSION.SDK_INT >= 33
+                && ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+            need.add("android.permission.POST_NOTIFICATIONS"); // shows the "monitor is on" notification
+        }
         if (need.isEmpty()) {
             scanAndPush();
         } else {
@@ -1153,12 +1264,6 @@ public class MainActivity extends AppCompatActivity {
                             new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
                 }
             });
-        }
-
-        @JavascriptInterface
-        public boolean hasMicPermission() {
-            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
-                    == PackageManager.PERMISSION_GRANTED;
         }
 
         @JavascriptInterface
@@ -1328,11 +1433,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        @JavascriptInterface
-        public synchronized boolean isNativeRecording() {
-            return isNativeRecording;
-        }
-
         /** After stopNativeRecording, JS can read staged audio in chunks */
         @JavascriptInterface
         public synchronized int getStagedSaveSize() {
@@ -1383,36 +1483,6 @@ public class MainActivity extends AppCompatActivity {
             in.close();
             return out.toByteArray();
         }
-
-        private String writeBytesToMusic(byte[] bytes, String name, String mime) {
-            try {
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Audio.Media.DISPLAY_NAME, name);
-                values.put(MediaStore.Audio.Media.MIME_TYPE, mime);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    values.put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Swaralay");
-                    values.put(MediaStore.Audio.Media.IS_PENDING, 1);
-                }
-                Uri uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
-                if (uri == null) return "ERROR:cannot_create_file";
-                try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-                    if (out == null) return "ERROR:cannot_open_stream";
-                    out.write(bytes);
-                    out.flush();
-                }
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    ContentValues done = new ContentValues();
-                    done.put(MediaStore.Audio.Media.IS_PENDING, 0);
-                    getContentResolver().update(uri, done, null, null);
-                }
-                final String msg = "Saved: Music/Swaralay/" + name;
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
-                return "OK:" + msg;
-            } catch (Exception e) {
-                return "ERROR:" + e.getMessage();
-            }
-        }
-
 
         /** Copy audio track from a video Uri into staged buffer (no quality loss on copy). */
         @JavascriptInterface
@@ -1519,6 +1589,14 @@ public class MainActivity extends AppCompatActivity {
          *            (stereo). Off = only the raw mic input is recorded.
          * Returns "NEEDS_RESTART" when micMode / safeLatency changed while the monitor is running.
          */
+        /** Reverb pre-delay (ms, 0..120) and L<->R movement of the reverb (depth %, speed Hz). */
+        @JavascriptInterface
+        public void setNativeMonitorRevExtras(int preMs, int panPct, double panHz) {
+            monitorRevPreMs = Math.max(0, Math.min(120, preMs));
+            monitorRevPanPct = Math.max(0, Math.min(100, panPct));
+            monitorRevPanHz = (float) Math.max(0.02, Math.min(3.0, panHz));
+        }
+
         @JavascriptInterface
         public String setNativeMonitorOptions(boolean lowCut, boolean gate, String micMode, boolean safeLatency, boolean recordFx) {
             optRecordFx = recordFx;
@@ -1679,6 +1757,7 @@ public class MainActivity extends AppCompatActivity {
                 monitorTrack = track;
                 monitorSampleRate = sr;
                 monitorRunning = true;
+                startMonitorService();
 
                 runOnUiThread(() -> {
                     try {
@@ -1718,6 +1797,7 @@ public class MainActivity extends AppCompatActivity {
                             if (msg != null) proc.setConvolver(msg.conv);
                             proc.setParams(monitorGain, monitorEcho, monitorReverb, monitorRevType,
                                     optLowCut, optGate);
+                            proc.setRevExtras(monitorRevPreMs, monitorRevPanPct, monitorRevPanHz);
                             final boolean capNow = monitorCapturing;
                             final boolean fxNow = capNow && captureFx;
                             proc.process(buffer, n, outBuf, fxNow ? fxBuf : null);
@@ -1787,13 +1867,9 @@ public class MainActivity extends AppCompatActivity {
             return "OK";
         }
 
-        @JavascriptInterface
-        public synchronized boolean isNativeMonitorOn() {
-            return monitorRunning;
-        }
-
         private void stopNativeMonitorInternal() {
             monitorRunning = false;
+            stopMonitorService();
             try {
                 if (monitorThread != null) {
                     monitorThread.join(500);
@@ -2076,6 +2152,7 @@ public class MainActivity extends AppCompatActivity {
             }
             releaseMonitorEffects();
         } catch (Exception ignored) {}
+        stopMonitorService();
         try { if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; } } catch (Exception ignored) {}
         super.onDestroy();
     }
