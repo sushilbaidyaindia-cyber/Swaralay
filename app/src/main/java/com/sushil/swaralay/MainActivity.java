@@ -5,6 +5,10 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
+import android.media.MediaMetadata;
+import android.provider.OpenableColumns;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -76,24 +80,747 @@ public class MainActivity extends AppCompatActivity {
     private int monitorSampleRate = 44100;
     private byte[] stagedBytes = null;
 
-    // Freeverb-style comb / all-pass delay lengths (samples @ 44.1 kHz)
-    private static final int[] COMB_44 = {1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617};
-    private static final int[] AP_44 = {556, 441, 341, 225};
-    // per reverb type: feedback, damping, pre-delay (ms), wet gain
-    private static final float[] REV_FB   = {0.80f, 0.88f, 0.84f, 0.93f};
-    private static final float[] REV_DAMP = {0.40f, 0.28f, 0.12f, 0.32f};
-    private static final float[] REV_PRE  = {4f, 18f, 0f, 32f};
-    private static final float[] REV_WET  = {1.6f, 1.3f, 1.4f, 1.1f};
+    // ---- Monitor options / state ----
+    private volatile boolean optRecordFx = false;  // record WITH the monitor effects (else raw mic only)
+    private boolean captureFx = false;             // mode of the recording that is running now
+    private int captureChannels = 1;
+    private volatile boolean optLowCut = true;
+    private volatile boolean optGate = false;
+    private volatile String optMicMode = "clear";  // "clear" = raw MIC, "voice" = phone voice filtering
+    private volatile boolean optSafeLatency = false;
+    private String activeMicMode = "clear";
+    private boolean activeSafeLatency = false;
+    private volatile boolean monitorIrOk = false;
+    private String monitorSourceName = "";
+    private android.media.audiofx.NoiseSuppressor monitorNs = null;
+    private final java.util.HashMap<String, MonitorDsp.Wav> irWavCache = new java.util.HashMap<>();
+    private final java.util.concurrent.atomic.AtomicInteger convToken = new java.util.concurrent.atomic.AtomicInteger(0);
+    private final java.util.concurrent.atomic.AtomicReference<ConvMsg> pendingConv = new java.util.concurrent.atomic.AtomicReference<>(null);
+    private static final String[] IR_NAMES = {"room", "hall", "plate", "cathedral"};
 
-    /** Smooth limiter: linear below 70%, soft knee above, never exceeds full scale. */
-    private static short softLimit(float x) {
-        float y = x / 32768f;
-        float a = Math.abs(y);
-        if (a > 0.7f) {
-            float s = 0.7f + 0.3f * (float) Math.tanh((a - 0.7f) / 0.3f);
-            y = (y < 0f) ? -s : s;
+    private static final class ConvMsg {
+        final MonitorDsp.StereoConvolver conv;
+        ConvMsg(MonitorDsp.StereoConvolver c) { conv = c; }
+    }
+
+    /** Reads ir-<name>.wav from the assets folder (same files the FX panel uses). */
+    private MonitorDsp.Wav loadIrWav(String name) {
+        synchronized (irWavCache) {
+            MonitorDsp.Wav w = irWavCache.get(name);
+            if (w != null) return w;
+            InputStream in = null;
+            try {
+                in = getAssets().open("ir-" + name + ".wav");
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                byte[] tmp = new byte[16384];
+                int n;
+                while ((n = in.read(tmp)) != -1) bo.write(tmp, 0, n);
+                w = MonitorDsp.parseWav(bo.toByteArray());
+                irWavCache.put(name, w);
+                return w;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            } finally {
+                if (in != null) { try { in.close(); } catch (Exception ignored) {} }
+            }
         }
-        return (short) (y * 32767f);
+    }
+
+    private MonitorDsp.StereoConvolver buildConvolver(int typeId, int sr) {
+        try {
+            String name = IR_NAMES[Math.max(0, Math.min(IR_NAMES.length - 1, typeId))];
+            MonitorDsp.Wav w = loadIrWav(name);
+            if (w == null) return null;
+            float[][] ir = MonitorDsp.prepareIr(w, sr, 3.0);
+            return MonitorDsp.StereoConvolver.fromIr(ir, 1024);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            return null;
+        }
+    }
+
+    private void releaseMonitorEffects() {
+        try {
+            if (monitorNs != null) {
+                try { monitorNs.release(); } catch (Throwable ignored) {}
+            }
+        } catch (Throwable ignored) {}
+        monitorNs = null;
+    }
+
+    // ===================== MONITOR DSP (pure Java, no Android classes) =====================
+    // BEGIN MonitorDsp
+    static final class MonitorDsp {
+
+        // ---------- FFT (radix-2, in place) ----------
+        static final class Fft {
+            final int n;
+            final float[] cos, sin;
+            final int[] rev;
+
+            Fft(int n) {
+                this.n = n;
+                cos = new float[n / 2];
+                sin = new float[n / 2];
+                for (int i = 0; i < n / 2; i++) {
+                    double a = -2.0 * Math.PI * i / n;
+                    cos[i] = (float) Math.cos(a);
+                    sin[i] = (float) Math.sin(a);
+                }
+                rev = new int[n];
+                int bits = Integer.numberOfTrailingZeros(n);
+                for (int i = 0; i < n; i++) rev[i] = Integer.reverse(i) >>> (32 - bits);
+            }
+
+            void transform(float[] re, float[] im, boolean inverse) {
+                for (int i = 0; i < n; i++) {
+                    int j = rev[i];
+                    if (j > i) {
+                        float t = re[i]; re[i] = re[j]; re[j] = t;
+                        t = im[i]; im[i] = im[j]; im[j] = t;
+                    }
+                }
+                for (int size = 2; size <= n; size <<= 1) {
+                    int half = size >> 1;
+                    int step = n / size;
+                    for (int i = 0; i < n; i += size) {
+                        for (int j = i, k = 0; j < i + half; j++, k += step) {
+                            float wr = cos[k];
+                            float wi = inverse ? -sin[k] : sin[k];
+                            int l = j + half;
+                            float tr = re[l] * wr - im[l] * wi;
+                            float ti = re[l] * wi + im[l] * wr;
+                            re[l] = re[j] - tr;
+                            im[l] = im[j] - ti;
+                            re[j] += tr;
+                            im[j] += ti;
+                        }
+                    }
+                }
+                if (inverse) {
+                    float s = 1f / n;
+                    for (int i = 0; i < n; i++) { re[i] *= s; im[i] *= s; }
+                }
+            }
+        }
+
+        // ---------- WAV reading + impulse-response preparation ----------
+        static final class Wav {
+            int sampleRate;
+            float[][] ch;
+        }
+
+        private static int u16(byte[] b, int i) {
+            return (b[i] & 0xff) | ((b[i + 1] & 0xff) << 8);
+        }
+
+        private static long u32(byte[] b, int i) {
+            return (b[i] & 0xffL) | ((b[i + 1] & 0xffL) << 8) | ((b[i + 2] & 0xffL) << 16) | ((b[i + 3] & 0xffL) << 24);
+        }
+
+        /** Reads PCM 8/16/24/32-bit and 32-bit float WAV files (mono or multi-channel). */
+        static Wav parseWav(byte[] b) throws Exception {
+            if (b == null || b.length < 44 || b[0] != 'R' || b[1] != 'I' || b[2] != 'F' || b[3] != 'F') {
+                throw new Exception("not_a_wav");
+            }
+            int pos = 12;
+            int tag = 0, channels = 0, rate = 0, bits = 0;
+            int dataPos = -1, dataLen = 0;
+            while (pos + 8 <= b.length) {
+                String id = new String(b, pos, 4, java.nio.charset.StandardCharsets.US_ASCII);
+                long sz = u32(b, pos + 4);
+                int body = pos + 8;
+                if (id.equals("fmt ")) {
+                    tag = u16(b, body);
+                    channels = u16(b, body + 2);
+                    rate = (int) u32(b, body + 4);
+                    bits = u16(b, body + 14);
+                    if (tag == 0xFFFE && sz >= 26) tag = u16(b, body + 24);
+                } else if (id.equals("data")) {
+                    dataPos = body;
+                    dataLen = (int) Math.min(sz, (long) (b.length - body));
+                    break;
+                }
+                long next = (long) body + sz + (sz & 1L);
+                if (next > b.length) break;
+                pos = (int) next;
+            }
+            if (dataPos < 0 || channels < 1 || rate < 8000 || bits < 8) throw new Exception("bad_wav");
+            boolean isFloat = (tag == 3);
+            if (!(tag == 1 || tag == 3)) throw new Exception("unsupported_format_" + tag);
+            if (isFloat && bits != 32) throw new Exception("unsupported_float_bits");
+            int bytes = bits / 8;
+            int frames = dataLen / (bytes * channels);
+            if (frames < 16) throw new Exception("too_short");
+            Wav w = new Wav();
+            w.sampleRate = rate;
+            w.ch = new float[channels][frames];
+            int p = dataPos;
+            for (int f = 0; f < frames; f++) {
+                for (int c = 0; c < channels; c++) {
+                    float v;
+                    if (isFloat) {
+                        int bitsInt = (b[p] & 0xff) | ((b[p + 1] & 0xff) << 8) | ((b[p + 2] & 0xff) << 16) | ((b[p + 3] & 0xff) << 24);
+                        v = Float.intBitsToFloat(bitsInt);
+                    } else if (bits == 16) {
+                        v = (short) ((b[p] & 0xff) | (b[p + 1] << 8)) / 32768f;
+                    } else if (bits == 24) {
+                        int iv = (b[p] & 0xff) | ((b[p + 1] & 0xff) << 8) | (b[p + 2] << 16);
+                        v = iv / 8388608f;
+                    } else if (bits == 32) {
+                        int iv = (b[p] & 0xff) | ((b[p + 1] & 0xff) << 8) | ((b[p + 2] & 0xff) << 16) | (b[p + 3] << 24);
+                        v = iv / 2147483648f;
+                    } else if (bits == 8) {
+                        v = ((b[p] & 0xff) - 128) / 128f;
+                    } else {
+                        throw new Exception("unsupported_bits_" + bits);
+                    }
+                    w.ch[c][f] = v;
+                    p += bytes;
+                }
+            }
+            return w;
+        }
+
+        /**
+         * Turns a decoded IR into a stereo IR at the monitor's sample rate:
+         * resample, cap length, remove DC, fade the tail, normalise so the wet level
+         * is about the same as the dry level for every impulse response.
+         */
+        static float[][] prepareIr(Wav w, int targetRate, double maxSeconds) throws Exception {
+            float[] a = w.ch[0];
+            float[] bch = (w.ch.length > 1) ? w.ch[1] : w.ch[0];
+            double ratio = (double) targetRate / (double) w.sampleRate;
+            int outLen = (int) Math.floor(a.length * ratio);
+            int maxLen = (int) (maxSeconds * targetRate);
+            if (outLen > maxLen) outLen = maxLen;
+            if (outLen < 64) throw new Exception("ir_too_short");
+            float[][] out = new float[2][outLen];
+            for (int c = 0; c < 2; c++) {
+                float[] src = (c == 0) ? a : bch;
+                double mean = 0;
+                for (int i = 0; i < outLen; i++) {
+                    double pos = i / ratio;
+                    int j = (int) pos;
+                    float f = (float) (pos - j);
+                    float s0 = src[Math.min(j, src.length - 1)];
+                    float s1 = src[Math.min(j + 1, src.length - 1)];
+                    float v = s0 + (s1 - s0) * f;
+                    out[c][i] = v;
+                    mean += v;
+                }
+                float m = (float) (mean / outLen);
+                for (int i = 0; i < outLen; i++) out[c][i] -= m;
+                int fade = Math.max(8, (int) (outLen * 0.08));
+                for (int i = 0; i < fade; i++) {
+                    int idx = outLen - fade + i;
+                    float g = 0.5f * (1f + (float) Math.cos(Math.PI * i / (double) fade));
+                    out[c][idx] *= g;
+                }
+            }
+            double e = 0;
+            for (int i = 0; i < outLen; i++) e += (double) out[0][i] * out[0][i] + (double) out[1][i] * out[1][i];
+            e *= 0.5;
+            if (e < 1e-12) throw new Exception("ir_silent");
+            float g = (float) (1.0 / Math.sqrt(e));
+            for (int c = 0; c < 2; c++) for (int i = 0; i < outLen; i++) out[c][i] *= g;
+            return out;
+        }
+
+        // ---------- Uniform partitioned convolution: mono in, stereo out ----------
+        static final class StereoConvolver {
+            final int B, N, bins, P;
+            final Fft fft;
+            final float[][] hLr, hLi, hRr, hRi;
+            final float[][] xr, xi;
+            int fdlPos = 0;
+            final float[] inBuf;
+            final float[] tr, ti;
+            final float[] aLr, aLi, aRr, aRi;
+            final float[] outL, outR;
+            int pos = 0;
+            float wetL, wetR;
+
+            private StereoConvolver(float[][] ir, int blockSize) {
+                B = blockSize;
+                N = 2 * B;
+                bins = B + 1;
+                int len = ir[0].length;
+                P = Math.max(1, (len + B - 1) / B);
+                fft = new Fft(N);
+                hLr = new float[P][bins]; hLi = new float[P][bins];
+                hRr = new float[P][bins]; hRi = new float[P][bins];
+                xr = new float[P][bins]; xi = new float[P][bins];
+                inBuf = new float[N];
+                tr = new float[N]; ti = new float[N];
+                aLr = new float[bins]; aLi = new float[bins];
+                aRr = new float[bins]; aRi = new float[bins];
+                outL = new float[B]; outR = new float[B];
+                float[] re = new float[N];
+                float[] im = new float[N];
+                for (int p = 0; p < P; p++) {
+                    for (int c = 0; c < 2; c++) {
+                        java.util.Arrays.fill(re, 0f);
+                        java.util.Arrays.fill(im, 0f);
+                        int start = p * B;
+                        int cnt = Math.min(B, len - start);
+                        if (cnt > 0) System.arraycopy(ir[c], start, re, 0, cnt);
+                        fft.transform(re, im, false);
+                        if (c == 0) {
+                            System.arraycopy(re, 0, hLr[p], 0, bins);
+                            System.arraycopy(im, 0, hLi[p], 0, bins);
+                        } else {
+                            System.arraycopy(re, 0, hRr[p], 0, bins);
+                            System.arraycopy(im, 0, hRi[p], 0, bins);
+                        }
+                    }
+                }
+            }
+
+            static StereoConvolver fromIr(float[][] ir, int blockSize) {
+                return new StereoConvolver(ir, blockSize);
+            }
+
+            void reset() {
+                for (int p = 0; p < P; p++) {
+                    java.util.Arrays.fill(xr[p], 0f);
+                    java.util.Arrays.fill(xi[p], 0f);
+                }
+                java.util.Arrays.fill(inBuf, 0f);
+                java.util.Arrays.fill(outL, 0f);
+                java.util.Arrays.fill(outR, 0f);
+                pos = 0;
+                fdlPos = 0;
+                wetL = 0f;
+                wetR = 0f;
+            }
+
+            /** Push one input sample; wetL / wetR then hold the reverb output (delayed by one block). */
+            void push(float x) {
+                inBuf[B + pos] = x;
+                wetL = outL[pos];
+                wetR = outR[pos];
+                pos++;
+                if (pos == B) {
+                    processBlock();
+                    pos = 0;
+                }
+            }
+
+            private void processBlock() {
+                System.arraycopy(inBuf, 0, tr, 0, N);
+                java.util.Arrays.fill(ti, 0f);
+                fft.transform(tr, ti, false);
+                fdlPos = (fdlPos + P - 1) % P;
+                System.arraycopy(tr, 0, xr[fdlPos], 0, bins);
+                System.arraycopy(ti, 0, xi[fdlPos], 0, bins);
+
+                java.util.Arrays.fill(aLr, 0f); java.util.Arrays.fill(aLi, 0f);
+                java.util.Arrays.fill(aRr, 0f); java.util.Arrays.fill(aRi, 0f);
+                for (int p = 0; p < P; p++) {
+                    int s = fdlPos + p;
+                    if (s >= P) s -= P;
+                    final float[] ar = xr[s], ai = xi[s];
+                    final float[] lr = hLr[p], li = hLi[p], rr = hRr[p], ri = hRi[p];
+                    for (int k = 0; k < bins; k++) {
+                        float a = ar[k], b = ai[k];
+                        aLr[k] += a * lr[k] - b * li[k];
+                        aLi[k] += a * li[k] + b * lr[k];
+                        aRr[k] += a * rr[k] - b * ri[k];
+                        aRi[k] += a * ri[k] + b * rr[k];
+                    }
+                }
+                // Both outputs are real, so one complex inverse FFT gives L (real part) and R (imaginary part):
+                // Z = AL + j*AR using the Hermitian symmetry of each spectrum.
+                for (int k = 0; k < bins; k++) {
+                    tr[k] = aLr[k] - aRi[k];
+                    ti[k] = aLi[k] + aRr[k];
+                }
+                for (int k = 1; k < B; k++) {
+                    int m = N - k;
+                    // conj(AL[k]) + j*conj(AR[k])
+                    tr[m] = aLr[k] + aRi[k];
+                    ti[m] = -aLi[k] + aRr[k];
+                }
+                fft.transform(tr, ti, true);
+                System.arraycopy(tr, B, outL, 0, B);
+                System.arraycopy(ti, B, outR, 0, B);
+                System.arraycopy(inBuf, B, inBuf, 0, B);
+            }
+        }
+
+        // ---------- Fallback algorithmic reverb (used only if an IR file is missing) ----------
+        static final class Freeverb {
+            static final int[] COMB_44 = {1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617};
+            static final int[] AP_44 = {556, 441, 341, 225};
+            static final float[] FB = {0.80f, 0.88f, 0.84f, 0.93f};
+            static final float[] DAMP = {0.40f, 0.28f, 0.12f, 0.32f};
+            static final float[] PRE_MS = {4f, 18f, 0f, 32f};
+            static final float[] WET = {2.75f, 2.32f, 2.16f, 2.14f};
+            final int sr, nC, nA, preMax;
+            final float[][] comb, ap;
+            final int[] ci, ai;
+            final float[] cLp, pre;
+            int pw = 0, preSamp = 0;
+            float fb = 0.84f, damp = 0.2f, wet = 1f;
+
+            Freeverb(int sr) {
+                this.sr = sr;
+                float scale = sr / 44100f;
+                nC = COMB_44.length;
+                nA = AP_44.length;
+                comb = new float[nC][];
+                ap = new float[nA][];
+                ci = new int[nC];
+                ai = new int[nA];
+                cLp = new float[nC];
+                for (int k = 0; k < nC; k++) comb[k] = new float[Math.max(1, (int) (COMB_44[k] * scale))];
+                for (int k = 0; k < nA; k++) ap[k] = new float[Math.max(1, (int) (AP_44[k] * scale))];
+                preMax = Math.max((int) (sr * 0.05), 2);
+                pre = new float[preMax];
+                setType(1);
+            }
+
+            void setType(int t) {
+                if (t < 0 || t > 3) t = 1;
+                fb = FB[t];
+                damp = DAMP[t];
+                preSamp = Math.min(preMax - 1, (int) (PRE_MS[t] * sr / 1000f));
+                wet = WET[t];
+            }
+
+            void reset() {
+                for (int k = 0; k < nC; k++) { java.util.Arrays.fill(comb[k], 0f); cLp[k] = 0f; }
+                for (int k = 0; k < nA; k++) java.util.Arrays.fill(ap[k], 0f);
+                java.util.Arrays.fill(pre, 0f);
+            }
+
+            float process(float xin) {
+                pre[pw] = xin;
+                int pr = pw - preSamp;
+                if (pr < 0) pr += preMax;
+                float rin = pre[pr];
+                pw++;
+                if (pw >= preMax) pw = 0;
+                float x = rin * 0.02f;
+                float sum = 0f;
+                for (int k = 0; k < nC; k++) {
+                    float[] cb = comb[k];
+                    int idx = ci[k];
+                    float y = cb[idx];
+                    float lp = y * (1f - damp) + cLp[k] * damp;
+                    if (lp > -1e-15f && lp < 1e-15f) lp = 0f;
+                    cLp[k] = lp;
+                    cb[idx] = x + lp * fb;
+                    idx++;
+                    if (idx >= cb.length) idx = 0;
+                    ci[k] = idx;
+                    sum += y;
+                }
+                float a = sum;
+                for (int k = 0; k < nA; k++) {
+                    float[] ab = ap[k];
+                    int idx = ai[k];
+                    float bo = ab[idx];
+                    float o = -a + bo;
+                    ab[idx] = a + bo * 0.5f;
+                    idx++;
+                    if (idx >= ab.length) idx = 0;
+                    ai[k] = idx;
+                    a = o;
+                }
+                return a * wet;
+            }
+        }
+
+        // ---------- Biquad high-pass (low-cut) ----------
+        static final class Biquad {
+            float b0, b1, b2, a1, a2, z1, z2;
+
+            static Biquad highpass(int sr, double fc, double q) {
+                Biquad f = new Biquad();
+                double w0 = 2.0 * Math.PI * fc / sr;
+                double alpha = Math.sin(w0) / (2.0 * q);
+                double cw = Math.cos(w0);
+                double a0 = 1.0 + alpha;
+                f.b0 = (float) (((1.0 + cw) / 2.0) / a0);
+                f.b1 = (float) ((-(1.0 + cw)) / a0);
+                f.b2 = f.b0;
+                f.a1 = (float) ((-2.0 * cw) / a0);
+                f.a2 = (float) ((1.0 - alpha) / a0);
+                return f;
+            }
+
+            float process(float x) {
+                float y = b0 * x + z1;
+                z1 = b1 * x - a1 * y + z2;
+                z2 = b2 * x - a2 * y;
+                return y;
+            }
+        }
+
+        // ---------- The whole live-monitor signal chain ----------
+        // mic (mono) -> [low-cut] -> [noise gate] -> dry + stereo ping-pong echo + IR reverb -> master gain -> soft limiter -> stereo out
+        static final class Processor {
+            static final float GATE_THR = 0.010f;   // about -40 dBFS
+            static final float GATE_FLOOR = 0.06f;  // at most about -24 dB of reduction
+            final int sr;
+            final float sm;
+            float g, e, r, gT, eT, rT;
+            boolean lowCut, gateOn, inited = false;
+            StereoConvolver conv;
+            final Freeverb fv;
+            boolean revActive = false;
+            final int echoLen;
+            final float[] eL, eR;
+            int ei = 0;
+            boolean echoActive = false;
+            float lpL = 0f, lpR = 0f;
+            final float lpA;
+            final Biquad hp;
+            float gEnv = 0f, gGain = 1f;
+            final float gAtk, gRel, gUp, gDown;
+
+            Processor(int sr) {
+                this.sr = sr;
+                sm = (float) (1.0 - Math.exp(-1.0 / (0.02 * sr)));
+                echoLen = Math.max((int) (sr * 0.32), 1);
+                eL = new float[echoLen];
+                eR = new float[echoLen];
+                lpA = (float) (1.0 - Math.exp(-2.0 * Math.PI * 4000.0 / sr));
+                hp = Biquad.highpass(sr, 90.0, 0.7071);
+                fv = new Freeverb(sr);
+                gAtk = (float) (1.0 - Math.exp(-1.0 / (0.015 * sr))); // average-level detector: noise peaks do not open the gate
+                gRel = (float) (1.0 - Math.exp(-1.0 / (0.150 * sr)));
+                gUp = (float) (1.0 - Math.exp(-1.0 / (0.005 * sr)));
+                gDown = (float) (1.0 - Math.exp(-1.0 / (0.050 * sr)));
+            }
+
+            void setConvolver(StereoConvolver c) {
+                conv = c;
+                if (c != null) c.reset();
+                fv.reset();
+            }
+
+            void setParams(float gain, float echo, float rev, int type, boolean lowCut, boolean gate) {
+                gT = gain; eT = echo; rT = rev;
+                if (!inited) { g = gT; e = eT; r = rT; inited = true; }
+                this.lowCut = lowCut;
+                this.gateOn = gate;
+                fv.setType(type);
+            }
+
+            private static short limit(float y) {
+                float a = Math.abs(y);
+                if (a > 0.7f) {
+                    float s = 0.7f + 0.3f * (float) Math.tanh((a - 0.7f) / 0.3f);
+                    y = (y < 0f) ? -s : s;
+                }
+                return (short) (y * 32767f);
+            }
+
+            /**
+             * in: mono 16-bit samples (not modified). out: interleaved stereo for the monitor, needs 2*n entries.
+             * rec: optional (may be null) interleaved stereo effect mix for recording: the same sound as the monitor
+             * but independent of the monitor volume.
+             */
+            void process(short[] in, int n, short[] out, short[] rec) {
+                final StereoConvolver cv = conv;
+                for (int i = 0; i < n; i++) {
+                    float x = in[i] * (1f / 32768f);
+                    g += (gT - g) * sm;
+                    e += (eT - e) * sm;
+                    r += (rT - r) * sm;
+
+                    float xh = hp.process(x);
+                    if (lowCut) x = xh;
+
+                    if (gateOn) {
+                        float a = Math.abs(x);
+                        gEnv += ((a > gEnv) ? gAtk : gRel) * (a - gEnv);
+                        float q = gEnv / GATE_THR;
+                        float tgt = (gEnv >= GATE_THR) ? 1f : Math.max(GATE_FLOOR, q * q);
+                        gGain += ((tgt > gGain) ? gUp : gDown) * (tgt - gGain);
+                        x *= gGain;
+                    } else {
+                        gEnv = 0f;
+                        gGain = 1f;
+                    }
+
+                    // echo (ping-pong, darkened feedback)
+                    float echoL = 0f, echoR = 0f;
+                    boolean echoOn = e > 0.008f;
+                    if (!echoOn && echoActive) {
+                        java.util.Arrays.fill(eL, 0f);
+                        java.util.Arrays.fill(eR, 0f);
+                        lpL = 0f; lpR = 0f;
+                        echoActive = false;
+                    }
+                    if (echoOn) {
+                        echoActive = true;
+                        float yl = eL[ei], yr = eR[ei];
+                        lpL += lpA * (yl - lpL);
+                        lpR += lpA * (yr - lpR);
+                        float fbk = Math.min(0.62f, 0.2f + e * 0.42f);
+                        float nl = x * 0.9f + lpR * fbk;
+                        float nr = lpL * fbk;
+                        if (nl > -1e-15f && nl < 1e-15f) nl = 0f;
+                        if (nr > -1e-15f && nr < 1e-15f) nr = 0f;
+                        eL[ei] = nl;
+                        eR[ei] = nr;
+                        ei++;
+                        if (ei >= echoLen) ei = 0;
+                        echoL = yl * e * 0.65f;
+                        echoR = yr * e * 0.65f;
+                    }
+
+                    // reverb (impulse response; algorithmic fallback if no IR)
+                    float wl = 0f, wr = 0f;
+                    boolean revOn = r > 0.008f;
+                    if (!revOn && revActive) {
+                        if (cv != null) cv.reset();
+                        fv.reset();
+                        revActive = false;
+                    }
+                    if (revOn) {
+                        revActive = true;
+                        if (cv != null) {
+                            cv.push(x);
+                            wl = cv.wetL * r;
+                            wr = cv.wetR * r;
+                        } else {
+                            float w = fv.process(x) * r;
+                            wl = w;
+                            wr = w;
+                        }
+                    }
+
+                    float mixL = x + echoL + wl;
+                    float mixR = x + echoR + wr;
+                    out[2 * i] = limit(mixL * g);
+                    out[2 * i + 1] = limit(mixR * g);
+                    if (rec != null) {
+                        rec[2 * i] = limit(mixL);
+                        rec[2 * i + 1] = limit(mixR);
+                    }
+                }
+            }
+        }
+    }
+    // END MonitorDsp
+
+    // ===== Native MediaSession (TalkBack two-finger double-tap, headset buttons) =====
+    private MediaSession mediaSession;
+    private volatile boolean mediaPlaying = false;
+    private volatile String mediaTitle = "Swaralay";
+    private volatile long mediaPosMs = 0, mediaDurMs = 0;
+
+    // ===== "Open with" support =====
+    private boolean pageReady = false;
+    private String pendingOpenUri = null;
+    private String pendingOpenName = null;
+
+    private void jsMedia(final String cmd) {
+        runOnUiThread(() -> {
+            try {
+                if (webView != null && pageReady) {
+                    webView.evaluateJavascript("window.__swaralayMedia&&window.__swaralayMedia('" + cmd + "')", null);
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    private void initMediaSession() {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || mediaSession != null) return;
+            mediaSession = new MediaSession(this, "Swaralay");
+            mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            mediaSession.setCallback(new MediaSession.Callback() {
+                @Override public void onPlay() { jsMedia("play"); }
+                @Override public void onPause() { jsMedia("pause"); }
+                @Override public void onStop() { jsMedia("stop"); }
+                @Override public void onSkipToNext() { jsMedia("next"); }
+                @Override public void onSkipToPrevious() { jsMedia("prev"); }
+            });
+            refreshMediaSession();
+            mediaSession.setActive(true);
+        } catch (Exception e) {
+            mediaSession = null;
+        }
+    }
+
+    private void refreshMediaSession() {
+        try {
+            if (mediaSession == null) return;
+            long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE
+                    | PlaybackState.ACTION_STOP | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS;
+            PlaybackState.Builder pb = new PlaybackState.Builder();
+            pb.setActions(actions);
+            pb.setState(mediaPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                    mediaPosMs, mediaPlaying ? 1.0f : 0f);
+            mediaSession.setPlaybackState(pb.build());
+            MediaMetadata.Builder mb = new MediaMetadata.Builder();
+            mb.putString(MediaMetadata.METADATA_KEY_TITLE, mediaTitle);
+            mb.putString(MediaMetadata.METADATA_KEY_ARTIST, "Swaralay");
+            if (mediaDurMs > 0) mb.putLong(MediaMetadata.METADATA_KEY_DURATION, mediaDurMs);
+            mediaSession.setMetadata(mb.build());
+            if (!mediaSession.isActive()) mediaSession.setActive(true);
+        } catch (Exception ignored) {}
+    }
+
+    private void handleViewIntent(Intent intent) {
+        try {
+            if (intent == null) return;
+            String action = intent.getAction();
+            Uri uri = null;
+            if (Intent.ACTION_VIEW.equals(action)) {
+                uri = intent.getData();
+            } else if (Intent.ACTION_SEND.equals(action)) {
+                Object o = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                if (o instanceof Uri) uri = (Uri) o;
+            }
+            if (uri == null) return;
+            String name = null;
+            if ("content".equals(uri.getScheme())) {
+                Cursor c = null;
+                try {
+                    c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
+                    if (c != null && c.moveToFirst()) name = c.getString(0);
+                } catch (Exception ignored) {
+                } finally { if (c != null) c.close(); }
+            }
+            if (name == null || name.length() == 0) name = uri.getLastPathSegment();
+            if (name == null || name.length() == 0) name = "audio";
+            pendingOpenUri = uri.toString();
+            pendingOpenName = name;
+            // consume so a recreate does not replay it
+            setIntent(new Intent(Intent.ACTION_MAIN));
+            dispatchPendingOpen();
+        } catch (Exception ignored) {}
+    }
+
+    private void dispatchPendingOpen() {
+        if (!pageReady || pendingOpenUri == null || webView == null) return;
+        final String u = pendingOpenUri, n = pendingOpenName;
+        pendingOpenUri = null; pendingOpenName = null;
+        webView.post(() -> webView.evaluateJavascript(
+                "window.__openExternalAudio&&window.__openExternalAudio("
+                        + JSONObject.quote(u) + "," + JSONObject.quote(n) + ")", null));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleViewIntent(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        initMediaSession();
+        refreshMediaSession();
+        try { if (mediaSession != null) mediaSession.setActive(true); } catch (Exception ignored) {}
     }
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
@@ -162,10 +889,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 injectEditorPickerJs();
+                pageReady = true;
+                refreshMediaSession();
+                dispatchPendingOpen();
                 checkPermissionAndScan();
             }
         });
 
+        initMediaSession();
+        handleViewIntent(getIntent());
         webView.loadUrl("file:///android_asset/index.html");
     }
 
@@ -427,6 +1159,15 @@ public class MainActivity extends AppCompatActivity {
         public boolean hasMicPermission() {
             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED;
+        }
+
+        @JavascriptInterface
+        public void setMediaState(boolean playing, String title, double posSec, double durSec) {
+            mediaPlaying = playing;
+            mediaTitle = (title == null || title.length() == 0) ? "Swaralay" : title;
+            mediaPosMs = (long) (Math.max(0, posSec) * 1000.0);
+            mediaDurMs = (long) (Math.max(0, durSec) * 1000.0);
+            runOnUiThread(() -> refreshMediaSession());
         }
 
         @JavascriptInterface
@@ -735,8 +1476,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        // ---- Live mic monitor (AudioRecord -> DSP -> AudioTrack) ----
-        // Echo + Freeverb-style reverb (8 combs + 4 all-pass), soft limiter, low latency.
+        // ---- Live mic monitor (AudioRecord -> DSP -> stereo AudioTrack) ----
+        // Chain: mic -> [low-cut] -> [noise gate] -> dry + ping-pong echo + IR reverb -> master -> soft limiter.
+        // Reverb uses the ir-room / ir-hall / ir-plate / ir-cathedral .wav files from the assets folder
+        // (same files as the FX panel). If a file is missing a built-in reverb is used instead.
         private int reverbTypeId(String t) {
             if ("room".equals(t)) return 0;
             if ("plate".equals(t)) return 2;
@@ -744,9 +1487,68 @@ public class MainActivity extends AppCompatActivity {
             return 1; // hall
         }
 
+        private String sourceName(int src) {
+            if (src == MediaRecorder.AudioSource.MIC) return "MIC";
+            if (src == MediaRecorder.AudioSource.VOICE_RECOGNITION) return "VOICE_RECOGNITION";
+            if (src == MediaRecorder.AudioSource.VOICE_COMMUNICATION) return "VOICE_COMMUNICATION";
+            return "DEFAULT";
+        }
+
+        /** Switch reverb type; works while the monitor is running (new impulse response loads in the background). */
         @JavascriptInterface
         public void setNativeMonitorReverbType(String type) {
-            monitorRevType = reverbTypeId(type);
+            final int id = reverbTypeId(type);
+            monitorRevType = id;
+            if (!monitorRunning) return;
+            final int tok = convToken.incrementAndGet();
+            final int sr = monitorSampleRate;
+            new Thread(() -> {
+                MonitorDsp.StereoConvolver c = buildConvolver(id, sr);
+                if (tok != convToken.get()) return; // a newer choice arrived meanwhile
+                monitorIrOk = (c != null);
+                pendingConv.set(new ConvMsg(c));
+            }, "SwaralayIrLoad").start();
+        }
+
+        /**
+         * lowCut   = cut rumble / breath thumps below ~90 Hz.
+         * gate     = reduce hiss while you are silent.
+         * micMode  = "clear" (raw MIC) or "voice" (phone voice filtering + noise suppressor).
+         * safeLatency = bigger buffers, for crackling on slow phones / Bluetooth.
+         * recordFx = a recording that starts while the monitor is on includes the monitor's echo / reverb
+         *            (stereo). Off = only the raw mic input is recorded.
+         * Returns "NEEDS_RESTART" when micMode / safeLatency changed while the monitor is running.
+         */
+        @JavascriptInterface
+        public String setNativeMonitorOptions(boolean lowCut, boolean gate, String micMode, boolean safeLatency, boolean recordFx) {
+            optRecordFx = recordFx;
+            optLowCut = lowCut;
+            optGate = gate;
+            String mode = "voice".equals(micMode) ? "voice" : "clear";
+            optMicMode = mode;
+            optSafeLatency = safeLatency;
+            if (monitorRunning && (!mode.equals(activeMicMode) || safeLatency != activeSafeLatency)) {
+                return "NEEDS_RESTART";
+            }
+            return "OK";
+        }
+
+        /** Small JSON status for the page: sample rate, mic source, whether the IR reverb file was found. */
+        @JavascriptInterface
+        public String getNativeMonitorInfo() {
+            try {
+                JSONObject o = new JSONObject();
+                o.put("on", monitorRunning);
+                o.put("sr", monitorSampleRate);
+                o.put("src", monitorSourceName);
+                o.put("irOk", monitorIrOk);
+                o.put("type", IR_NAMES[Math.max(0, Math.min(IR_NAMES.length - 1, monitorRevType))]);
+                o.put("ns", monitorNs != null);
+                o.put("mode", activeMicMode);
+                return o.toString();
+            } catch (Exception e) {
+                return "{}";
+            }
         }
 
         @JavascriptInterface
@@ -769,36 +1571,47 @@ public class MainActivity extends AppCompatActivity {
                 stopNativeMonitorInternal();
                 applyMonitorLevels(gainPercent, echoPercent, reverbPercent);
 
+                final boolean voiceMode = "voice".equals(optMicMode);
+                final boolean safe = optSafeLatency;
                 final int channelIn = AudioFormat.CHANNEL_IN_MONO;
-                final int channelOut = AudioFormat.CHANNEL_OUT_MONO;
+                final int channelOut = AudioFormat.CHANNEL_OUT_STEREO;
                 final int encoding = AudioFormat.ENCODING_PCM_16BIT;
 
-                // MIC first (no voice-call AEC/NS/AGC colouring), then fallbacks.
-                int[] sources = new int[] {
-                        MediaRecorder.AudioSource.MIC,
-                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                        MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-                        MediaRecorder.AudioSource.DEFAULT
-                };
+                int[] sources;
+                if (voiceMode) {
+                    sources = new int[] {
+                            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                            MediaRecorder.AudioSource.MIC,
+                            MediaRecorder.AudioSource.DEFAULT
+                    };
+                } else {
+                    // Clear: no voice-call AEC / noise suppression / AGC colouring
+                    sources = new int[] {
+                            MediaRecorder.AudioSource.MIC,
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                            MediaRecorder.AudioSource.DEFAULT
+                    };
+                }
                 int[] rates = new int[] {48000, 44100};
                 AudioRecord rec = null;
                 int sr = 0;
-                int recBuf = 0;
                 int minPlayChosen = 0;
+                int usedSource = MediaRecorder.AudioSource.DEFAULT;
                 Exception last = null;
                 for (int rate : rates) {
                     int minRec = AudioRecord.getMinBufferSize(rate, channelIn, encoding);
                     int minPlay = AudioTrack.getMinBufferSize(rate, channelOut, encoding);
                     if (minRec <= 0 || minPlay <= 0) continue;
-                    int b = Math.max(minRec, minPlay) * 2;
+                    int b = Math.max(minRec, minPlay) * (safe ? 4 : 2);
                     for (int src : sources) {
                         try {
                             AudioRecord r = new AudioRecord(src, rate, channelIn, encoding, b);
                             if (r.getState() == AudioRecord.STATE_INITIALIZED) {
                                 rec = r;
                                 sr = rate;
-                                recBuf = b;
                                 minPlayChosen = minPlay;
+                                usedSource = src;
                                 break;
                             }
                             r.release();
@@ -812,8 +1625,20 @@ public class MainActivity extends AppCompatActivity {
                     return "ERROR:cannot_open_mic:" + (last != null ? last.getMessage() : "unknown");
                 }
 
+                releaseMonitorEffects();
+                if (voiceMode) {
+                    try {
+                        if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
+                            monitorNs = android.media.audiofx.NoiseSuppressor.create(rec.getAudioSessionId());
+                            if (monitorNs != null) monitorNs.setEnabled(true);
+                        }
+                    } catch (Throwable ignored) {
+                        monitorNs = null;
+                    }
+                }
+
                 AudioTrack track;
-                int trackBuf = Math.max(minPlayChosen * 2, 2048);
+                int trackBuf = safe ? Math.max(minPlayChosen * 4, 16384) : Math.max(minPlayChosen * 2, 2048);
                 if (Build.VERSION.SDK_INT >= 26) {
                     track = new AudioTrack.Builder()
                             .setAudioAttributes(new android.media.AudioAttributes.Builder()
@@ -827,16 +1652,28 @@ public class MainActivity extends AppCompatActivity {
                                     .build())
                             .setBufferSizeInBytes(trackBuf)
                             .setTransferMode(AudioTrack.MODE_STREAM)
-                            .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                            .setPerformanceMode(safe ? AudioTrack.PERFORMANCE_MODE_NONE
+                                    : AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
                             .build();
                 } else {
                     track = new AudioTrack(AudioManager.STREAM_MUSIC, sr, channelOut, encoding,
                             trackBuf, AudioTrack.MODE_STREAM);
                 }
                 if (track.getState() != AudioTrack.STATE_INITIALIZED) {
-                    rec.release();
+                    try { rec.release(); } catch (Exception ignored) {}
+                    releaseMonitorEffects();
                     return "ERROR:cannot_open_speaker";
                 }
+
+                final MonitorDsp.Processor proc = new MonitorDsp.Processor(sr);
+                MonitorDsp.StereoConvolver c0 = buildConvolver(monitorRevType, sr);
+                proc.setConvolver(c0);
+                monitorIrOk = (c0 != null);
+                pendingConv.set(null);
+                convToken.incrementAndGet();
+                activeMicMode = voiceMode ? "voice" : "clear";
+                activeSafeLatency = safe;
+                monitorSourceName = sourceName(usedSource);
 
                 monitorRecord = rec;
                 monitorTrack = track;
@@ -857,41 +1694,15 @@ public class MainActivity extends AppCompatActivity {
 
                 final AudioRecord fRec = rec;
                 final AudioTrack fTrack = track;
-                final int fSr = sr;
+                final int blk = Math.max(safe ? sr / 40 : sr / 100, 240);
                 monitorThread = new Thread(() -> {
                     try {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
                     } catch (Exception ignored) {}
-                    final int blk = Math.max(fSr / 100, 240); // ~10 ms blocks = low latency
                     short[] buffer = new short[blk];
-                    byte[] rawBytes = new byte[blk * 2];
-                    final float scale = fSr / 44100f;
-
-                    // Echo (~320 ms single repeat with feedback)
-                    final int echoLen = Math.max((int) (fSr * 0.32), 1);
-                    float[] echoBuf = new float[echoLen];
-                    int ei = 0;
-
-                    // Reverb: pre-delay -> 8 parallel damped combs -> 4 series all-pass
-                    final int nC = COMB_44.length;
-                    final int nA = AP_44.length;
-                    float[][] comb = new float[nC][];
-                    int[] ci = new int[nC];
-                    float[] cLp = new float[nC];
-                    for (int k = 0; k < nC; k++) comb[k] = new float[Math.max(1, (int) (COMB_44[k] * scale))];
-                    float[][] ap = new float[nA][];
-                    int[] ai = new int[nA];
-                    for (int k = 0; k < nA; k++) ap[k] = new float[Math.max(1, (int) (AP_44[k] * scale))];
-                    final int preMax = Math.max((int) (fSr * 0.05), 2);
-                    float[] pre = new float[preMax];
-                    int pw = 0;
-
-                    boolean revActive = false;
-                    boolean echoActive = false;
-                    int curType = -1;
-                    float fb = 0.84f, damp = 0.2f, wetTypeGain = 1.4f;
-                    int preSamp = 0;
-
+                    short[] outBuf = new short[blk * 2];
+                    short[] fxBuf = new short[blk * 2];
+                    byte[] rawBytes = new byte[blk * 4]; // big enough for stereo FX recording too
                     try {
                         fRec.startRecording();
                         fTrack.play();
@@ -903,99 +1714,38 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 continue;
                             }
-                            final float g = monitorGain;
-                            final float eAmt = monitorEcho;
-                            final float rAmt = monitorReverb;
-                            final int ty = monitorRevType;
-                            final boolean cap = monitorCapturing;
+                            ConvMsg msg = pendingConv.getAndSet(null);
+                            if (msg != null) proc.setConvolver(msg.conv);
+                            proc.setParams(monitorGain, monitorEcho, monitorReverb, monitorRevType,
+                                    optLowCut, optGate);
+                            final boolean capNow = monitorCapturing;
+                            final boolean fxNow = capNow && captureFx;
+                            proc.process(buffer, n, outBuf, fxNow ? fxBuf : null);
+                            fTrack.write(outBuf, 0, n * 2);
 
-                            if (ty != curType) {
-                                curType = ty;
-                                fb = REV_FB[ty];
-                                damp = REV_DAMP[ty];
-                                preSamp = Math.min(preMax - 1, (int) (REV_PRE[ty] * fSr / 1000f));
-                                wetTypeGain = REV_WET[ty];
-                            }
-                            final boolean revOn = rAmt > 0.008f;
-                            final boolean echoOn = eAmt > 0.008f;
-
-                            // When an effect is switched off, wipe its memory so old sound
-                            // never "comes back" when it is switched on again.
-                            if (!revOn && revActive) {
-                                for (int k = 0; k < nC; k++) { java.util.Arrays.fill(comb[k], 0f); cLp[k] = 0f; }
-                                for (int k = 0; k < nA; k++) java.util.Arrays.fill(ap[k], 0f);
-                                java.util.Arrays.fill(pre, 0f);
-                                revActive = false;
-                            }
-                            if (revOn) revActive = true;
-                            if (!echoOn && echoActive) {
-                                java.util.Arrays.fill(echoBuf, 0f);
-                                echoActive = false;
-                            }
-                            if (echoOn) echoActive = true;
-
-                            for (int i = 0; i < n; i++) {
-                                final short rawS = buffer[i];
-                                final float dry = rawS;
-                                if (cap) {
-                                    rawBytes[2 * i] = (byte) (rawS & 0xff);
-                                    rawBytes[2 * i + 1] = (byte) ((rawS >> 8) & 0xff);
-                                }
-                                float out = dry * g;
-
-                                if (echoOn) {
-                                    float es = echoBuf[ei];
-                                    out += es * eAmt;
-                                    echoBuf[ei] = dry * 0.9f + es * (0.2f + eAmt * 0.5f);
-                                    ei++;
-                                    if (ei >= echoLen) ei = 0;
-                                }
-
-                                if (revOn) {
-                                    pre[pw] = dry;
-                                    int pr = pw - preSamp;
-                                    if (pr < 0) pr += preMax;
-                                    float rin = pre[pr];
-                                    pw++;
-                                    if (pw >= preMax) pw = 0;
-
-                                    float x = rin * 0.02f;
-                                    float sum = 0f;
-                                    for (int k = 0; k < nC; k++) {
-                                        float[] cb = comb[k];
-                                        int idx = ci[k];
-                                        float y = cb[idx];
-                                        cLp[k] = y * (1f - damp) + cLp[k] * damp;
-                                        cb[idx] = x + cLp[k] * fb;
-                                        idx++;
-                                        if (idx >= cb.length) idx = 0;
-                                        ci[k] = idx;
-                                        sum += y;
+                            if (capNow) {
+                                int bytes;
+                                if (fxNow) {
+                                    // effect mix (same sound as the monitor, stereo, independent of monitor volume)
+                                    for (int i = 0; i < n * 2; i++) {
+                                        short s = fxBuf[i];
+                                        rawBytes[2 * i] = (byte) (s & 0xff);
+                                        rawBytes[2 * i + 1] = (byte) ((s >> 8) & 0xff);
                                     }
-                                    float a = sum;
-                                    for (int k = 0; k < nA; k++) {
-                                        float[] ab = ap[k];
-                                        int idx = ai[k];
-                                        float bo = ab[idx];
-                                        float o = -a + bo;
-                                        ab[idx] = a + bo * 0.5f;
-                                        idx++;
-                                        if (idx >= ab.length) idx = 0;
-                                        ai[k] = idx;
-                                        a = o;
+                                    bytes = n * 4;
+                                } else {
+                                    // RAW mic samples (buffer is never modified by the DSP)
+                                    for (int i = 0; i < n; i++) {
+                                        short s = buffer[i];
+                                        rawBytes[2 * i] = (byte) (s & 0xff);
+                                        rawBytes[2 * i + 1] = (byte) ((s >> 8) & 0xff);
                                     }
-                                    out += a * rAmt * wetTypeGain;
+                                    bytes = n * 2;
                                 }
-
-                                buffer[i] = softLimit(out);
-                            }
-                            fTrack.write(buffer, 0, n);
-
-                            if (cap) {
                                 synchronized (captureLock) {
                                     if (captureOut != null) {
                                         try {
-                                            captureOut.write(rawBytes, 0, n * 2);
+                                            captureOut.write(rawBytes, 0, bytes);
                                         } catch (Exception ignored) {}
                                     }
                                 }
@@ -1064,11 +1814,16 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {}
             monitorTrack = null;
+            releaseMonitorEffects();
+            pendingConv.set(null);
+            convToken.incrementAndGet();
+            monitorIrOk = false;
         }
 
-        // ---- Record RAW mic input while the live monitor is running ----
-        // The monitor thread already owns the microphone, so it hands us the untouched
-        // input samples (before gain / echo / reverb). Output of the monitor is never recorded.
+        // ---- Record while the live monitor is running ----
+        // The monitor thread already owns the microphone, so it hands us the samples:
+        //  * default: the RAW mic input (before gain / echo / reverb), mono
+        //  * "Record with effects": the monitor's effect mix (voice + echo + reverb), stereo
         private String startMonitorCapture() {
             try {
                 synchronized (captureLock) {
@@ -1076,6 +1831,8 @@ public class MainActivity extends AppCompatActivity {
                     captureOut = new java.io.BufferedOutputStream(new java.io.FileOutputStream(captureFile), 64 * 1024);
                 }
                 captureSampleRate = monitorSampleRate;
+                captureFx = optRecordFx;
+                captureChannels = captureFx ? 2 : 1;
                 recordingViaMonitor = true;
                 isNativeRecording = true;
                 monitorCapturing = true;
@@ -1112,20 +1869,31 @@ public class MainActivity extends AppCompatActivity {
                         captureOut = null;
                     }
                 }
-                byte[] pcm = new byte[0];
-                if (captureFile != null && captureFile.exists()) {
-                    pcm = readFileBytes(captureFile);
-                    try { captureFile.delete(); } catch (Exception ignored) {}
-                }
-                captureFile = null;
+                long len = (captureFile != null && captureFile.exists()) ? captureFile.length() : 0L;
                 recordingViaMonitor = false;
                 isNativeRecording = false;
-                if (pcm.length < 200) return "ERROR:empty_recording";
-
-                byte[] wav = new byte[44 + pcm.length];
-                writeWavHeader(wav, pcm.length, captureSampleRate, 1, 16);
-                System.arraycopy(pcm, 0, wav, 44, pcm.length);
-                String name = "Recording_" + System.currentTimeMillis() + ".wav";
+                if (len < 200L || len > 500L * 1024 * 1024) {
+                    if (captureFile != null) { try { captureFile.delete(); } catch (Exception ignored) {} }
+                    captureFile = null;
+                    return len < 200L ? "ERROR:empty_recording" : "ERROR:recording_too_large";
+                }
+                // read the PCM straight into the WAV buffer (no second copy)
+                byte[] wav = new byte[44 + (int) len];
+                FileInputStream pin = new FileInputStream(captureFile);
+                try {
+                    int off = 44;
+                    while (off < wav.length) {
+                        int r = pin.read(wav, off, wav.length - off);
+                        if (r < 0) break;
+                        off += r;
+                    }
+                } finally {
+                    try { pin.close(); } catch (Exception ignored) {}
+                }
+                try { captureFile.delete(); } catch (Exception ignored) {}
+                captureFile = null;
+                writeWavHeader(wav, (int) len, captureSampleRate, captureChannels, 16);
+                String name = (captureFx ? "Recording_FX_" : "Recording_") + System.currentTimeMillis() + ".wav";
                 stagedBytes = wav;
                 saveBuffer = null;
                 saveFileName = name;
@@ -1306,7 +2074,9 @@ public class MainActivity extends AppCompatActivity {
                 try { monitorTrack.stop(); } catch (Exception ignored) {}
                 try { monitorTrack.release(); } catch (Exception ignored) {}
             }
+            releaseMonitorEffects();
         } catch (Exception ignored) {}
+        try { if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; } } catch (Exception ignored) {}
         super.onDestroy();
     }
 }
