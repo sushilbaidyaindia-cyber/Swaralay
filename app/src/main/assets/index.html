@@ -541,35 +541,42 @@
                     <button class="stepper-btn" onclick="adjustInputVal('fxTreble', 1)" aria-label="Increase Treble">➕</button>
                 </div>
 
+                <button type="button" onclick="fxEffectsOff()" style="width:100%; margin:0 0 12px 0; padding:12px; background:#333; color:#fff; border:1px solid #666; border-radius:6px;">⟲ Echo / Reverb / Pan সব বন্ধ করুন (Effects off)</button>
                 <label class="fx-label echo">🗣️ Echo Amount (%)</label>
                 <div class="stepper-group" style="margin-bottom:8px;">
                     <button class="stepper-btn" onclick="adjustInputVal('fxEcho', -1)" aria-label="Decrease Echo">➖</button>
-                    <input type="number" id="fxEcho" value="0" min="0" max="100" aria-label="Echo amount">
+                    <input type="number" id="fxEcho" value="15" min="0" max="100" aria-label="Echo amount">
                     <button class="stepper-btn" onclick="adjustInputVal('fxEcho', 1)" aria-label="Increase Echo">➕</button>
                 </div>
                 
                 <label style="font-size:12px; color:#aaa; display:block;">Echo Delay Time (ms)</label>
                 <div class="stepper-group" style="margin-bottom:15px;">
                     <button class="stepper-btn" onclick="adjustInputVal('fxEchoDelay', -10)" aria-label="Decrease Echo Delay">➖</button>
-                    <input type="number" id="fxEchoDelay" value="280" min="50" max="800" step="10" aria-label="Echo delay in milliseconds">
+                    <input type="number" id="fxEchoDelay" value="320" min="50" max="800" step="10" aria-label="Echo delay in milliseconds">
                     <button class="stepper-btn" onclick="adjustInputVal('fxEchoDelay', 10)" aria-label="Increase Echo Delay">➕</button>
                 </div>
 
+                <label style="font-size:12px; color:#aaa; display:block; margin-top:10px;">Echo style</label>
+                <select id="fxEchoStyle" aria-label="Echo style" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
+                    <option value="mono">Normal — same on both speakers</option>
+                    <option value="pingpong" selected>Ping-pong — left ↔ right (guitar / vocal separate feel)</option>
+                </select>
+
                 <label style="font-size:12px; color:#aaa; display:block; margin-top:8px;">Reverb type (character stays the same)</label>
                 <select id="fxReverbType" aria-label="Select Reverb Category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
-                    <option value="room">Room — real IR (natural small space)</option>
-                    <option value="hall">Hall — real IR (wide hall)</option>
-                    <option value="plate">Plate — real IR (studio plate)</option>
-                    <option value="cathedral">Cathedral — real IR (long tail)</option>
+                    <option value="room">Room — small room, short and tight</option>
+                    <option value="hall">Hall — big warm hall (about 2 s)</option>
+                    <option value="plate" selected>Plate — bright studio plate, great for vocals</option>
+                    <option value="cathedral">Cathedral — huge, dark, very long (4+ s)</option>
                 </select>
 
                 <label class="fx-label reverb">🏟️ Reverb volume / wet (%)</label>
                 <div class="stepper-group" style="margin-bottom:8px;">
                     <button class="stepper-btn" onclick="adjustInputVal('fxReverb', -1)" aria-label="Decrease reverb volume">➖</button>
-                    <input type="number" id="fxReverb" value="0" min="0" max="100" aria-label="Reverb volume wet">
+                    <input type="number" id="fxReverb" value="25" min="0" max="100" aria-label="Reverb volume wet">
                     <button class="stepper-btn" onclick="adjustInputVal('fxReverb', 1)" aria-label="Increase reverb volume">➕</button>
                 </div>
-                <p style="font-size:11px; color:#888; margin:0 0 10px 0;">Only the reverb sound goes up/down. Type/IR stays the same (studio send/return style).</p>
+                <p style="font-size:11px; color:#888; margin:0 0 10px 0;">The original sound always stays at full level. This only sets how much reverb is mixed in (studio send/return).</p>
 
                 <label class="fx-label reverb">⏱️ Reverb pre-delay (ms) — gap before the reverb starts</label>
                 <div class="stepper-group" style="margin-bottom:4px;">
@@ -582,29 +589,16 @@
                 <label class="fx-label reverb">↔️ Reverb pan — reverb moves left ↔ right (%)</label>
                 <div class="stepper-group" style="margin-bottom:4px;">
                     <button class="stepper-btn" onclick="adjustInputVal('fxRevPan', -5)" aria-label="Decrease reverb pan">➖</button>
-                    <input type="number" id="fxRevPan" value="0" min="0" max="100" aria-label="Reverb pan amount">
+                    <input type="number" id="fxRevPan" value="35" min="0" max="100" aria-label="Reverb pan amount">
                     <button class="stepper-btn" onclick="adjustInputVal('fxRevPan', 5)" aria-label="Increase reverb pan">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Reverb pan speed</label>
                 <select id="fxRevPanSpeed" aria-label="Reverb pan speed" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
-                    <option value="0.12">Slow</option>
-                    <option value="0.3" selected>Medium</option>
-                    <option value="0.6">Fast</option>
+                    <option value="0.05" selected>Slow float — one slow drift about every 20 s (studio)</option>
+                    <option value="0.1">Medium — about every 10 s</option>
+                    <option value="0.2">Livelier — about every 5 s</option>
                 </select>
 
-                <label class="fx-label" style="color:#7bed9f;">🎤 Dry volume — original voice/music (%)</label>
-                <div class="stepper-group" style="margin-bottom:4px;">
-                    <button class="stepper-btn" onclick="adjustInputVal('fxDry', -1)" aria-label="Decrease dry volume">➖</button>
-                    <input type="number" id="fxDry" value="100" min="0" max="100" aria-label="Dry volume">
-                    <button class="stepper-btn" onclick="adjustInputVal('fxDry', 1)" aria-label="Increase dry volume">➕</button>
-                </div>
-                <p style="font-size:11px; color:#666; margin:6px 0 0;">Keep Dry ~100 so the ear stays full; raise Reverb volume for more space without drowning the original.</p>
-
-                <label style="font-size:12px; color:#aaa; display:block; margin-top:14px;">Echo style</label>
-                <select id="fxEchoStyle" aria-label="Echo style" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
-                    <option value="mono">Normal — same on both speakers</option>
-                    <option value="pingpong" selected>Ping-pong — left ↔ right (guitar / vocal separate feel)</option>
-                </select>
 
                 <label class="fx-label" style="color:var(--accent); margin-top:14px;">🔄 Auto-pan (rotate between speakers) %</label>
                 <div class="stepper-group" style="margin-bottom:8px;">
@@ -614,10 +608,10 @@
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Pan speed (how fast it moves L↔R)</label>
                 <select id="fxAutoPanSpeed" aria-label="Auto pan speed" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:4px;">
-                    <option value="0.15">Slow — gentle sweep</option>
-                    <option value="0.35" selected>Medium</option>
-                    <option value="0.7">Fast</option>
-                    <option value="1.2">Very fast</option>
+                    <option value="0.08">Slow — gentle sweep (about 12 s)</option>
+                    <option value="0.18" selected>Medium — about 5 s</option>
+                    <option value="0.4">Fast — about 2.5 s</option>
+                    <option value="0.8">Very fast</option>
                 </select>
 
                 <label class="fx-label" style="color:var(--accent); margin-top:12px;">↔️ Stereo width % (100 = original, 0 = mono)</label>
@@ -650,9 +644,9 @@
                     1) Record → Stop → <b>Add to project</b><br>
                     2) Record again = overdub while hearing previous layers<br>
                     3) Only the mic is recorded (monitor is not mixed in)<br>
-                    4) High quality record: 48 kHz / 256 kbps, studio mic mode (clear — speak closer for best result)<br>
-                    4) Use <b>headphones</b> to avoid speaker bleed<br>
-                    5) Finally <b>Mix & Save</b>
+                    4) Studio quality: lossless 48 kHz WAV, no processing (no auto-gain, no noise filter) — speak 10–15 cm from the mic<br>
+                    5) Use <b>headphones</b> to avoid speaker bleed<br>
+                    6) Finally <b>Mix & Save</b>
                 </p>
                 <p id="overdubHint" style="font-size:12px; color:var(--accent); text-align:center; margin:0 0 10px 0;" aria-live="off" aria-hidden="true"></p>
 
@@ -682,12 +676,19 @@
                     </button>
                 </div>
 
-                <div id="afterStopButtons" style="display:none; flex-direction:column; gap:8px; margin-bottom:10px;">
-                    <button onclick="addToProject()" style="background: var(--success); color:#fff; width:100%; margin:0; padding:12px; font-size:14px;">
-                        ➕ Add layer to project
+                <div id="afterStopButtons" style="display:none; flex-direction:column; gap:8px; margin-bottom:10px; padding:12px; border:1px solid #2e5a40; border-radius:10px; background:#1a2a22;">
+                    <p id="recReviewInfo" style="margin:0; font-size:13px; color:#cfe8d8; text-align:center;" aria-live="polite">Recording ready — listen first, then save or discard.</p>
+                    <button id="recPreviewBtn" type="button" onclick="toggleRecordingPreview()" aria-label="Play recording" style="background:#7c4dff; color:#fff; width:100%; margin:0; padding:14px; font-size:15px;">
+                        ▶ Play recording
                     </button>
-                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; width:100%; margin:0; padding:10px; font-size:13px;">
-                        💾 Save this layer only
+                    <button onclick="saveLastRecording()" style="background: var(--accent); color:#000; width:100%; margin:0; padding:12px; font-size:14px;">
+                        💾 Save recording
+                    </button>
+                    <button onclick="addToProject()" style="background: var(--success); color:#fff; width:100%; margin:0; padding:10px; font-size:13px;">
+                        ➕ Add as layer to project
+                    </button>
+                    <button id="recDiscardBtn" type="button" onclick="discardLastRecording()" style="background: var(--danger); color:#fff; width:100%; margin:0; padding:10px; font-size:13px;">
+                        🗑 Discard (cancel)
                     </button>
                 </div>
 
@@ -720,20 +721,20 @@
                 <label style="font-size:12px; color:#aaa; display:block;">Live Echo %</label>
                 <div class="stepper-group" style="margin-bottom:10px;">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', -5); updateMicMonitorLevels()" aria-label="Decrease live echo">➖</button>
-                    <input type="number" id="micMonEcho" value="0" min="0" max="100" aria-label="Live echo" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
+                    <input type="number" id="micMonEcho" value="10" min="0" max="100" aria-label="Live echo" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonEcho', 5); updateMicMonitorLevels()" aria-label="Increase live echo">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Live Reverb %</label>
                 <div class="stepper-group" style="margin-bottom:8px;">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', -5); updateMicMonitorLevels()" aria-label="Decrease live reverb">➖</button>
-                    <input type="number" id="micMonRev" value="0" min="0" max="100" aria-label="Live reverb" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
+                    <input type="number" id="micMonRev" value="30" min="0" max="100" aria-label="Live reverb" onchange="updateMicMonitorLevels()" oninput="updateMicMonitorLevels()">
                     <button type="button" class="stepper-btn" onclick="adjustInputVal('micMonRev', 5); updateMicMonitorLevels()" aria-label="Increase live reverb">➕</button>
                 </div>
                 <label style="font-size:12px; color:#aaa; display:block;">Reverb type</label>
                 <select id="micMonRevType" aria-label="Monitor reverb type" onchange="rebuildMicMonitorReverb()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
                     <option value="room">Room</option>
-                    <option value="hall" selected>Hall</option>
-                    <option value="plate">Plate</option>
+                    <option value="hall">Hall</option>
+                    <option value="plate" selected>Plate</option>
                     <option value="cathedral">Cathedral</option>
                 </select>
                 <label style="font-size:12px; color:#aaa; display:block;">Reverb pre-delay</label>
@@ -747,10 +748,10 @@
                 </select>
                 <label style="font-size:12px; color:#aaa; display:block;">Reverb pan (reverb moves left ↔ right)</label>
                 <select id="micMonRevPan" aria-label="Monitor reverb pan" onchange="applyMicMonitorOptions()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; margin-bottom:8px;">
-                    <option value="0|0.3" selected>Off — fixed</option>
-                    <option value="40|0.15">Gentle — slow, small</option>
-                    <option value="70|0.3">Medium</option>
-                    <option value="100|0.5">Wide — fast, full L↔R</option>
+                    <option value="0|0.05">Off — fixed</option>
+                    <option value="35|0.06" selected>Gentle — slow float, wide (studio default)</option>
+                    <option value="60|0.12">Medium — a little livelier</option>
+                    <option value="100|0.22">Wide — full L↔R, still smooth</option>
                 </select>
                 <div role="group" aria-label="Monitor sound options" style="margin:12px 0 4px 0; padding:12px; border:1px solid #2e5a40; border-radius:8px;">
                     <label style="display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#cfe8d8; margin:0 0 10px 0;"><input type="checkbox" id="micMonRecFx" onchange="applyMicMonitorOptions()" style="width:22px; height:22px; flex:0 0 auto; margin:2px 0 0 0;"><span><b>Record with effects (FX).</b> রেকর্ডে মনিটরের Echo / Reverb সহ গলা রেকর্ড হবে (স্টিরিও)। বন্ধ থাকলে শুধু কাঁচা মাইক রেকর্ড হয়। Live Monitor চালু থাকলে তবেই কাজ করে।</span></label>
@@ -915,6 +916,8 @@
         
         // Editor Previews
         let rowAudioPlayer = new Audio();
+        let fxPreviewRendering = false;
+        let recPreviewAudio = null, recPreviewUrl = null;   // listen to a fresh recording before saving
         let currentRowBtn = null;
         let currentMasterSource = null;
         let isPreviewingMaster = false;
@@ -1292,6 +1295,7 @@
                                 } catch (e) {}
                             }
                             if (afterStop) afterStop.style.display = 'flex';
+                            prepareRecordingPreview();
                         } else {
                             alert('Stop recording error: ' + result);
                         }
@@ -1325,6 +1329,7 @@
             // ===== START (with overdub monitor of existing layers) =====
             try {
                 if (afterStop) afterStop.style.display = 'none';
+                releaseRecordingPreview();
                 lastRecordingBlob = null;
                 useNativeRecorder = false;
 
@@ -1432,6 +1437,7 @@
                         document.getElementById('fxFile').files = dt.files;
                     } catch (e) {}
                     if (afterStop) afterStop.style.display = 'flex';
+                    prepareRecordingPreview();
                 };
                 mediaRecorder.start(100);
                 isRecording = true;
@@ -1502,6 +1508,7 @@
                     buffer: buffer,
                     duration: buffer.duration
                 });
+                releaseRecordingPreview();
                 lastRecordingBlob = null;
                 document.getElementById('afterStopButtons').style.display = 'none';
                 updateProjectTracksUI();
@@ -1511,6 +1518,77 @@
                 alert('Could not add to project: ' + (e && e.message ? e.message : e));
                 console.error(e);
             }
+        }
+
+        // ========== LISTEN BEFORE SAVING (play / save / discard) ==========
+        function setRecPreviewBtn(playing) {
+            const b = document.getElementById('recPreviewBtn');
+            if (!b) return;
+            b.innerHTML = playing ? '⏸ Pause' : '▶ Play recording';
+            b.setAttribute('aria-label', playing ? 'Pause recording' : 'Play recording');
+        }
+        function stopRecordingPreview() {
+            try { if (recPreviewAudio && !recPreviewAudio.paused) recPreviewAudio.pause(); } catch (e) {}
+            setRecPreviewBtn(false);
+        }
+        function releaseRecordingPreview() {
+            stopRecordingPreview();
+            try { if (recPreviewAudio) { recPreviewAudio.removeAttribute('src'); recPreviewAudio.load(); } } catch (e) {}
+            recPreviewAudio = null;
+            if (recPreviewUrl) { try { URL.revokeObjectURL(recPreviewUrl); } catch (e) {} recPreviewUrl = null; }
+        }
+        function fmtRecTime(s) {
+            s = Math.max(0, Math.floor(s || 0));
+            return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+        }
+        function prepareRecordingPreview() {
+            releaseRecordingPreview();
+            if (!lastRecordingBlob) return;
+            try {
+                recPreviewUrl = URL.createObjectURL(lastRecordingBlob);
+                recPreviewAudio = new Audio();
+                recPreviewAudio.preload = 'auto';
+                recPreviewAudio.src = recPreviewUrl;
+                const info = document.getElementById('recReviewInfo');
+                const base = 'Recording ready';
+                const show = () => {
+                    if (!info || !recPreviewAudio) return;
+                    const d = recPreviewAudio.duration;
+                    info.textContent = base + (isFinite(d) && d > 0 ? ' · ' + fmtRecTime(d) : '') + ' — listen first, then save or discard.';
+                };
+                recPreviewAudio.addEventListener('loadedmetadata', show);
+                recPreviewAudio.addEventListener('play', () => setRecPreviewBtn(true));
+                recPreviewAudio.addEventListener('pause', () => setRecPreviewBtn(false));
+                recPreviewAudio.addEventListener('ended', () => setRecPreviewBtn(false));
+                show();
+                setRecPreviewBtn(false);
+            } catch (e) { console.warn('recording preview', e); }
+        }
+        function toggleRecordingPreview() {
+            if (!recPreviewAudio) { prepareRecordingPreview(); }
+            if (!recPreviewAudio) return alert('Record and stop first.');
+            if (recPreviewAudio.paused) {
+                // only the recording should be heard
+                try { if (audio && !audio.paused) { audio.pause(); setPlayPauseBtnState(false); } } catch (e) {}
+                try { if (rowAudioPlayer && !rowAudioPlayer.paused) rowAudioPlayer.pause(); } catch (e) {}
+                try { if (cutterPlayer && !cutterPlayer.paused) cutterPlayer.pause(); } catch (e) {}
+                try { if (recPreviewAudio.ended) recPreviewAudio.currentTime = 0; } catch (e) {}
+                recPreviewAudio.play().catch(function (e) { console.warn(e); });
+            } else {
+                recPreviewAudio.pause();
+            }
+        }
+        function discardLastRecording() {
+            if (!lastRecordingBlob) return;
+            if (!confirm('Discard this recording? It will be deleted and cannot be brought back.')) return;
+            releaseRecordingPreview();
+            lastRecordingBlob = null;
+            const as = document.getElementById('afterStopButtons');
+            if (as) as.style.display = 'none';
+            try { if (window.AndroidBridge && AndroidBridge.clearStagedSave) AndroidBridge.clearStagedSave(); } catch (e) {}
+            try { const fx = document.getElementById('fxFile'); if (fx && fx.files && fx.files[0] && /^Last_Recording\./.test(fx.files[0].name)) fx.value = ''; } catch (e) {}
+            const rb = document.getElementById('recordBtn');
+            try { if (rb) rb.focus({ preventScroll: true }); } catch (e) {}
         }
 
         async function saveLastRecording() {
@@ -2554,9 +2632,9 @@
             if (!srcBuf) return null;
             const sr = ctx.sampleRate;
             const srcRate = srcBuf.sampleRate;
-            // length scales with amount (use more of the tail when amount high)
-            const useRatio = 0.45 + 0.55 * Math.min(1, (amountPercent || 50) / 100);
-            const srcLen = Math.floor(srcBuf.length * useRatio);
+            // Always the WHOLE impulse response: the type keeps its character, the Reverb % only sets the wet level.
+            // (Cutting the IR short made every type sound alike and chopped the tail without a fade.)
+            const srcLen = srcBuf.length;
             const outLen = Math.max(1, Math.floor(srcLen * sr / srcRate));
             const ch = Math.min(2, srcBuf.numberOfChannels);
             const out = ctx.createBuffer(2, outLen, sr);
@@ -2569,7 +2647,7 @@
                     const f = srcPos - j;
                     const a = sCh[j] || 0;
                     const b = sCh[Math.min(srcLen - 1, j + 1)] || 0;
-                    d[i] = (a + (b - a) * f) * (0.7 + 0.3 * ((amountPercent || 50) / 100));
+                    d[i] = a + (b - a) * f;
                 }
             }
             return out;
@@ -2781,8 +2859,8 @@
                     try {
                         if (typeof AndroidBridge.setNativeMonitorRevExtras === 'function') {
                             const pre = parseInt((document.getElementById('micMonRevPre') || {}).value, 10) || 0;
-                            const pp = String((document.getElementById('micMonRevPan') || {}).value || '0|0.3').split('|');
-                            AndroidBridge.setNativeMonitorRevExtras(pre, parseInt(pp[0], 10) || 0, parseFloat(pp[1]) || 0.3);
+                            const pp = String((document.getElementById('micMonRevPan') || {}).value || '35|0.06').split('|');
+                            AndroidBridge.setNativeMonitorRevExtras(pre, parseInt(pp[0], 10) || 0, parseFloat(pp[1]) || 0.06);
                         }
                     } catch (ex) { console.warn('setNativeMonitorRevExtras', ex); }
                     return String(AndroidBridge.setNativeMonitorOptions(o.lowCut, o.gate, o.mode, o.safe, o.recFx) || '');
@@ -3341,6 +3419,8 @@
         }
 
         function stopAllPreviews() {
+            try { fxPreviewToken++; } catch (e) {}
+            try { stopRecordingPreview(); } catch (e) {}
             try { stopMonitorPlayback(); } catch (e) {}
             try { stopLivePlay(); } catch (e) {}
             if (currentMasterSource) { 
@@ -3899,12 +3979,22 @@
             return await offline.startRendering();
         }
 
+        // Mix/merge safety limiter: samples up to 0.95 are left exactly as they are (normal music is not touched),
+        // only the overs above 0.95 are rounded off smoothly, never beyond 0.995.
+        function mixSoftLimit(s) {
+            var a = s < 0 ? -s : s;
+            if (a <= 0.95) return s;
+            var y = 0.95 + 0.045 * Math.tanh((a - 0.95) / 0.045);
+            return s < 0 ? -y : y;
+        }
+
         function softLimitBufferInPlace(buffer) {
             if (!buffer) return buffer;
             for (let c = 0; c < buffer.numberOfChannels; c++) {
                 let ch = buffer.getChannelData(c);
                 for (let i = 0; i < ch.length; i++) {
-                    ch[i] = boostSoftClip(ch[i]);
+                    let v = ch[i];
+                    if (v > 0.95 || v < -0.95) ch[i] = mixSoftLimit(v);
                 }
             }
             return buffer;
@@ -3915,7 +4005,8 @@
             let tracks = [];
             for (let row of container.querySelectorAll('.track-row')) {
                 let fileInput = row.querySelector('.file-input');
-                let vol = parseFloat(row.querySelector('.vol-input').value) / 100 || 1;
+                let volRaw = parseFloat(row.querySelector('.vol-input').value);
+                let vol = isFinite(volRaw) ? Math.max(0, volRaw) / 100 : 1; // 0 % now really mutes the track
                 let panInput = row.querySelector('.pan-input');
                 let pan = panInput ? (parseFloat(panInput.value) || 0) / 100 : 0; // -1 to +1
                 if (fileInput.files.length > 0) tracks.push({ file: fileInput.files[0], vol: vol, pan: pan });
@@ -3957,7 +4048,7 @@
                         let sourceChannelData = item.buffer.getChannelData(i < item.buffer.numberOfChannels ? i : 0);
                         for (let j = 0; j < item.buffer.length; j++) {
                             if (offset + j < finalBuffer.length) {
-                                finalChannel[offset + j] = boostSoftClip(sourceChannelData[j] * item.vol);
+                                finalChannel[offset + j] = mixSoftLimit(sourceChannelData[j] * item.vol);
                             }
                         }
                     }
@@ -4411,6 +4502,12 @@
         }
 
         /** How long the echo / reverb keeps ringing after the song ends (seconds). */
+        function fxEffectsOff() {
+            ['fxEcho','fxReverb','fxRevPan','fxAutoPan'].forEach(function (id) {
+                var el = document.getElementById(id); if (el) el.value = 0;
+            });
+        }
+
         function fxTailSeconds() {
             const val = (id) => parseInt((document.getElementById(id) || {}).value, 10) || 0;
             const reverbAmount = val('fxReverb');
@@ -4419,11 +4516,8 @@
             const delayMs = val('fxEchoDelay') || 280;
             let tail = 1.5;
             if (reverbAmount > 0) {
-                if (reverbType === 'room') tail = 2.0 + (reverbAmount / 100) * 1.5;
-                else if (reverbType === 'plate') tail = 2.5 + (reverbAmount / 100) * 2.0;
-                else if (reverbType === 'hall') tail = 3.5 + (reverbAmount / 100) * 2.5;
-                else if (reverbType === 'cathedral') tail = 5.0 + (reverbAmount / 100) * 3.5;
-                tail += Math.min(120, val('fxRevPre')) / 1000;
+                const irLen = { room: 1.4, plate: 2.2, hall: 3.0, cathedral: 4.5 };
+                tail = (irLen[reverbType] || 3.0) + 0.5 + Math.min(120, val('fxRevPre')) / 1000;
             }
             if (echoPct > 1) {
                 const e = Math.min(100, echoPct) / 100;
@@ -4449,12 +4543,10 @@
             if (!isFinite(revPreMs)) revPreMs = 0;
             revPreMs = Math.max(0, Math.min(120, revPreMs));
             let revPanAmt = Math.max(0, Math.min(100, parseInt((document.getElementById('fxRevPan') || {}).value, 10) || 0)) / 100;
-            let revPanHz = parseFloat((document.getElementById('fxRevPanSpeed') || {}).value) || 0.3;
-            let dryLevel = (parseInt((document.getElementById('fxDry') || {}).value, 10));
-            if (!isFinite(dryLevel)) dryLevel = 100;
-            dryLevel = Math.max(0, Math.min(100, dryLevel)) / 100;
+            let revPanHz = parseFloat((document.getElementById('fxRevPanSpeed') || {}).value) || 0.05;
+            const dryLevel = 1; // original sound always at full level (studio send/return: only the effects are mixed in)
             let autoPanAmt = (parseInt((document.getElementById('fxAutoPan') || {}).value, 10) || 0) / 100;
-            let autoPanHz = parseFloat((document.getElementById('fxAutoPanSpeed') || {}).value) || 0.35;
+            let autoPanHz = parseFloat((document.getElementById('fxAutoPanSpeed') || {}).value) || 0.18;
             let stereoWidth = parseInt((document.getElementById('fxStereoWidth') || {}).value, 10);
             if (!isFinite(stereoWidth)) stereoWidth = 100;
             stereoWidth = Math.max(0, Math.min(100, stereoWidth)) / 100;
@@ -4551,7 +4643,7 @@
                     // Schedule L↔R rotation for the full file length (works offline too)
                         let dur = Math.max(0.5, sourceBuffer.duration || 30);
                         let depth = Math.min(1, autoPanAmt * 0.95);
-                        let n = Math.min(800, Math.max(32, Math.floor(dur * autoPanHz * 16)));
+                        let n = Math.min(2400, Math.max(64, Math.floor(dur * autoPanHz * 32)));
                         let curve = new Float32Array(n);
                         for (let i = 0; i < n; i++) {
                             let t = i / (n - 1);
@@ -4631,11 +4723,9 @@
                 convNode.buffer = await getImpulseBuffer(ctx, reverb * 100, reverbType);
                 // Wet only — does not lower dry (dryGainNode already set separately)
                 let reverbGain = ctx.createGain();
-                // Gentle curve so low % is audible, high % not harsh
-                let wetBoost = (reverbType === 'cathedral' || reverbType === 'hall') ? 1.35 : 1.15;
-                let wetCurve = reverb * reverb * wetBoost; // smoother at low settings
-                if (reverb > 0.01) wetCurve = Math.max(wetCurve, reverb * 0.35 * wetBoost);
-                reverbGain.gain.value = Math.min(1.2, wetCurve);
+                // Calibrated send level. The convolver normalises its impulse response (about -21 dB), so the return needs
+                // real gain: 25 % is about -17 dB under the voice (classic vocal reverb), 50 % about -11 dB, 100 % about -5 dB.
+                reverbGain.gain.value = Math.min(6.0, reverb * 6.2);
                 if (revPreMs > 0 && ctx.createDelay) {
                     let preDelay = ctx.createDelay(0.25);
                     preDelay.delayTime.value = revPreMs / 1000;
@@ -4645,33 +4735,39 @@
                     trebleFilter.connect(convNode); // send from pre-dry-gain = full send, mix at output
                 }
                 convNode.connect(reverbGain);
-                if (ctx.createStereoPanner) {
-                    let spread = 0.25 + stereoWidth * 0.385;
-                    let pL = ctx.createStereoPanner();
-                    let pR = ctx.createStereoPanner();
-                    let gL = ctx.createGain();
-                    let gR = ctx.createGain();
-                    gL.gain.value = 0.85;
-                    gR.gain.value = 0.85;
-                    reverbGain.connect(gL);
-                    reverbGain.connect(gR);
+                if (ctx.createStereoPanner && ctx.createChannelSplitter) {
+                    // Studio placement: the reverb's left and right halves sit wide apart (the vocal stays in the middle,
+                    // it is on the dry path). With "Reverb pan" on, the whole reverb image drifts slowly left <-> right.
+                    const wide = 0.92 * stereoWidth;                     // 0 = mono, 1 = fully wide
+                    const sway = Math.min(1, revPanAmt) * 0.45;          // how far the image drifts (max +-0.45)
+                    const base = wide * (1 - sway * 0.9);                // head-room so the sides never hit the wall
+                    const split = ctx.createChannelSplitter(2);
+                    reverbGain.connect(split);
+                    const pL = ctx.createStereoPanner();
+                    const pR = ctx.createStereoPanner();
+                    const gL = ctx.createGain();
+                    const gR = ctx.createGain();
+                    gL.gain.value = 1.0;
+                    gR.gain.value = 1.0;
+                    split.connect(gL, 0);
+                    split.connect(gR, 1);
                     gL.connect(pL);
                     gR.connect(pR);
-                    pL.pan.value = -spread;
-                    pR.pan.value = spread;
-                    if (revPanAmt > 0.02) {
+                    pL.pan.value = -base;
+                    pR.pan.value = base;
+                    if (sway > 0.01) {
                         try {
-                            // reverb image sweeps left <-> right for the whole length (works offline too)
-                            let dur = Math.max(0.5, (sourceBuffer.duration || 30) + 12);
-                            let depth = Math.min(1, revPanAmt * 0.95);
-                            let n = Math.min(900, Math.max(32, Math.floor(dur * revPanHz * 16)));
-                            let cL = new Float32Array(n), cR = new Float32Array(n);
+                            const dur = Math.max(0.5, (sourceBuffer.duration || 30) + 14);
+                            const n = Math.min(2400, Math.max(64, Math.floor(dur * revPanHz * 32)));
+                            const cL = new Float32Array(n), cR = new Float32Array(n);
+                            const w = 2 * Math.PI * revPanHz;
                             for (let i = 0; i < n; i++) {
-                                let s = Math.sin(2 * Math.PI * revPanHz * (i / (n - 1)) * dur) * depth;
-                                cL[i] = Math.max(-1, Math.min(1, -spread + s));
-                                cR[i] = Math.max(-1, Math.min(1, spread + s));
+                                const t = (i / (n - 1)) * dur;
+                                // the two halves are slightly out of phase, so the reverb "breathes" while it floats
+                                cL[i] = Math.max(-1, Math.min(1, -base + sway * Math.sin(w * t)));
+                                cR[i] = Math.max(-1, Math.min(1, base + sway * Math.sin(w * t + 0.7)));
                             }
-                            let t0 = ctx.currentTime || 0;
+                            const t0 = ctx.currentTime || 0;
                             pL.pan.setValueCurveAtTime(cL, t0, dur);
                             pR.pan.setValueCurveAtTime(cR, t0, dur);
                         } catch (eRp) { console.warn('reverb pan', eRp); }
@@ -4731,44 +4827,76 @@
             setTimeout(() => loading.style.display = "none", 2500);
         }
 
+        // Preview = the SAME offline render the Save button uses, played back as a finished buffer.
+        // (A live Web Audio graph with long reverb + panning cannot keep up on many phones -> crackling.)
+        const FX_PREVIEW_MAX_SECONDS = 90;
+        let fxPreviewToken = 0;
         async function previewFxEditor() {
             let f1 = document.getElementById('fxFile').files[0];
             let btn = document.getElementById('previewFxBtn');
             let loading = document.getElementById('fxLoading');
             if(!f1) return alert('Select or Record a Track first!');
-            
+
             if (isPreviewingMaster && currentPreviewType === 'fx') { stopAllPreviews(); return; }
+            if (fxPreviewRendering) { return; }
             stopAllPreviews();
+            const myToken = ++fxPreviewToken;
+            fxPreviewRendering = true;
+            btn.disabled = true;
 
             try {
-                loading.innerText = "Applying FX... Please wait."; loading.style.display = "block";
+                loading.innerText = "Preparing preview… (about a few seconds)"; loading.style.display = "block";
                 let buffer = await readAudioData(f1);
-                let playCtx = new AudioContext();
+                let note = '';
+                // very long files: preview the first part only — Save renders the whole file
+                const maxFrames = Math.floor(buffer.sampleRate * FX_PREVIEW_MAX_SECONDS);
+                if (buffer.length > maxFrames) {
+                    const ac = new OfflineAudioContext(1, 1, buffer.sampleRate);
+                    const part = ac.createBuffer(buffer.numberOfChannels, maxFrames, buffer.sampleRate);
+                    for (let c = 0; c < buffer.numberOfChannels; c++) part.copyToChannel(buffer.getChannelData(c).subarray(0, maxFrames), c);
+                    buffer = part;
+                    note = ' (first ' + FX_PREVIEW_MAX_SECONDS + ' s; Save uses the whole file)';
+                }
+                const tailSeconds = fxTailSeconds();
+                const offlineCtx = new OfflineAudioContext(
+                    Math.max(2, buffer.numberOfChannels),
+                    buffer.length + Math.floor(buffer.sampleRate * tailSeconds),
+                    buffer.sampleRate
+                );
+                const src0 = await buildFxGraph(offlineCtx, buffer, true);
+                src0.start(0);
+                const rendered = await offlineCtx.startRendering();
+                if (myToken !== fxPreviewToken) return; // user stopped / left the page while it was rendering
+
+                // glitch-free playback: big output buffer ('playback'), just a finished buffer going to the speaker
+                let playCtx;
+                try { playCtx = new AudioContext({ latencyHint: 'playback' }); } catch (e0) { playCtx = new AudioContext(); }
                 fxPreviewCtx = playCtx;
-                
-                currentMasterSource = await buildFxGraph(playCtx, buffer, false);
-                currentMasterSource.start();
-                
-                isPreviewingMaster = true; 
+                const src = playCtx.createBufferSource();
+                src.buffer = rendered;
+                src.connect(playCtx.destination);
+                currentMasterSource = src;
+                src.start();
+
+                isPreviewingMaster = true;
                 currentPreviewType = 'fx';
-                btn.innerHTML = '⏸ Stop FX'; 
+                btn.innerHTML = '⏸ Stop FX';
                 btn.style.background = '#ff4757';
-                loading.style.display = "none";
-                
-                const mySource = currentMasterSource;
-                currentMasterSource.onended = () => {
-                    if (currentMasterSource !== mySource) return; // user already stopped it
-                    // Song finished: reset the UI now, but keep the context alive so echo / reverb ring out
-                    const tailCtx = playCtx;
-                    const tailMs = Math.round(fxTailSeconds() * 1000);
-                    fxPreviewCtx = null;
+                loading.innerText = 'Playing preview' + note;
+                if (!note) loading.style.display = "none";
+
+                src.onended = () => {
+                    if (currentMasterSource !== src) return; // already stopped by the user
                     stopAllPreviews();
-                    setTimeout(() => { try { tailCtx.close(); } catch (e) {} }, tailMs);
+                    loading.style.display = "none";
                 };
-            } catch(e) { 
-                alert("Error applying FX!"); 
-                console.error(e); 
-                loading.style.display = "none"; 
+            } catch(e) {
+                alert("Error applying FX!");
+                console.error(e);
+                loading.style.display = "none";
+            } finally {
+                fxPreviewRendering = false;
+                btn.disabled = false;
             }
         }
 
@@ -4818,6 +4946,11 @@
                 stopAllPreviews();
                 return;
             }
+            // 2b) Recording review player
+            if (recPreviewAudio && !recPreviewAudio.paused) {
+                stopRecordingPreview();
+                return;
+            }
             // 3) Row track preview
             if (rowAudioPlayer && !rowAudioPlayer.paused) {
                 rowAudioPlayer.pause();
@@ -4840,6 +4973,7 @@
                 return !!((isPreviewingMaster && currentMasterSource) ||
                           (cutterPlayer && !cutterPlayer.paused && cutterPlayer.src) ||
                           (rowAudioPlayer && !rowAudioPlayer.paused && rowAudioPlayer.src) ||
+                          (recPreviewAudio && !recPreviewAudio.paused) ||
                           (audio && audio.src && !audio.paused && !audio.ended));
             } catch (e) { return false; }
         }
