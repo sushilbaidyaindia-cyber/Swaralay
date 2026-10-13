@@ -215,6 +215,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
         .controls button span { font-size: 16px; margin-bottom: 2px; }
+        .controls button { white-space: nowrap; }
         .controls button:nth-child(3) {
             background: var(--accent);
             color: #000;
@@ -238,12 +239,146 @@
         .rec-indicator { display: inline-block; width: 10px; height: 10px; background: red; border-radius: 50%; margin-right: 5px; animation: blink 1s infinite; display: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
+        /* ===== Player: library list + full-screen "now playing" mode ===== */
+        body.play-mode .header, body.play-mode .tabs, body.play-mode .lib-only, body.play-mode #trackList,
+        body.play-mode .playlist-header { display: none !important; }
+        body:not(.play-mode) #nowPlayingSection { display: none !important; }
+        body.play-mode { padding-bottom: 24px; }
+        body.play-mode #player { padding-top: 10px; }
+        body.play-mode #nowPlayingSection { margin-top: 0 !important; padding: 22px 16px 26px !important; }
+        body.play-mode #currentTrackName { font-size: 19px; line-height: 1.35; margin: 14px 0 16px !important; word-break: break-word; outline: none; }
+        body.play-mode .controls { margin-top: 22px; }
+        body.play-mode .controls button { padding: 20px 0; font-size: 12px; }
+        body.play-mode .controls button span { font-size: 24px; }
+        #npBack { width: auto; margin: 0; padding: 10px 16px; background: #252538; color: #fff; border-radius: 22px; font-size: 14px; }
+        #trackList { max-height: none; }
+        .lib-bar { display: flex; gap: 8px; margin-top: 8px; }
+        .lib-bar button { margin: 0; }
+        #miniNow { display: none; margin-top: 12px; padding: 10px; border-radius: 14px; background: linear-gradient(160deg,#1e1e32,#161624); border: 1px solid rgba(0,210,255,0.25); align-items: center; gap: 8px; }
+        #miniNow.show { display: flex; }
+        #miniNow .mn-open { flex: 1; margin: 0; background: none; color: #fff; text-align: left; font-size: 13px; padding: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #miniNow .mn-toggle { width: 52px; margin: 0; padding: 10px 0; font-size: 18px; }
+        .track-item small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 11px; flex: 0 0 auto; }
+        :focus-visible { outline: 3px solid #ffd54a; outline-offset: 2px; }
+        fieldset.opt-group { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin: 14px 0 0; padding: 12px 14px 10px; background: #1a1a28; }
+        fieldset.opt-group legend { color: var(--accent); font-weight: 800; font-size: 14px; padding: 0 8px; }
+        .opt-radio { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #222236; border: 1px solid #333; cursor: pointer; font-size: 14px; color: #eee; }
+        .opt-radio input { width: 26px; height: 26px; flex: 0 0 auto; accent-color: var(--accent); margin: 0; }
+        .opt-radio span small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+        .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
+        .set-row input[type=number] { width: 90px; flex: 0 0 auto; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; font-weight: 700; }
         .fx-label { font-size: 12px; display: block; font-weight: bold; margin-top: 12px; }
         .fx-label.noise { color: var(--success); }
         .fx-label.bass { color: var(--accent); }
         .fx-label.treble { color: var(--accent); }
         .fx-label.echo { color: var(--purple); }
         .fx-label.reverb { color: var(--purple); }
+
+        /* ================= PRO THEME LAYER ================= */
+        :root {
+            --bg: #0b0c12;
+            --panel: #14151f;
+            --panel2: #1a1c29;
+            --line: rgba(255,255,255,0.07);
+            --accent: #3ddcff;
+            --accent2: #7c8cff;
+            --accent-dim: rgba(61,220,255,0.13);
+            --text: #eef0f6;
+            --muted: #8d92a6;
+            --radius: 16px;
+            --radius-sm: 12px;
+            --shadow: 0 6px 24px rgba(0,0,0,0.38);
+        }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            background: radial-gradient(1200px 500px at 50% -120px, rgba(61,220,255,0.07), transparent 60%), var(--bg);
+            font-feature-settings: "tnum";
+            letter-spacing: 0.1px;
+            padding-bottom: 96px;
+        }
+        .header {
+            padding: 12px 16px 11px;
+            font-size: 21px;
+            text-align: left;
+            display: flex; align-items: baseline; gap: 10px;
+            background: rgba(11,12,18,0.88);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--line);
+            box-shadow: none;
+        }
+        .header::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 0 12px var(--accent); align-self: center; flex: 0 0 auto; }
+        .header { background-image: none; }
+        .header-sub { display: inline; margin: 0; font-size: 10px; letter-spacing: 3px; opacity: 0.8; }
+        .tabs {
+            left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto;
+            border-radius: 22px; padding: 6px; gap: 6px;
+            background: rgba(22,23,34,0.92);
+            border: 1px solid var(--line);
+            box-shadow: 0 10px 34px rgba(0,0,0,0.6);
+        }
+        .tab-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            padding: 9px 4px 8px; border-radius: 16px; border: none; margin: 0;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.3px; color: var(--muted); background: transparent;
+        }
+        .tab-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .tab-btn.active { color: #04202a; background: linear-gradient(135deg, var(--accent), #8ff0ff); border-top: none; box-shadow: 0 4px 16px rgba(61,220,255,0.3); }
+        .content { padding: 14px 14px 28px; }
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0)) , var(--panel);
+            border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 16px;
+        }
+        h2 { font-size: 18px; letter-spacing: 0.2px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+        h3, h4 { letter-spacing: 0.2px; }
+        button { min-height: 46px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; letter-spacing: 0.2px; box-shadow: 0 2px 10px rgba(0,0,0,0.25); transition: transform .12s, opacity .12s, filter .12s; }
+        button:not(:disabled):active { transform: scale(0.975); filter: brightness(0.92); }
+        button:disabled { opacity: .45; }
+        button:not([style*="background"]):not(.stepper-btn):not(.tab-btn):not(.editor-sub-tab) { background: linear-gradient(135deg, var(--accent), #6fe8ff); color: #04202a; }
+        button[style*="#7c4dff"] { background: linear-gradient(135deg,#7c4dff,#9a7bff) !important; }
+        button[style*="var(--success)"] { background: linear-gradient(135deg,#27c46b,#3be08a) !important; color:#03210f !important; }
+        .mini-btn, .del-btn { min-height: 36px; }
+        .playlist-header button { min-height: 38px; font-size: 13px; padding: 6px 12px; }
+        .editor-nav { position: sticky; top: 52px; z-index: 50; background: linear-gradient(var(--bg) 70%, transparent); padding: 10px 2px 12px; margin: -4px -2px 12px; border-bottom: none; gap: 8px; }
+        .editor-sub-tab { min-height: 40px; padding: 9px 16px; background: var(--panel2); border: 1px solid var(--line); color: #c9ccd9; border-radius: 999px; font-size: 13px; box-shadow: none; }
+        .editor-sub-tab.active { background: linear-gradient(135deg, var(--accent), #8ff0ff); color: #04202a; border-color: transparent; box-shadow: 0 4px 14px rgba(61,220,255,0.3); }
+        select, input[type=number], input[type=text], input[type=search] {
+            min-height: 46px; background: #0f1019 !important; color: var(--text) !important;
+            border: 1px solid #2a2d40 !important; border-radius: 12px !important; font-size: 15px; padding: 10px 12px;
+        }
+        select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' stroke='%238d92a6' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") !important; background-repeat: no-repeat !important; background-position: right 14px center !important; padding-right: 38px !important; }
+        select:focus, input:focus { border-color: var(--accent) !important; outline: none; box-shadow: 0 0 0 3px rgba(61,220,255,0.18); }
+        input[type=range] { -webkit-appearance: none; appearance: none; height: 28px; background: transparent; margin: 6px 0; }
+        input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 6px; background: #2a2d40; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+        input[type=checkbox] { accent-color: var(--accent); }
+        input[type=file] { background: #0f1019; border-color: #2a2d40; }
+        .stepper-group { gap: 8px; margin-top: 6px; }
+        .stepper-btn { min-height: 46px; min-width: 52px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); color: #fff; box-shadow: none; position: relative; }
+        .stepper-btn[aria-label^="Increase"], .stepper-btn[aria-label^="Decrease"] { font-size: 0; }
+        .stepper-btn[aria-label^="Increase"]::before { content: "+"; font-size: 24px; font-weight: 500; line-height: 1; }
+        .stepper-btn[aria-label^="Decrease"]::before { content: "\2212"; font-size: 24px; font-weight: 500; line-height: 1; }
+        .stepper-btn:hover { background: #262a3d; }
+        .stepper-btn.secondary { background: var(--panel2); color: #fff; }
+        .stepper-group input[type=number] { flex: 1 1 auto; width: auto; min-width: 70px; font-size: 18px; border-radius: 12px; }
+        .fx-label { letter-spacing: 0.3px; font-size: 12.5px; margin-top: 16px; }
+        .track-list { max-height: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+        .track-item { padding: 15px 16px; min-height: 54px; font-size: 15px; border-bottom: 1px solid var(--line); }
+        .track-item:last-child { border-bottom: none; }
+        .track-item.playing { background: var(--accent-dim); border-left: 3px solid var(--accent); color: var(--accent); }
+        .folder-header { letter-spacing: .4px; }
+        .controls button { background: var(--panel2); border: 1px solid var(--line); box-shadow: none; }
+        .controls button:nth-child(3) { background: linear-gradient(135deg, var(--accent), #8ff0ff) !important; color: #04202a !important; transform: scale(1.06); box-shadow: 0 6px 22px rgba(61,220,255,0.35); }
+        #nowPlayingSection { border: 1px solid rgba(61,220,255,0.2) !important; background: linear-gradient(165deg, #1a1d2e, #12131d) !important; border-radius: 22px !important; }
+        .playlist-header { margin-top: 18px; border-bottom: none; padding-bottom: 4px; }
+        .playlist-header h3 { font-size: 15px !important; letter-spacing: .5px; color: var(--muted); text-transform: none; }
+        #miniNow { border-radius: 18px; background: linear-gradient(165deg,#1a1d2e,#12131d); }
+        details.card > summary { list-style: none; }
+        details.card > summary::-webkit-details-marker { display: none; }
+        .set-row { border-bottom-color: var(--line); }
+        /* long how-to boxes: easier to read */
+        #panel-record > div[style*="dashed"], #panel-record div[style*="text-align:center"] { border-radius: 14px; }
+        #panel-record p, #panel-record div[style*="line-height"] { text-align: left; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #2a2d40; border-radius: 6px; }
     </style>
     <!-- LAME MP3 encoder (~156KB) — high quality (320 kbps) for WhatsApp -->
     <script src="lame.min.js"></script>
@@ -251,26 +386,35 @@
 </head>
 <body>
 
-    <h1 class="header">Swaralay<span class="header-sub">SWARALAY</span></h1>
+    <h1 class="header">Swaralay<span class="header-sub">STUDIO</span></h1>
 
     <!-- 🎵 PLAYER TAB -->
     <div id="player" class="content">
         <div class="card">
-            <h2>🎵 Player</h2>
+            <h2 class="lib-only">🎵 Player</h2>
             <input type="file" id="fileInput" multiple accept="audio/*" style="display:none;" aria-hidden="true">
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;" aria-hidden="true">
-            <p style="font-size:12px; color:#8a8a9a; margin:0 0 6px 0;">Pick audio from your phone</p>
-            <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff; margin-top:4px;">📱 Choose from phone music</button>
+
+            <div id="miniNow" aria-label="Now playing">
+                <button type="button" class="mn-open" id="miniNowOpen" onclick="enterPlayMode()">Now playing</button>
+                <button type="button" class="mn-toggle" id="miniNowToggle" onclick="togglePlay()" aria-label="Play or pause">⏯</button>
+            </div>
+
+            <div class="lib-only">
+                <p id="libStatus" style="font-size:13px; color:#8a8a9a; margin:12px 0 0 0;" role="status" aria-live="polite">গান খোঁজা হচ্ছে…</p>
+                <div class="lib-bar">
+                    <button type="button" onclick="refreshLibrary()" style="background:#2a2a40; color:#fff;">🔄 গান আবার খুঁজুন</button>
+                    <button type="button" onclick="openPhoneMusicPicker('fileInput')" style="background:#7c4dff; color:#fff;">📱 ফাইল বেছে নিন</button>
+                </div>
+            </div>
+
             <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
-                <h4 id="currentTrackName" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
+                <button type="button" id="npBack" onclick="exitPlayMode()" aria-label="Back to song list">⬅ গানের তালিকা</button>
+                <h4 id="currentTrackName" tabindex="-1" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
                 <div class="time-display">
                     <span id="currentTime">0:00</span>
                     <span id="totalTime">0:00</span>
-                </div>
-                <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
-                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 Shuffle</button>
-                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 Repeat Off</button>
                 </div>
                 <div class="controls">
                     <button type="button" onclick="prevTrack()" aria-label="Previous track"><span>⏮</span>Prev</button>
@@ -279,21 +423,29 @@
                     <button type="button" onclick="fastForward()" aria-label="Fast forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
                     <button type="button" onclick="nextTrack()" aria-label="Next track"><span>⏭</span>Next</button>
                 </div>
-                <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 Volume: <span id="volLabel">100</span>%</label>
-                <input type="range" id="playerVolume" value="100" min="0" max="100" aria-label="Player Volume" oninput="setPlayerVolume(this.value)">
-                <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:15px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
-                <p id="playlistMsg" style="color: var(--success); font-size:12px; text-align:center; display:none; margin-top:10px;" aria-live="polite">Added to DB Playlist!</p>
             </div>
+
         </div>
 
         <div class="playlist-header">
-            <h3 style="margin:0; font-size:16px;">📂 Selected Files</h3>
+            <h3 style="margin:0; font-size:16px;">🎵 গানের তালিকা</h3>
             <div style="display:flex; gap:6px;">
                 <button onclick="clearSelectedFiles()" style="margin:0; width:auto; padding:5px 10px; background:var(--danger); color:#fff;" aria-label="Clear selected files">🗑 Clear</button>
                 <button onclick="loadDbPlaylist()" style="margin:0; width:auto; padding:5px 10px; background:var(--warning); color:#000;">📑 View DB Playlist</button>
             </div>
         </div>
         <div class="track-list" id="trackList"></div>
+        <details id="npExtras" class="lib-only card" style="margin-top:14px;">
+            <summary style="cursor:pointer; font-weight:700; color:var(--accent); padding:4px 0;">⚙️ প্লেয়ার অপশন (Shuffle · Repeat · Volume · Playlist)</summary>
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
+                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 Shuffle</button>
+                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 Repeat Off</button>
+                </div>
+                <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 Volume: <span id="volLabel">100</span>%</label>
+                <input type="range" id="playerVolume" value="100" min="0" max="100" aria-label="Player Volume" oninput="setPlayerVolume(this.value)">
+                <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:10px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
+                <p id="playlistMsg" style="color: var(--success); font-size:12px; text-align:center; display:none; margin-top:10px;" aria-live="polite">Added to DB Playlist!</p>
+                    </details>
     </div>
 
     <!-- ✂️ EDITOR TAB -->
@@ -493,9 +645,9 @@
 
             <label class="fx-label" style="color:var(--warning);">Or transpose directly (semitones)</label>
             <div class="stepper-group" style="margin-bottom:6px;">
-                <button class="stepper-btn" onclick="adjustPitchDirect(-1)" aria-label="Pitch down">➖</button>
+                <button class="stepper-btn" onclick="adjustPitchDirect(-1)" aria-label="Decrease pitch, pitch down">➖</button>
                 <input type="number" id="fxPitchDirect" value="0" min="-12" max="12" step="1" aria-label="Direct transpose" onchange="syncPitchDirect()">
-                <button class="stepper-btn" onclick="adjustPitchDirect(1)" aria-label="Pitch up">➕</button>
+                <button class="stepper-btn" onclick="adjustPitchDirect(1)" aria-label="Increase pitch, pitch up">➕</button>
             </div>
             <p style="font-size:11px; color:#888; margin:0 0 14px 0;">+2 = two semitones higher · duration/tempo stays the same (SoundTouch)</p>
 
@@ -831,26 +983,24 @@
     <div id="settings" class="content">
         <div class="card">
             <h2>⚙️ Settings</h2>
-            <div class="input-group">
-                Skip time (sec): <input type="number" id="skipSetting" value="10" min="1" max="60" aria-label="Fast Forward Skip Time"> 
-            </div>
-            <div class="input-group" style="margin-top: 15px;">
-                Volume/FX Step (%): <input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume Increase Decrease Amount"> 
-            </div>
-            <div style="margin-top:16px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
-                <strong style="color:var(--accent);">Save format</strong><br>
-                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')"> <b>MP3</b> (LAME) — WhatsApp-friendly</label>
-                <label style="display:block; margin:8px 0;"><input type="radio" name="exportFormat" value="wav" onchange="setExportFormat('wav')"> <b>WAV</b> — uncompressed (larger files)</label>
-                <label style="display:block; margin:10px 0 4px; color:#aaa;">MP3 quality (minimum 128 kbps)</label>
-                <select id="mp3Bitrate" aria-label="MP3 bitrate" onchange="setMp3Bitrate(this.value)" style="width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#222; color:#fff;">
-                    <option value="128">128 kbps — smaller file</option>
-                    <option value="192">192 kbps — clear</option>
-                    <option value="256" selected>256 kbps — high (default)</option>
-                    <option value="320">320 kbps — maximum</option>
+            <div class="set-row"><label for="skipSetting">Skip time (সেকেন্ড)<br><small style="color:#888">⏪ ⏩ বাটনে কত সেকেন্ড লাফাবে</small></label><input type="number" id="skipSetting" value="10" min="1" max="60" aria-label="Skip time in seconds"></div>
+            <div class="set-row"><label for="volStepSetting">Volume / FX step (%)<br><small style="color:#888">➕ ➖ বাটনে কত করে বাড়বে</small></label><input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume and effect step in percent"></div>
+            <fieldset class="opt-group" id="formatGroup">
+                <legend>Save format — সেভের ফরম্যাট</legend>
+                <div role="radiogroup" aria-label="Save format">
+                    <label class="opt-radio" for="fmtMp3"><input type="radio" id="fmtMp3" name="exportFormat" value="mp3" checked onchange="setExportFormat('mp3')" aria-label="MP3 format"><span><b>MP3</b><small>ছোট ফাইল, WhatsApp-এ পাঠানো সহজ</small></span></label>
+                    <label class="opt-radio" for="fmtWav"><input type="radio" id="fmtWav" name="exportFormat" value="wav" onchange="setExportFormat('wav')" aria-label="WAV format"><span><b>WAV</b><small>কম্প্রেস ছাড়া সেরা মান, ফাইল বড়</small></span></label>
+                </div>
+                <label for="mp3Bitrate" style="display:block; margin:14px 0 6px; color:#aaa; font-size:13px;">MP3 quality (সর্বনিম্ন ১২৮ kbps)</label>
+                <select id="mp3Bitrate" aria-label="MP3 quality" onchange="setMp3Bitrate(this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:15px;">
+                    <option value="128">128 kbps — ছোট ফাইল</option>
+                    <option value="192">192 kbps — পরিষ্কার</option>
+                    <option value="256" selected>256 kbps — উচ্চ মান (ডিফল্ট)</option>
+                    <option value="320">320 kbps — সর্বোচ্চ</option>
                 </select>
-                <span style="font-size:12px; color:#888; display:block; margin-top:8px;">Record / cut / mix / FX / video export all use this setting. Default MP3 ≥ 128 kbps.</span>
-            </div>
-            <div style="margin-top:12px; padding:12px; background:#1a1a28; border-radius:10px; font-size:13px; color:#ccc; line-height:1.5;">
+                <p style="font-size:12px; color:#888; margin:10px 0 2px;">Record / Cut / Mix / FX / Video সব সেভে এই সেটিং চলে।</p>
+            </fieldset>
+            <div style="margin-top:14px; padding:12px; background:#1a1a28; border-radius:12px; font-size:13px; color:#ccc; line-height:1.5;">
                 <strong style="color:#00d2ff;">TalkBack play / pause</strong><br>
                 Music playing → <b>two-finger double-tap</b> pauses it, again plays it (TalkBack's media gesture; keep its gesture set to "Pause or resume media").<br>
                 Also works with the headset / Bluetooth play-pause button, or the Play button (single-finger double-tap).
@@ -863,9 +1013,9 @@
 
     <!-- NAVIGATION TABS (Bottom) -->
     <div class="tabs" role="tablist" aria-label="Main Navigation">
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="player" onclick="openMainTab('player', this)" aria-label="Player">🎵<br>Player</button>
-        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="editor" onclick="openMainTab('editor', this)" aria-label="Editor">✂️<br>Editor</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="settings" onclick="openMainTab('settings', this)" aria-label="Settings">⚙️<br>Settings</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="player" onclick="openMainTab('player', this)" aria-label="Player"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span>Player</span></button>
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="editor" onclick="openMainTab('editor', this)" aria-label="Editor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/><path d="M4 12h4M12 12h8"/><circle cx="10" cy="12" r="0.01"/></svg><span>Editor</span></button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="settings" onclick="openMainTab('settings', this)" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
     </div>
 
     <script>
@@ -877,7 +1027,7 @@
         if (![128, 192, 256, 320].includes(mp3Bitrate)) mp3Bitrate = 256;
         function setMp3Bitrate(v) {
             let n = parseInt(v, 10);
-            if (![128, 192, 256, 320].includes(n)) n = 192;
+            if (![128, 192, 256, 320].includes(n)) n = 256;
             mp3Bitrate = n;
             try { localStorage.setItem('swaralay_mp3_bitrate', String(n)); } catch (e) {}
         }
@@ -910,6 +1060,7 @@
         let isShuffle = false;
         let repeatMode = 'off'; // 'off' | 'all' | 'one'
         let lastListGroupByFolder = false;  // remembers how the current "Selected Files" list was built
+        let sortDesc = null;               // null = default direction per mode (A-Z / newest first); true/false once the user flips it
         let sortMode = 'name';              // 'name' | 'date' — how the track list is ordered
         let folderViewMode = 'combined';    // 'combined' | 'browse' — how a folder import is displayed
         let currentBrowseFolder = null;     // which sub-folder we're viewing in 'browse' mode (null = folder list)
@@ -996,6 +1147,8 @@
             let activeBtn = btn || document.querySelector(`.tabs .tab-btn[onclick*="'${tabName}'"]`);
             if (activeBtn) { activeBtn.classList.add('active'); activeBtn.setAttribute('aria-selected', 'true'); }
             stopAllPreviews();
+            if (tabName !== 'player') document.body.classList.remove('play-mode');
+            if (tabName === 'player') { try { ensureLibraryLoaded(); } catch (e0) {} }
             // When opening Editor, show empty state (no panel active)
             if (tabName === 'editor') {
                 document.querySelectorAll('.editor-panel').forEach(el => el.classList.remove('active'));
@@ -1053,8 +1206,11 @@
         }
 
         function saveSettings() {
-            skipTime = parseInt(document.getElementById('skipSetting').value);
-            volStep = parseInt(document.getElementById('volStepSetting').value) || 10;
+            skipTime = Math.max(1, Math.min(60, parseInt(document.getElementById('skipSetting').value, 10) || 10));
+            volStep = Math.max(1, Math.min(50, parseInt(document.getElementById('volStepSetting').value, 10) || 10));
+            document.getElementById('skipSetting').value = skipTime;
+            document.getElementById('volStepSetting').value = volStep;
+            try { localStorage.setItem('swaralay_skip', String(skipTime)); localStorage.setItem('swaralay_volstep', String(volStep)); } catch (e) {}
             document.querySelectorAll('.skip-val').forEach(el => el.innerText = skipTime);
             let msg = document.getElementById('settingsMsg');
             msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000);
@@ -1708,9 +1864,13 @@
             if (!isDbReady) return alert("Database is not ready!");
             if (files.length === 0 || !files[currentTrackIndex]) return alert("No song selected!");
             let fileToSave = files[currentTrackIndex]; 
+            if (fileToSave.lazy && !fileToSave.__blob) {
+                lazyEnsureBlob(fileToSave).then(() => addToPlaylist()).catch((err) => alert('সেভ করা যায়নি: ' + err));
+                return;
+            }
             let tx = db.transaction(["playlist"], "readwrite");
             let store = tx.objectStore("playlist");
-            let request = store.add({ name: fileToSave.name, blob: fileToSave });
+            let request = store.add({ name: fileToSave.name, blob: fileToSave.__blob || fileToSave });
             request.onsuccess = () => {
                 let msg = document.getElementById('playlistMsg');
                 msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000);
@@ -1775,11 +1935,13 @@
         // together (sorted by folder name) and the chosen sortMode only orders songs *within*
         // each folder — otherwise sortMode orders the whole flat list.
         function sortFilesArray(groupByFolder) {
-            let byNameOrDate = sortMode === 'date'
-                ? (a, b) => (a.lastModified || 0) - (b.lastModified || 0)
-                : (a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true, sensitivity: 'base' });
-
-            if (groupByFolder) {
+            const desc = (sortDesc === null) ? (sortMode === 'date') : sortDesc;   // dates: newest first by default
+            const dir = desc ? -1 : 1;
+            const byNameOrDate = sortMode === 'date'
+                ? (a, b) => dir * ((a.lastModified || 0) - (b.lastModified || 0))
+                : (a, b) => dir * (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
+            // folders stay grouped only in the folder views; "All together" is one flat list in the chosen order
+            if (groupByFolder && !(inLibrary() && folderViewMode === 'combined')) {
                 files.sort((a, b) => {
                     let fa = getFolderKey(a), fb = getFolderKey(b);
                     if (fa !== fb) return fa.localeCompare(fb, undefined, { numeric: true, sensitivity: 'base' });
@@ -1825,14 +1987,15 @@
         function setFolderViewMode(mode) {
             folderViewMode = mode;
             currentBrowseFolder = null;
+            if (inLibrary()) { const pf = files[currentTrackIndex]; sortFilesArray(true); if (pf) { const i = files.indexOf(pf); if (i >= 0) currentTrackIndex = i; } }
             refreshTrackListView();
         }
 
         // NEW: re-sort the list by name (A-Z) or by date, keeping the currently playing
         // track correctly tracked even though its index in `files` changes.
         function setSortMode(mode) {
-            if (sortMode === mode) return;
-            sortMode = mode;
+            if (sortMode === mode) { sortDesc = !((sortDesc === null) ? (sortMode === 'date') : sortDesc); }
+            else { sortMode = mode; sortDesc = null; }
             let playingFile = files[currentTrackIndex];
             sortFilesArray(lastListGroupByFolder);
             if (playingFile) {
@@ -1853,11 +2016,13 @@
                 sortWrap.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
                 let nameBtn = document.createElement('button');
                 nameBtn.type = 'button'; nameBtn.className = 'mini-btn'; nameBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'name' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'name' ? '#000' : '#fff') + ';';
-                nameBtn.innerText = '🔤 Name (A-Z)';
+                nameBtn.innerText = '🔤 নাম ' + (sortMode === 'name' ? (((sortDesc === null) ? false : sortDesc) ? '(Z→A) ↓' : '(A→Z) ↑') : '(A→Z)');
+                nameBtn.setAttribute('aria-label', 'Sort by name' + (sortMode === 'name' ? ', tap again to reverse' : ''));
                 nameBtn.onclick = () => setSortMode('name');
                 let dateBtn = document.createElement('button');
                 dateBtn.type = 'button'; dateBtn.className = 'mini-btn'; dateBtn.style.cssText = 'flex:1; margin:0; padding:8px; font-size:12px; background:' + (sortMode === 'date' ? 'var(--accent)' : '#2a2a40') + '; color:' + (sortMode === 'date' ? '#000' : '#fff') + ';';
-                dateBtn.innerText = '📅 By date';
+                dateBtn.innerText = '📅 তারিখ ' + (sortMode === 'date' ? (((sortDesc === null) ? true : sortDesc) ? '(নতুন আগে) ↓' : '(পুরোনো আগে) ↑') : '(নতুন আগে)');
+                dateBtn.setAttribute('aria-label', 'Sort by date' + (sortMode === 'date' ? ', tap again to reverse' : ''));
                 dateBtn.onclick = () => setSortMode('date');
                 sortWrap.appendChild(nameBtn); sortWrap.appendChild(dateBtn);
                 frag.appendChild(sortWrap);
@@ -1916,7 +2081,7 @@
 
             let lastFolder = null;
             files.forEach((file, index) => {
-                if (groupByFolder) {
+                if (groupByFolder && !(inLibrary() && folderViewMode === 'combined')) {
                     let folder = getFolderKey(file);
                     if (folder !== lastFolder) {
                         let folderDiv = document.createElement('div');
@@ -2036,7 +2201,9 @@
         document.getElementById('trackList').addEventListener('click', (e) => {
             let item = e.target.closest('.track-item[data-index]');
             if (!item) return;
+            if (e.target.closest('.del-btn')) return;
             playTrack(parseInt(item.dataset.index, 10));
+            enterPlayMode();
         });
         document.getElementById('trackList').addEventListener('keydown', (e) => {
             if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -2044,6 +2211,7 @@
             if (!item) return;
             e.preventDefault();
             playTrack(parseInt(item.dataset.index, 10));
+            enterPlayMode();
         });
 
         function playTrack(index, forceStart) {
@@ -2055,9 +2223,23 @@
             let file = files[index];
             if (!file) return;
             // BUGFIX: previous track's blob URL was never released — revoke it before making a new one
-            if (currentAudioObjectUrl) { try { URL.revokeObjectURL(currentAudioObjectUrl); } catch(e) {} }
-            currentAudioObjectUrl = URL.createObjectURL(file);
-            audio.src = currentAudioObjectUrl;
+            if (currentAudioObjectUrl) { try { URL.revokeObjectURL(currentAudioObjectUrl); } catch(e) {} currentAudioObjectUrl = null; }
+            audio.onerror = null;
+            if (file.lazy && !file.__blob) {
+                // phone library entry: play straight from the content:// address; if the WebView refuses, read it through the app
+                currentAudioObjectUrl = null;
+                audio.src = file.uri;
+                const startedFor = file;
+                audio.onerror = () => {
+                    audio.onerror = null;
+                    if (files[currentTrackIndex] !== startedFor) return;
+                    lazyEnsureBlob(startedFor).then(() => { if (files[currentTrackIndex] === startedFor) playTrack(currentTrackIndex, forceStart); })
+                        .catch((err) => alert('গান চালানো যায়নি: ' + err));
+                };
+            } else {
+                currentAudioObjectUrl = URL.createObjectURL(file.__blob || file);
+                audio.src = currentAudioObjectUrl;
+            }
 
             // Resume from last position if available
             let key = file.name;
@@ -2073,6 +2255,30 @@
             setPlayPauseBtnState(true);
             document.getElementById('currentTrackName').innerText = file.name;
             updateTrackListUI();
+        }
+
+        // read a phone-library song through the app (fallback / for saving to the playlist)
+        function lazyEnsureBlob(file) {
+            return new Promise((resolve, reject) => {
+                if (file.__blob) return resolve(file.__blob);
+                if (!window.AndroidBridge || typeof AndroidBridge.readUriAsBase64 !== 'function') return reject('bridge নেই');
+                setTimeout(() => {
+                    try {
+                        const b64 = String(AndroidBridge.readUriAsBase64(file.uri) || '');
+                        if (!b64 || b64.indexOf('ERROR:') === 0) return reject(b64 || 'empty');
+                        const bin = atob(b64);
+                        const arr = new Uint8Array(bin.length);
+                        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                        let mime = 'audio/mpeg';
+                        if (/\.wav$/i.test(file.name)) mime = 'audio/wav';
+                        else if (/\.(ogg|opus)$/i.test(file.name)) mime = 'audio/ogg';
+                        else if (/\.(m4a|aac|mp4)$/i.test(file.name)) mime = 'audio/mp4';
+                        else if (/\.flac$/i.test(file.name)) mime = 'audio/flac';
+                        file.__blob = new Blob([arr], { type: mime });
+                        resolve(file.__blob);
+                    } catch (e) { reject(e); }
+                }, 20);
+            });
         }
 
         function setPlayPauseBtnState(isPlaying) {
@@ -2226,7 +2432,7 @@
         // NEW: rebuild the "Selected Files" list (used after removing a track), keeping the
         // same folder-grouping mode it was originally shown in.
         function refreshTrackListView() {
-            let headerText = lastListGroupByFolder
+            let headerText = inLibrary() ? ('🎵 সব গান (' + files.length + ')') : lastListGroupByFolder
                 ? '📁 Added from folder (' + files.length + ' tracks)'
                 : '📁 Selected Files';
             renderTrackList(headerText, lastListGroupByFolder);
@@ -3672,9 +3878,9 @@
                 <div class="stepper-group" style="margin-top:8px; justify-content: space-between;">
                     <label style="font-size:12px; color:#ccc;">Pan (L/R)</label>
                     <div style="display:flex; gap:5px; align-items:center;">
-                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, -1)" aria-label="Pan Left">➖</button>
+                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, -1)" aria-label="Decrease pan, move left">➖</button>
                         <input type="number" class="pan-input" value="0" min="-100" max="100" style="width:60px;" aria-label="Pan value, minus is left, plus is right">
-                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, 1)" aria-label="Pan Right">➕</button>
+                        <button class="stepper-btn secondary" onclick="adjustRowPan(this, 1)" aria-label="Increase pan, move right">➕</button>
                     </div>
                 </div>
                 <p style="font-size:10px; color:#888; margin:2px 0 0 0;">-100 = Left, 0 = Center, +100 = Right</p>
@@ -3927,6 +4133,17 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             try { syncExportFormatUI(); } catch(e) {}
+            try {
+                let br = document.getElementById('mp3Bitrate');
+                if (br) br.value = String(getMp3Bitrate());
+                let sk = parseInt(localStorage.getItem('swaralay_skip'), 10);
+                let vs = parseInt(localStorage.getItem('swaralay_volstep'), 10);
+                if (sk >= 1 && sk <= 60) skipTime = sk;
+                if (vs >= 1 && vs <= 50) volStep = vs;
+                document.getElementById('skipSetting').value = skipTime;
+                document.getElementById('volStepSetting').value = volStep;
+                document.querySelectorAll('.skip-val').forEach(function (el) { el.innerText = skipTime; });
+            } catch(e) {}
             let vf = document.getElementById('videoFile');
             if (vf) {
                 vf.addEventListener('change', function () {
@@ -5051,6 +5268,7 @@
                 renderTrackList('📂 Opened file');
                 openMainTab('player');
                 playTrack(0, true);
+                enterPlayMode();
             } catch (e) { alert('অডিও খোলা যায়নি: ' + e); }
         };
 
@@ -5114,5 +5332,115 @@
         });
 
     </script>
+
+    <script>
+        // ===================== PLAYER LIBRARY + PLAY MODE =====================
+        let libraryRequested = false;
+        let libForce = false;
+
+        function setLibStatus(t) { const el = document.getElementById('libStatus'); if (el) el.textContent = t; }
+        function playerTabActive() { const el = document.getElementById('player'); return !!(el && el.classList.contains('active')); }
+        function inLibrary() { return files.length > 0 && files[0] && files[0].lazy === true; }
+
+        function ensureLibraryLoaded() {
+            if (libraryRequested) return;
+            if (files.length && !inLibrary()) return; // user is working with their own picked files
+            requestLibrary();
+        }
+        function requestLibrary() {
+            libraryRequested = true;
+            if (!window.AndroidBridge || typeof AndroidBridge.rescanAudio !== 'function') {
+                setLibStatus('এখানে ফোনের গান আপনা-আপনি আসে না। "📱 ফাইল বেছে নিন" চাপুন।');
+                return;
+            }
+            setLibStatus('গান খোঁজা হচ্ছে…');
+            try { AndroidBridge.rescanAudio(); } catch (e) { setLibStatus('গান খোঁজা যায়নি: ' + e); }
+            // if the permission is refused, no list ever arrives — tell the user instead of waiting forever
+            setTimeout(() => {
+                if (!inLibrary() && /খোঁজা হচ্ছে/.test((document.getElementById('libStatus') || {}).textContent || '')) {
+                    setLibStatus('গান পাওয়া যায়নি। ফোনের Settings → Apps → Swaralay → Permissions-এ Music/Audio অনুমতি দিন, তারপর "🔄 গান আবার খুঁজুন" চাপুন।');
+                }
+            }, 8000);
+        }
+        function refreshLibrary() { libForce = true; requestLibrary(); }
+
+        function fmtSize(n) { if (!n) return ''; return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+        function fmtDur(ms) { if (!ms) return ''; const t = Math.round(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+
+        window.populateAllAudioLists = function (list) {
+            try {
+                if (!Array.isArray(list)) return;
+                if (!(libForce || inLibrary() || files.length === 0)) return; // do not replace the user's own list
+                libForce = false;
+                libraryRequested = true;
+                const curUri = (inLibrary() && files[currentTrackIndex]) ? files[currentTrackIndex].uri : null;
+                const arr = list.map((o) => {
+                    const t = { lazy: true, uri: o.uri, name: o.name || o.title || 'audio', size: o.size || 0, dur: o.dur || 0,
+                        lastModified: (o.date || 0) * 1000, webkitRelativePath: (o.folder || '') + (o.name || '') };
+                    return t;
+                });
+                if (!arr.length) { setLibStatus('ফোনে কোনো অডিও ফাইল পাওয়া যায়নি।'); return; }
+                isDbPlaylistView = false;
+                currentBrowseFolder = null;
+                files = arr;
+                sortFilesArray(true);
+                if (curUri) { const i = files.findIndex((f) => f.uri === curUri); if (i >= 0) currentTrackIndex = i; }
+                else currentTrackIndex = 0;
+                renderTrackList('🎵 সব গান (' + files.length + ')', true);
+                updateLibraryNames();
+                setLibStatus(files.length + 'টি গান পাওয়া গেছে। যেটা চালাতে চান সেটায় চাপুন।');
+                updateTrackListUI();
+            } catch (e) { console.error('populateAllAudioLists', e); setLibStatus('তালিকা বানাতে সমস্যা: ' + e); }
+        };
+        // show size / duration next to each library song
+        function updateLibraryNames() {
+            document.querySelectorAll('#trackList .track-item[data-index]').forEach((el) => {
+                const f = files[parseInt(el.dataset.index, 10)];
+                if (!f || !f.lazy || el.querySelector('small')) return;
+                const info = [fmtDur(f.dur), fmtSize(f.size)].filter(Boolean).join(' · ');
+                if (!info) return;
+                const sm = document.createElement('small'); sm.textContent = info;
+                const del = el.querySelector('.del-btn');
+                el.insertBefore(sm, del || null);
+            });
+        }
+        const _origRefreshTrackListView = (typeof refreshTrackListView === 'function') ? refreshTrackListView : null;
+        if (_origRefreshTrackListView) {
+            window.refreshTrackListView = function () { _origRefreshTrackListView.apply(this, arguments); updateLibraryNames(); };
+        }
+
+        function enterPlayMode() {
+            if (!audio || !audio.src) return;
+            document.body.classList.add('play-mode');
+            window.scrollTo(0, 0);
+            const t = document.getElementById('currentTrackName');
+            if (t) { try { t.focus(); } catch (e) {} }
+        }
+        function exitPlayMode() {
+            document.body.classList.remove('play-mode');
+            updateMiniNow();
+            const cur = document.querySelector('#trackList .track-item.playing');
+            if (cur) { try { cur.scrollIntoView({ block: 'center' }); cur.focus(); } catch (e) {} }
+            else { const m = document.getElementById('miniNowOpen'); if (m && document.getElementById('miniNow').classList.contains('show')) { try { m.focus(); } catch (e) {} } }
+        }
+        window.__swaralayBack = function () {
+            if (document.body.classList.contains('play-mode')) { exitPlayMode(); return true; }
+            if (playerTabActive() && currentBrowseFolder !== null) { currentBrowseFolder = null; refreshTrackListView(); return true; }
+            return false;
+        };
+        function updateMiniNow() {
+            const box = document.getElementById('miniNow'); if (!box) return;
+            const has = !!(audio && audio.src && files[currentTrackIndex]);
+            box.classList.toggle('show', has && !document.body.classList.contains('play-mode'));
+            if (!has) return;
+            const open = document.getElementById('miniNowOpen');
+            if (open) { open.textContent = (audio.paused ? '⏸ ' : '🔊 ') + files[currentTrackIndex].name; open.setAttribute('aria-label', 'Open player: ' + files[currentTrackIndex].name); }
+            const tg = document.getElementById('miniNowToggle');
+            if (tg) { tg.textContent = audio.paused ? '▶' : '⏸'; tg.setAttribute('aria-label', audio.paused ? 'Play' : 'Pause'); }
+        }
+        ['play', 'pause', 'loadedmetadata', 'emptied', 'ended'].forEach((ev) => audio.addEventListener(ev, updateMiniNow));
+        window.addEventListener('DOMContentLoaded', () => { updateMiniNow(); });
+    </script>
+
 </body>
 </html>
