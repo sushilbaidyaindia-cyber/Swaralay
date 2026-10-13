@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ---- Monitor DSP / capture state ----
     private volatile int monitorRevPreMs = 0, monitorRevPanPct = 0;
-    private volatile float monitorRevPanHz = 0.3f;
+    private volatile float monitorRevPanHz = 0.06f;
     private volatile int monitorRevType = 1; // 0 room, 1 hall, 2 plate, 3 cathedral
     private volatile boolean monitorCapturing = false;
     private boolean recordingViaMonitor = false;
@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
             String name = IR_NAMES[Math.max(0, Math.min(IR_NAMES.length - 1, typeId))];
             MonitorDsp.Wav w = loadIrWav(name);
             if (w == null) return null;
-            float[][] ir = MonitorDsp.prepareIr(w, sr, 3.0);
+            float[][] ir = MonitorDsp.prepareIr(w, sr, 4.6);
             return MonitorDsp.StereoConvolver.fromIr(ir, 1024);
         } catch (Throwable t) {
             t.printStackTrace();
@@ -817,6 +817,15 @@ public class MainActivity extends AppCompatActivity {
         try { stopService(new Intent(this, MonitorService.class)); } catch (Exception ignored) {}
     }
 
+    // ===== Studio-quality PCM recorder state (used by AudioBridge) =====
+    private AudioRecord pcmRec;
+    private Thread pcmThread;
+    private volatile boolean pcmRunning = false;
+    private File pcmFile;
+    private java.io.FileOutputStream pcmOut;
+    private volatile long pcmBytes = 0;
+    private int pcmRate = 48000;
+
     // ===== Native MediaSession (TalkBack two-finger double-tap, headset buttons) =====
     private MediaSession mediaSession;
     private volatile boolean mediaPlaying = false;
@@ -1307,6 +1316,112 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+        // ---- Studio-quality recorder: lossless 16-bit PCM WAV, 48 kHz, no processing ----
+
+        /** Returns "OK" when the PCM recorder started, otherwise null (caller falls back to the AAC recorder). */
+        private String startPcmRecording() {
+            try {
+                int[] rates = {48000, 44100};
+                int[] sources = (Build.VERSION.SDK_INT >= 24)
+                        ? new int[]{MediaRecorder.AudioSource.UNPROCESSED, MediaRecorder.AudioSource.MIC,
+                                    MediaRecorder.AudioSource.VOICE_RECOGNITION}
+                        : new int[]{MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_RECOGNITION};
+                AudioRecord rec = null;
+                int usedRate = 48000;
+                outer:
+                for (int rate : rates) {
+                    int min = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                    if (min <= 0) continue;
+                    for (int src : sources) {
+                        AudioRecord r = null;
+                        try {
+                            r = new AudioRecord(src, rate, AudioFormat.CHANNEL_IN_MONO,
+                                    AudioFormat.ENCODING_PCM_16BIT, Math.max(min * 4, rate / 2));
+                            if (r.getState() == AudioRecord.STATE_INITIALIZED) {
+                                rec = r; usedRate = rate;
+                                break outer;
+                            }
+                        } catch (Throwable ignored) {}
+                        if (r != null) { try { r.release(); } catch (Throwable ignored) {} }
+                    }
+                }
+                if (rec == null) return null;
+                pcmFile = new File(getCacheDir(), "swaralay_rec_" + System.currentTimeMillis() + ".wav");
+                pcmOut = new java.io.FileOutputStream(pcmFile);
+                pcmOut.write(new byte[44]); // header is filled in when recording stops
+                pcmBytes = 0;
+                pcmRate = usedRate;
+                pcmRec = rec;
+                rec.startRecording();
+                pcmRunning = true;
+                final AudioRecord fr = rec;
+                pcmThread = new Thread(() -> {
+                    short[] buf = new short[2048];
+                    byte[] bytes = new byte[buf.length * 2];
+                    while (pcmRunning) {
+                        int n = fr.read(buf, 0, buf.length);
+                        if (n <= 0) {
+                            if (n < 0) break;
+                            continue;
+                        }
+                        for (int i = 0; i < n; i++) {
+                            bytes[2 * i] = (byte) (buf[i] & 0xff);
+                            bytes[2 * i + 1] = (byte) ((buf[i] >> 8) & 0xff);
+                        }
+                        try {
+                            pcmOut.write(bytes, 0, n * 2);
+                            pcmBytes += n * 2L;
+                        } catch (Exception e) { break; }
+                    }
+                }, "swaralay-pcm-rec");
+                pcmThread.setPriority(Thread.MAX_PRIORITY);
+                pcmThread.start();
+                isNativeRecording = true;
+                silenceTalkBackBurst();
+                return "OK";
+            } catch (Throwable t) {
+                stopPcmQuiet();
+                return null;
+            }
+        }
+
+        private void stopPcmQuiet() {
+            pcmRunning = false;
+            try { if (pcmThread != null) pcmThread.join(1500); } catch (Exception ignored) {}
+            pcmThread = null;
+            if (pcmRec != null) {
+                try { pcmRec.stop(); } catch (Throwable ignored) {}
+                try { pcmRec.release(); } catch (Throwable ignored) {}
+            }
+            pcmRec = null;
+            try { if (pcmOut != null) pcmOut.close(); } catch (Exception ignored) {}
+            pcmOut = null;
+        }
+
+        private String finishPcmRecording() {
+            try {
+                stopPcmQuiet();
+                isNativeRecording = false;
+                if (pcmFile == null || !pcmFile.exists() || pcmBytes < 2000) return "ERROR:empty_recording";
+                byte[] hdr = new byte[44];
+                writeWavHeader(hdr, (int) Math.min(pcmBytes, Integer.MAX_VALUE - 64), pcmRate, 1, 16);
+                java.io.RandomAccessFile raf = new java.io.RandomAccessFile(pcmFile, "rw");
+                raf.seek(0);
+                raf.write(hdr);
+                raf.close();
+                byte[] bytes = readFileBytes(pcmFile);
+                String name = "Recording_" + System.currentTimeMillis() + ".wav";
+                stagedBytes = bytes;
+                saveBuffer = null;
+                saveFileName = name;
+                try { pcmFile.delete(); } catch (Exception ignored) {}
+                return "OK:" + name + ":" + bytes.length;
+            } catch (Exception e) {
+                isNativeRecording = false;
+                return "ERROR:" + e.getMessage();
+            }
+        }
+
         // ---- Native mic recording (reliable on Android WebView) ----
         @JavascriptInterface
         public synchronized String startNativeRecording() {
@@ -1326,6 +1441,7 @@ public class MainActivity extends AppCompatActivity {
                     return startMonitorCapture();
                 }
                 stopNativeRecorderQuiet();
+                if ("OK".equals(startPcmRecording())) return "OK";   // lossless WAV; falls back to AAC below if the device refuses
                 nativeRecordFile = new File(getCacheDir(), "swaralay_rec_" + System.currentTimeMillis() + ".m4a");
                 // Studio clarity: UNPROCESSED / MIC first (no AGC pumping). Fallback to voice sources.
                 int[] sources;
@@ -1402,6 +1518,9 @@ public class MainActivity extends AppCompatActivity {
                 if (isNativeRecording && recordingViaMonitor) {
                     return finishMonitorCapture();
                 }
+                if (pcmRec != null || pcmRunning) {
+                    return finishPcmRecording();
+                }
                 if (!isNativeRecording || nativeRecorder == null) {
                     return "ERROR:not_recording";
                 }
@@ -1464,6 +1583,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void stopNativeRecorderQuiet() {
+            if (pcmRec != null || pcmRunning) { stopPcmQuiet(); isNativeRecording = false; }
             try {
                 if (nativeRecorder != null) {
                     try { nativeRecorder.stop(); } catch (Exception ignored) {}
@@ -2153,6 +2273,7 @@ public class MainActivity extends AppCompatActivity {
             releaseMonitorEffects();
         } catch (Exception ignored) {}
         stopMonitorService();
+        try { pcmRunning = false; if (pcmRec != null) { pcmRec.stop(); pcmRec.release(); } } catch (Throwable ignored) {}
         try { if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; } } catch (Exception ignored) {}
         super.onDestroy();
     }
