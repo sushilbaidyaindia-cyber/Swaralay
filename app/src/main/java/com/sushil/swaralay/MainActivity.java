@@ -1181,42 +1181,65 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    /** Every playable audio file on the phone (songs, recordings, WhatsApp audio, ...) except ringtones / alarms / notifications. */
     private JSONArray scanAudioFiles() {
         JSONArray list = new JSONArray();
         Uri collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String[] projection = {
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.DATE_ADDED
-        };
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0";
-        String sort = MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC";
-        try (Cursor c = getContentResolver().query(collection, projection, selection, null, sort)) {
+        final boolean hasRel = Build.VERSION.SDK_INT >= 29;
+        java.util.ArrayList<String> cols = new java.util.ArrayList<>();
+        cols.add(MediaStore.Audio.Media._ID);
+        cols.add(MediaStore.Audio.Media.DISPLAY_NAME);
+        cols.add(MediaStore.Audio.Media.TITLE);
+        cols.add(MediaStore.Audio.Media.ARTIST);
+        cols.add(MediaStore.Audio.Media.DATE_ADDED);
+        cols.add(MediaStore.Audio.Media.SIZE);
+        cols.add(MediaStore.Audio.Media.DURATION);
+        cols.add(hasRel ? MediaStore.MediaColumns.RELATIVE_PATH : MediaStore.Audio.Media.DATA);
+        String selection = MediaStore.Audio.Media.IS_RINGTONE + "=0 AND "
+                + MediaStore.Audio.Media.IS_NOTIFICATION + "=0 AND "
+                + MediaStore.Audio.Media.IS_ALARM + "=0 AND "
+                + MediaStore.Audio.Media.SIZE + ">0";
+        String sort = MediaStore.Audio.Media.DISPLAY_NAME + " COLLATE NOCASE ASC";
+        try (Cursor c = getContentResolver().query(collection, cols.toArray(new String[0]), selection, null, sort)) {
             if (c == null) return list;
             int idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
             int nameCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME);
             int titleCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
             int artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
             int dateCol = c.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED);
+            int sizeCol = c.getColumnIndex(MediaStore.Audio.Media.SIZE);
+            int durCol = c.getColumnIndex(MediaStore.Audio.Media.DURATION);
+            int pathCol = c.getColumnIndex(hasRel ? MediaStore.MediaColumns.RELATIVE_PATH : MediaStore.Audio.Media.DATA);
             while (c.moveToNext()) {
-                long id = c.getLong(idCol);
-                Uri contentUri = ContentUris.withAppendedId(
-                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
                 try {
-                    JSONObject o = new JSONObject();
+                    long id = c.getLong(idCol);
+                    Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
+                    String display = c.getString(nameCol);
                     String title = c.getString(titleCol);
-                    if (title == null || title.isEmpty()) title = c.getString(nameCol);
+                    if (display == null || display.isEmpty()) display = (title != null && !title.isEmpty()) ? title : ("audio_" + id);
+                    String folder = "";
+                    if (pathCol >= 0) {
+                        String pth = c.getString(pathCol);
+                        if (pth != null) {
+                            if (!hasRel) {
+                                int k = pth.lastIndexOf('/');
+                                pth = (k >= 0) ? pth.substring(0, k + 1) : "";
+                                if (pth.startsWith("/storage/emulated/0/")) pth = pth.substring("/storage/emulated/0/".length());
+                            }
+                            folder = pth;
+                        }
+                    }
+                    JSONObject o = new JSONObject();
                     o.put("id", id);
-                    o.put("name", c.getString(nameCol));
-                    o.put("title", title != null ? title : "Unknown");
-                    o.put("artist", c.getString(artistCol) != null ? c.getString(artistCol) : "");
+                    o.put("name", display);
+                    o.put("title", (title != null && !title.isEmpty()) ? title : display);
+                    String artist = c.getString(artistCol);
+                    o.put("artist", (artist != null && !"<unknown>".equals(artist)) ? artist : "");
                     o.put("uri", contentUri.toString());
-                    o.put("path", contentUri.toString());
-                    long dateAdded = (dateCol >= 0) ? c.getLong(dateCol) : 0L;
-                    o.put("dateAdded", dateAdded);
-                    o.put("date", dateAdded);
+                    o.put("folder", folder);
+                    o.put("date", (dateCol >= 0) ? c.getLong(dateCol) : 0L);
+                    o.put("size", (sizeCol >= 0) ? c.getLong(sizeCol) : 0L);
+                    o.put("dur", (durCol >= 0) ? c.getLong(durCol) : 0L);
                     list.put(o);
                 } catch (Exception ignored) {}
             }
@@ -1227,6 +1250,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class AudioBridge {
+        /** The Player tab asks for the phone's audio list (asks for permission first if needed). */
+        @JavascriptInterface
+        public void rescanAudio() {
+            runOnUiThread(() -> checkPermissionAndScan());
+        }
+
         /** Stop current TalkBack speech (cannot fully disable TalkBack from an app). */
         @JavascriptInterface
         public void silenceTalkBack() {
@@ -2253,8 +2282,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView == null) { super.onBackPressed(); return; }
+        // The page gets the first chance: leave the full-screen player / a folder, then fall back to normal behaviour.
+        webView.evaluateJavascript(
+                "(function(){try{return !!(window.__swaralayBack&&window.__swaralayBack());}catch(e){return false;}})()",
+                value -> {
+                    if ("true".equals(value)) return;
+                    if (webView.canGoBack()) webView.goBack();
+                    else MainActivity.super.onBackPressed();
+                });
     }
 
     @Override
