@@ -130,16 +130,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private MonitorDsp.StereoConvolver buildConvolver(int typeId, int sr) {
-        try {
-            String name = IR_NAMES[Math.max(0, Math.min(IR_NAMES.length - 1, typeId))];
-            MonitorDsp.Wav w = loadIrWav(name);
-            if (w == null) return null;
-            float[][] ir = MonitorDsp.prepareIr(w, sr, 4.6);
-            return MonitorDsp.StereoConvolver.fromIr(ir, 1024);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            return null;
-        }
+        // File IR disabled — live monitor uses algorithmic Freeverb only (classic sound)
+        return null;
     }
 
     private void releaseMonitorEffects() {
