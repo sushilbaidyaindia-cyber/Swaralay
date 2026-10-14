@@ -259,6 +259,36 @@
         #miniNow .mn-open { flex: 1; margin: 0; background: none; color: #fff; text-align: left; font-size: 13px; padding: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #miniNow .mn-toggle { width: 52px; margin: 0; padding: 10px 0; font-size: 18px; }
         .track-item small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 11px; flex: 0 0 auto; }
+        /* player screen (play mode) */
+        body.play-mode { padding-bottom: 20px; background: #000; }
+        body.play-mode #player { max-width: 520px; padding: 6px 18px 18px; }
+        #nowPlayingSection { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+        .pm-top { display: flex; align-items: center; min-height: 56px; }
+        #npBack { width: 52px; height: 52px; min-height: 52px; padding: 0; margin: 0; border-radius: 50%; background: transparent !important; color: #fff; box-shadow: none; display: flex; align-items: center; justify-content: center; }
+        #npBack svg { width: 28px; height: 28px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        #npSwipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; margin: 4px -18px 0; }
+        #npSwipe::-webkit-scrollbar { display: none; }
+        .pm-page { flex: 0 0 100%; scroll-snap-align: center; padding: 0 18px; box-sizing: border-box; }
+        .pm-art { width: 100%; aspect-ratio: 1 / 1; max-height: 52vh; border-radius: 28px; background: #3f4658; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+        .pm-art svg { width: 38%; height: 38%; stroke: #c4c9e4; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+        h4.pm-title { font-size: 21px; font-weight: 600; line-height: 1.4; color: #fff; text-align: left; margin: 26px 0 18px !important; word-break: break-word; outline: none; min-height: 3em; }
+        h4.pm-side { color: #8d92a6; }
+        body.play-mode #progressBar { margin: 4px 0 0; }
+        body.play-mode .time-display { margin: 0 4px 8px; font-size: 14px; color: #e3e5ee; }
+        .pm-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 6px; }
+        .pm-btn { width: auto; margin: 0; padding: 0; min-height: 0; border-radius: 50%; background: transparent !important; color: #fff !important; box-shadow: none; display: flex; align-items: center; justify-content: center; position: relative; flex: 0 0 auto; }
+        .pm-btn svg { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .pm-btn svg .f { fill: #fff; }
+        .pm-sm { width: 60px; height: 60px; } .pm-sm svg { width: 30px; height: 30px; }
+        .pm-md { width: 66px; height: 66px; } .pm-md svg { width: 34px; height: 34px; }
+        .pm-play { width: 92px; height: 92px; background: #e9eaf2 !important; transform: none !important; }
+        .pm-play svg { width: 46px; height: 46px; stroke: none; } .pm-play svg path, .pm-play svg rect { fill: #14151f; stroke: none; }
+        .pm-btn.on svg { stroke: var(--accent); } .pm-btn.on svg .f { fill: var(--accent); }
+        .pm-one { display: none; position: absolute; font-style: normal; font-size: 11px; font-weight: 800; color: var(--accent); }
+        #repeatBtn[data-mode="one"] .pm-one { display: block; }
+        .pm-skip { justify-content: center; gap: 14px; margin-top: 22px; }
+        .pm-pill { flex: 1; margin: 0; min-height: 56px; border-radius: 28px; background: #1d2030 !important; color: #fff !important; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: none; border: 1px solid rgba(255,255,255,0.08); }
+        .pm-pill-ic svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
         :focus-visible { outline: 3px solid #ffd54a; outline-offset: 2px; }
         fieldset.opt-group { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin: 14px 0 0; padding: 12px 14px 10px; background: #1a1a28; }
         fieldset.opt-group legend { color: var(--accent); font-weight: 800; font-size: 14px; padding: 0 8px; }
@@ -379,6 +409,24 @@
         #panel-record > div[style*="dashed"], #panel-record div[style*="text-align:center"] { border-radius: 14px; }
         #panel-record p, #panel-record div[style*="line-height"] { text-align: left; }
         ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #2a2d40; border-radius: 6px; }
+        body #nowPlayingSection { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+        body.play-mode .header { display: none !important; }
+        body.play-mode #player > .card { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+        h4.pm-title { min-height: 2.6em; }
+        body.play-mode .content { padding-left: 4px; padding-right: 4px; }
+        .pm-row { gap: 0; } .pm-row.pm-skip { gap: 14px; }
+        .pm-sm { width: 52px; height: 52px; } .pm-sm svg { width: 28px; height: 28px; }
+        .pm-md { width: 60px; height: 60px; } .pm-md svg { width: 32px; height: 32px; }
+        .pm-play { width: 84px; height: 84px; } .pm-play svg { width: 42px; height: 42px; }
+        .pm-row.pm-main { justify-content: space-between; margin-top: 18px; }
+        .pm-md { width: 56px; height: 56px; } .pm-md svg { width: 30px; height: 30px; }
+        .pm-seek svg { width: 44px !important; height: 44px !important; stroke: #fff; }
+        .pm-seek .skip-val { position: absolute; font-size: 12px; font-weight: 800; color: #fff; left: 0; right: 0; text-align: center; top: 50%; transform: translateY(-48%); pointer-events: none; }
+        .pm-play { width: 80px; height: 80px; } .pm-play svg { width: 40px; height: 40px; }
+        .pm-row.pm-skipbar { margin-top: 20px; gap: 6px; }
+        .pm-skipwrap { flex: 1 1 auto; min-width: 0; }
+        .pm-skiplabel { display: block; font-size: 13px; color: #c9ccd9; text-align: center; }
+        .pm-skipwrap input[type=range] { margin: 2px 0 0; }
     </style>
     <!-- LAME MP3 encoder (~156KB) — high quality (320 kbps) for WhatsApp -->
     <script src="lame.min.js"></script>
@@ -408,20 +456,32 @@
                 </div>
             </div>
 
-            <div id="nowPlayingSection" style="background: linear-gradient(160deg, #1e1e32 0%, #161624 100%); padding: 16px; border-radius: 14px; margin-top: 12px; border: 1px solid rgba(0,210,255,0.25); box-shadow: 0 0 24px rgba(0,210,255,0.08);">
-                <button type="button" id="npBack" onclick="exitPlayMode()" aria-label="Back to song list">⬅ গানের তালিকা</button>
-                <h4 id="currentTrackName" tabindex="-1" style="margin: 0 0 10px 0; color: #fff; text-align: center;">No song selected</h4>
+            <div id="nowPlayingSection">
+                <div class="pm-top"><button type="button" id="npBack" onclick="exitPlayMode()" aria-label="Back to song list"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button></div>
+                <div id="npSwipe" role="group" aria-label="গান বদলাতে দুই আঙুলে ডানে বা বাঁয়ে সোয়াইপ করুন">
+                    <div class="pm-page" aria-hidden="true"><div class="pm-art"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div><h4 class="pm-title pm-side" id="npNextTitle"></h4></div>
+                    <div class="pm-page"><div class="pm-art"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div><h4 id="currentTrackName" class="pm-title" tabindex="-1">No song selected</h4></div>
+                    <div class="pm-page" aria-hidden="true"><div class="pm-art"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div><h4 class="pm-title pm-side" id="npPrevTitle"></h4></div>
+                </div>
                 <input type="range" id="progressBar" value="0" min="0" max="100" aria-label="Song Progress">
                 <div class="time-display">
-                    <span id="currentTime">0:00</span>
-                    <span id="totalTime">0:00</span>
+                    <span id="currentTime">00:00</span>
+                    <span id="totalTime">00:00</span>
                 </div>
-                <div class="controls">
-                    <button type="button" onclick="prevTrack()" aria-label="Previous track"><span>⏮</span>Prev</button>
-                    <button type="button" onclick="rewind()" aria-label="Rewind"><span>⏪</span>-<b class="skip-val">10</b>s</button>
-                    <button type="button" onclick="togglePlay()" id="playPauseBtn" aria-label="Play"><span>▶</span>Play</button>
-                    <button type="button" onclick="fastForward()" aria-label="Fast forward"><span>⏩</span>+<b class="skip-val">10</b>s</button>
-                    <button type="button" onclick="nextTrack()" aria-label="Next track"><span>⏭</span>Next</button>
+                <div class="pm-row pm-main">
+                    <button type="button" class="pm-btn pm-md" onclick="prevTrack()" aria-label="Previous track"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14" /><path d="M19 5L9 12l10 7z" class="f"/></svg></button>
+                    <button type="button" class="pm-btn pm-md pm-seek" onclick="rewind()" aria-label="Rewind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><b class="skip-val">30</b></button>
+                    <button type="button" class="pm-btn pm-play" onclick="togglePlay()" id="playPauseBtn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button>
+                    <button type="button" class="pm-btn pm-md pm-seek" onclick="fastForward()" aria-label="Fast forward"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg><b class="skip-val">30</b></button>
+                    <button type="button" class="pm-btn pm-md" onclick="nextTrack()" aria-label="Next track"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14"/><path d="M5 5l10 7-10 7z" class="f"/></svg></button>
+                </div>
+                <div class="pm-row pm-skipbar">
+                    <button id="shuffleBtn" type="button" class="pm-btn pm-sm" onclick="toggleShuffle()" aria-label="Shuffle off" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+                    <div class="pm-skipwrap">
+                        <label for="bigSeek" class="pm-skiplabel">বড় লাফ — <b id="bigStepLabel">5 মিনিট</b> করে</label>
+                        <input type="range" id="bigSeek" min="0" max="1" step="1" value="0" aria-label="Big jump seek" oninput="onBigSeekInput(this.value)">
+                    </div>
+                    <button id="repeatBtn" type="button" class="pm-btn pm-sm" onclick="cycleRepeatMode()" aria-label="Repeat off" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg><i class="pm-one">1</i></button>
                 </div>
             </div>
 
@@ -437,10 +497,6 @@
         <div class="track-list" id="trackList"></div>
         <details id="npExtras" class="lib-only card" style="margin-top:14px;">
             <summary style="cursor:pointer; font-weight:700; color:var(--accent); padding:4px 0;">⚙️ প্লেয়ার অপশন (Shuffle · Repeat · Volume · Playlist)</summary>
-                <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
-                    <button id="shuffleBtn" type="button" onclick="toggleShuffle()" aria-label="Shuffle" aria-pressed="false" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔀 Shuffle</button>
-                    <button id="repeatBtn" type="button" onclick="cycleRepeatMode()" aria-label="Repeat mode" style="width:auto; margin:0; padding:8px 14px; font-size:12px; background:#383854; color:#fff;">🔁 Repeat Off</button>
-                </div>
                 <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">🔊 Volume: <span id="volLabel">100</span>%</label>
                 <input type="range" id="playerVolume" value="100" min="0" max="100" aria-label="Player Volume" oninput="setPlayerVolume(this.value)">
                 <button onclick="addToPlaylist()" style="background: var(--success); color:#fff; width:100%; margin-top:10px; padding:10px;" aria-label="Add to Playlist">📑 Save to DB Playlist</button>
@@ -983,7 +1039,7 @@
     <div id="settings" class="content">
         <div class="card">
             <h2>⚙️ Settings</h2>
-            <div class="set-row"><label for="skipSetting">Skip time (সেকেন্ড)<br><small style="color:#888">⏪ ⏩ বাটনে কত সেকেন্ড লাফাবে</small></label><input type="number" id="skipSetting" value="10" min="1" max="60" aria-label="Skip time in seconds"></div>
+            <div class="set-row"><label for="skipSetting">Skip time (সেকেন্ড)<br><small style="color:#888">⏪ ⏩ বাটনে কত সেকেন্ড লাফাবে</small></label><input type="number" id="skipSetting" value="30" min="1" max="60" aria-label="Skip time in seconds"></div>
             <div class="set-row"><label for="volStepSetting">Volume / FX step (%)<br><small style="color:#888">➕ ➖ বাটনে কত করে বাড়বে</small></label><input type="number" id="volStepSetting" value="10" min="1" max="50" aria-label="Volume and effect step in percent"></div>
             <fieldset class="opt-group" id="formatGroup">
                 <legend>Save format — সেভের ফরম্যাট</legend>
@@ -1000,6 +1056,24 @@
                 </select>
                 <p style="font-size:12px; color:#888; margin:10px 0 2px;">Record / Cut / Mix / FX / Video সব সেভে এই সেটিং চলে।</p>
             </fieldset>
+            <fieldset class="opt-group" id="bigStepGroup">
+                <legend>বড় লাফের স্লাইডার</legend>
+                <div role="radiogroup" aria-label="Big jump unit">
+                    <label class="opt-radio" for="bsMin"><input type="radio" id="bsMin" name="bigStepMode" value="min" checked onchange="setBigStepMode('min')" aria-label="Jump in minutes"><span><b>মিনিট ধরে</b><small>যেমন ৫ মিনিট করে এগোবে/পিছোবে</small></span></label>
+                    <label class="opt-radio" for="bsPct"><input type="radio" id="bsPct" name="bigStepMode" value="pct" onchange="setBigStepMode('pct')" aria-label="Jump in percent"><span><b>শতাংশ (%) ধরে</b><small>যেমন গানের ১০% করে</small></span></label>
+                </div>
+                <div class="set-row"><label for="bigStepInput"><span id="bigStepUnitLbl">কত মিনিট করে</span><br><small style="color:#888">ছোট গান হলে লাফ নিজে থেকে ছোট হয়</small></label><input type="number" id="bigStepInput" value="5" min="1" max="60" aria-label="Big jump amount" onchange="setBigStepValue(this.value)"></div>
+            </fieldset>
+
+            <fieldset class="opt-group" id="swipeGroup">
+                <legend>Player swipe — গান বদলানো</legend>
+                <div role="radiogroup" aria-label="Two finger swipe direction">
+                    <label class="opt-radio" for="swNormal"><input type="radio" id="swNormal" name="swipeDir" value="normal" checked onchange="setSwipeReversed(false)" aria-label="Swipe right for next song"><span><b>ডানে সোয়াইপ = পরের গান</b><small>বাঁয়ে সোয়াইপ = আগের গান</small></span></label>
+                    <label class="opt-radio" for="swReverse"><input type="radio" id="swReverse" name="swipeDir" value="reverse" onchange="setSwipeReversed(true)" aria-label="Swipe right for previous song"><span><b>ডানে সোয়াইপ = আগের গান</b><small>বাঁয়ে সোয়াইপ = পরের গান</small></span></label>
+                </div>
+                <p style="font-size:12px; color:#888; margin:8px 0 2px;">প্লেয়ার পর্দায় (গান চালালে) TalkBack-এ দুই আঙুলে, আর TalkBack ছাড়া এক আঙুলে ছবির উপর সোয়াইপ। উল্টো মনে হলে এখানে বদলে নিন।</p>
+            </fieldset>
+
             <div style="margin-top:14px; padding:12px; background:#1a1a28; border-radius:12px; font-size:13px; color:#ccc; line-height:1.5;">
                 <strong style="color:#00d2ff;">TalkBack play / pause</strong><br>
                 Music playing → <b>two-finger double-tap</b> pauses it, again plays it (TalkBack's media gesture; keep its gesture set to "Pause or resume media").<br>
@@ -1020,7 +1094,7 @@
 
     <script>
         // --- GLOBAL VARIABLES & SETTINGS ---
-        let skipTime = 10;
+        let skipTime = 30;
         let volStep = 10;
         let exportFormat = localStorage.getItem('swaralay_export_format') || 'mp3';
         let mp3Bitrate = parseInt(localStorage.getItem('swaralay_mp3_bitrate') || '256', 10);
@@ -2255,6 +2329,7 @@
             setPlayPauseBtnState(true);
             document.getElementById('currentTrackName').innerText = file.name;
             updateTrackListUI();
+            try { updateNeighborTitles(); } catch (e) {}
         }
 
         // read a phone-library song through the app (fallback / for saving to the playlist)
@@ -2281,16 +2356,13 @@
             });
         }
 
+        const PM_ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>';
+        const PM_ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.2"/><rect x="14" y="4" width="5" height="16" rx="1.2"/></svg>';
         function setPlayPauseBtnState(isPlaying) {
             let btn = document.getElementById('playPauseBtn');
             if (!btn) return;
-            if (isPlaying) {
-                btn.innerHTML = '<span>⏸</span>Pause';
-                btn.setAttribute('aria-label', 'Pause');
-            } else {
-                btn.innerHTML = '<span>▶</span>Play';
-                btn.setAttribute('aria-label', 'Play');
-            }
+            btn.innerHTML = isPlaying ? PM_ICON_PAUSE : PM_ICON_PLAY;
+            btn.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
         }
 
         function togglePlay() {
@@ -2368,8 +2440,8 @@
                     progressBar.setAttribute('aria-valuetext', formatTime(audio.currentTime) + '  of ' + formatTime(audio.duration));
                     lastAriaTimeUpdate = now;
                 }
-                document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
-                document.getElementById('totalTime').innerText = formatTime(audio.duration);
+                document.getElementById('currentTime').innerText = formatTime(audio.currentTime).replace(/^(\d):/, '0$1:');
+                document.getElementById('totalTime').innerText = formatTime(audio.duration).replace(/^(\d):/, '0$1:');
                 // Save position every ~3 seconds
                 if (curSec % 3 === 0) saveTrackPosition();
             }
@@ -2382,19 +2454,22 @@
             let btn = document.getElementById('shuffleBtn');
             if (btn) {
                 btn.setAttribute('aria-pressed', isShuffle ? 'true' : 'false');
-                btn.style.background = isShuffle ? 'var(--accent)' : '#383854';
-                btn.style.color = isShuffle ? '#000' : '#fff';
+                btn.setAttribute('aria-label', isShuffle ? 'Shuffle on' : 'Shuffle off');
+                btn.classList.toggle('on', isShuffle);
             }
+            try { updateNeighborTitles(); } catch (e) {}
         }
         function cycleRepeatMode() {
             repeatMode = repeatMode === 'off' ? 'all' : (repeatMode === 'all' ? 'one' : 'off');
             let btn = document.getElementById('repeatBtn');
             if (btn) {
-                let labels = { off: '🔁 Repeat Off', all: '🔁 Repeat all', one: '🔂 Repeat one' };
-                btn.innerText = labels[repeatMode];
-                btn.style.background = repeatMode === 'off' ? '#383854' : 'var(--accent)';
-                btn.style.color = repeatMode === 'off' ? '#fff' : '#000';
+                let labels = { off: 'Repeat off', all: 'Repeat all songs', one: 'Repeat this song' };
+                btn.setAttribute('aria-label', labels[repeatMode]);
+                btn.setAttribute('aria-pressed', repeatMode === 'off' ? 'false' : 'true');
+                btn.dataset.mode = repeatMode;
+                btn.classList.toggle('on', repeatMode !== 'off');
             }
+            try { updateNeighborTitles(); } catch (e) {}
         }
         function getRandomTrackIndex(excludeIndex) {
             if (files.length <= 1) return 0;
@@ -5441,6 +5516,163 @@
         ['play', 'pause', 'loadedmetadata', 'emptied', 'ended'].forEach((ev) => audio.addEventListener(ev, updateMiniNow));
         window.addEventListener('DOMContentLoaded', () => { updateMiniNow(); });
     </script>
+
+    <script>
+        // ===== swipe to change song (two-finger swipe with TalkBack scrolls this strip; one finger works without TalkBack) =====
+        let swipeReversed = false;
+        try { swipeReversed = localStorage.getItem('swaralay_swipe_rev') === '1'; } catch (e) {}
+        function setSwipeReversed(v) {
+            swipeReversed = !!v;
+            try { localStorage.setItem('swaralay_swipe_rev', v ? '1' : '0'); } catch (e) {}
+            try { updateNeighborTitles(); } catch (e) {}
+        }
+        function neighborIndex(dir) {
+            if (!files.length) return -1;
+            if (isShuffle) return -2;
+            let i = currentTrackIndex + dir;
+            if (i >= 0 && i < files.length) return i;
+            if (repeatMode === 'all') return (i + files.length) % files.length;
+            return -1;
+        }
+        function updateNeighborTitles() {
+            const n = neighborIndex(1), p = neighborIndex(-1);
+            const label = (i, pre) => i === -2 ? (pre + ' 🔀') : (i >= 0 && files[i] ? (pre + ' ' + files[i].name) : '—');
+            const nx = document.getElementById('npNextTitle'), pv = document.getElementById('npPrevTitle');
+            const leftIsNext = !swipeReversed;
+            if (nx) nx.textContent = leftIsNext ? label(n, '⏭') : label(p, '⏮');
+            if (pv) pv.textContent = leftIsNext ? label(p, '⏮') : label(n, '⏭');
+        }
+        function centerSwipe() {
+            const el = document.getElementById('npSwipe'); if (!el || !el.clientWidth) return;
+            el.style.scrollBehavior = 'auto';
+            el.scrollLeft = el.clientWidth;
+        }
+        let swipeTimer = null, swipeBusy = false;
+        function onSwipeSettle() {
+            const el = document.getElementById('npSwipe'); if (!el) return;
+            const w = el.clientWidth; if (!w) return;
+            const x = el.scrollLeft;
+            let side = 0;
+            if (x < w * 0.5) side = -1;
+            else if (x > w * 1.5) side = 1;
+            if (!side) return;
+            swipeBusy = true;
+            // left page = next song (default), right page = previous song; the setting swaps them
+            let goNext = (side === -1);
+            if (swipeReversed) goNext = !goNext;
+            if (goNext) nextTrack(); else prevTrack();
+            setTimeout(() => { centerSwipe(); swipeBusy = false; updateNeighborTitles(); }, 80);
+        }
+        (function () {
+            const el = document.getElementById('npSwipe'); if (!el) return;
+            el.addEventListener('scroll', () => {
+                if (swipeBusy) return;
+                clearTimeout(swipeTimer);
+                swipeTimer = setTimeout(onSwipeSettle, 140);
+            }, { passive: true });
+            window.addEventListener('resize', () => { if (document.body.classList.contains('play-mode')) centerSwipe(); });
+            window.addEventListener('DOMContentLoaded', () => {
+                try { const a = document.getElementById(swipeReversed ? 'swReverse' : 'swNormal'); if (a) a.checked = true; } catch (e) {}
+                updateNeighborTitles();
+            });
+        })();
+        (function () {
+            const orig = window.enterPlayMode;
+            window.enterPlayMode = function () {
+                orig.apply(this, arguments);
+                updateNeighborTitles();
+                requestAnimationFrame(() => { centerSwipe(); setTimeout(centerSwipe, 120); });
+            };
+        })();
+    </script>
+
+    <script>
+        // skip length slider on the player screen (same value as Settings -> Skip time)
+        function applySkipValue(v) {
+            v = Math.max(1, Math.min(60, parseInt(v, 10) || 10));
+            skipTime = v;
+            document.querySelectorAll('.skip-val').forEach(function (el) { el.innerText = v; });
+            const st = document.getElementById('skipSetting'); if (st) st.value = v;
+            const sl = document.getElementById('skipSlider'); if (sl) { sl.value = v; sl.setAttribute('aria-valuetext', v + ' সেকেন্ড'); }
+            const lb = document.getElementById('skipSliderVal'); if (lb) lb.textContent = v;
+            try { localStorage.setItem('swaralay_skip', String(v)); } catch (e) {}
+        }
+        function setSkipFromSlider(v) { applySkipValue(v); }
+        window.addEventListener('DOMContentLoaded', function () { applySkipValue(skipTime); });
+        (function () {
+            const orig = window.saveSettings;
+            if (typeof orig === 'function') window.saveSettings = function () { orig.apply(this, arguments); applySkipValue(skipTime); };
+        })();
+    </script>
+
+    <script>
+        // ===== big-jump slider: each slider step jumps by N minutes or N % of the song =====
+        let bigStepMode = 'min', bigStepVal = 5, bigDragging = false;
+        try {
+            const m = localStorage.getItem('swaralay_bigstep_mode'); if (m === 'min' || m === 'pct') bigStepMode = m;
+            const v = parseInt(localStorage.getItem('swaralay_bigstep_val'), 10); if (v >= 1 && v <= 60) bigStepVal = v;
+        } catch (e) {}
+        function bigStepLabelText() { return bigStepMode === 'pct' ? (bigStepVal + '%') : (bigStepVal + ' মিনিট'); }
+        function bigStepSeconds() {
+            const d = audio.duration;
+            if (!isFinite(d) || d <= 0) return 0;
+            const sec = (bigStepMode === 'pct') ? d * bigStepVal / 100 : bigStepVal * 60;
+            return Math.max(2, Math.min(sec, Math.max(5, d / 4))); // never longer than a quarter of a short song
+        }
+        function fmtClock(t) { t = Math.max(0, Math.round(t || 0)); const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s2 = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s2).padStart(2, '0'); }
+        function refreshBigSeek(force) {
+            const el = document.getElementById('bigSeek'); if (!el) return;
+            if (bigDragging && !force) return;
+            const lb = document.getElementById('bigStepLabel'); if (lb) lb.textContent = bigStepLabelText();
+            const st = bigStepSeconds();
+            if (!st) { el.max = 1; el.value = 0; el.setAttribute('aria-valuetext', '—'); return; }
+            const n = Math.max(1, Math.round(audio.duration / st));
+            el.max = n;
+            el.value = Math.min(n, Math.round(audio.currentTime / st));
+            el.setAttribute('aria-valuetext', fmtClock(audio.currentTime) + ' / ' + fmtClock(audio.duration) + ', ' + bigStepLabelText() + ' করে লাফ');
+        }
+        function onBigSeekInput(v) {
+            const st = bigStepSeconds(); if (!st) return;
+            const t = Math.min(audio.duration - 0.3, Math.max(0, (parseInt(v, 10) || 0) * st));
+            audio.currentTime = t;
+            const el = document.getElementById('bigSeek');
+            if (el) el.setAttribute('aria-valuetext', fmtClock(t) + ' / ' + fmtClock(audio.duration) + ', ' + bigStepLabelText() + ' করে লাফ');
+        }
+        function setBigStepMode(m) {
+            bigStepMode = (m === 'pct') ? 'pct' : 'min';
+            const inp = document.getElementById('bigStepInput');
+            const max = bigStepMode === 'pct' ? 50 : 60;
+            if (bigStepVal > max) bigStepVal = (bigStepMode === 'pct') ? 10 : 5;
+            if (inp) { inp.max = max; inp.value = bigStepVal; }
+            const ul = document.getElementById('bigStepUnitLbl'); if (ul) ul.textContent = bigStepMode === 'pct' ? 'গানের কত শতাংশ করে' : 'কত মিনিট করে';
+            try { localStorage.setItem('swaralay_bigstep_mode', bigStepMode); localStorage.setItem('swaralay_bigstep_val', String(bigStepVal)); } catch (e) {}
+            refreshBigSeek(true);
+        }
+        function setBigStepValue(v) {
+            const max = bigStepMode === 'pct' ? 50 : 60;
+            bigStepVal = Math.max(1, Math.min(max, parseInt(v, 10) || (bigStepMode === 'pct' ? 10 : 5)));
+            const inp = document.getElementById('bigStepInput'); if (inp) inp.value = bigStepVal;
+            try { localStorage.setItem('swaralay_bigstep_val', String(bigStepVal)); } catch (e) {}
+            refreshBigSeek(true);
+        }
+        (function () {
+            const el = document.getElementById('bigSeek');
+            if (el) {
+                ['pointerdown', 'touchstart'].forEach((ev) => el.addEventListener(ev, () => { bigDragging = true; }, { passive: true }));
+                ['pointerup', 'touchend', 'pointercancel', 'touchcancel', 'blur'].forEach((ev) => el.addEventListener(ev, () => { bigDragging = false; refreshBigSeek(true); }, { passive: true }));
+            }
+            audio.addEventListener('timeupdate', () => refreshBigSeek(false));
+            audio.addEventListener('loadedmetadata', () => refreshBigSeek(true));
+            audio.addEventListener('emptied', () => refreshBigSeek(true));
+            window.addEventListener('DOMContentLoaded', () => {
+                const r = document.getElementById(bigStepMode === 'pct' ? 'bsPct' : 'bsMin'); if (r) r.checked = true;
+                setBigStepMode(bigStepMode);
+            });
+        })();
+    </script>
+
+
+
 
 </body>
 </html>
