@@ -1018,6 +1018,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void injectEditorPickerJs() {
+        // The page (index.html) now owns the song list, the picker and the player screen. The old script that used to be
+        // injected here replaced the page's own list with a bare one, so tapping a song never opened the player.
+        if (true) return;
         String js =
             "(function(){"
           + "if(window.__swaralayPickerReady)return;window.__swaralayPickerReady=true;"
