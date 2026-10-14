@@ -2031,7 +2031,7 @@
             files = Array.from(e.target.files);
             sortFilesArray(false);
             renderTrackList('📁 Selected Files');
-            if(files.length > 0) playTrack(0);
+            if(files.length > 0) { playTrack(0); enterPlayMode(); }
         });
 
         const AUDIO_EXT_RE = /\.(mp3|wav|ogg|m4a|flac|aac|wma|opus|amr)$/i;
@@ -2054,6 +2054,7 @@
                 sortFilesArray(true);
                 renderTrackList('📁 Added from folder (' + files.length + ' tracks)', true);
                 playTrack(0);
+                enterPlayMode();
             }, 30);
         });
 
@@ -2276,7 +2277,7 @@
             let item = e.target.closest('.track-item[data-index]');
             if (!item) return;
             if (e.target.closest('.del-btn')) return;
-            playTrack(parseInt(item.dataset.index, 10));
+            try { playTrack(parseInt(item.dataset.index, 10)); } catch (err) { console.error(err); }
             enterPlayMode();
         });
         document.getElementById('trackList').addEventListener('keydown', (e) => {
@@ -2284,7 +2285,7 @@
             let item = e.target.closest('.track-item[data-index]');
             if (!item) return;
             e.preventDefault();
-            playTrack(parseInt(item.dataset.index, 10));
+            try { playTrack(parseInt(item.dataset.index, 10)); } catch (err) { console.error(err); }
             enterPlayMode();
         });
 
@@ -2376,7 +2377,21 @@
                 setPlayPauseBtnState(false);
             }
         }
+        // a single picked file has no neighbours: continue in the phone's song list instead
+        function ensureLibraryContext() {
+            if (typeof libraryFiles === 'undefined' || !libraryFiles.length) return;
+            if (files.length > 1 && !(files.length === 1)) return;
+            if (inLibrary()) return;
+            const cur = files[currentTrackIndex] || files[0];
+            let idx = cur ? libraryFiles.findIndex((f) => f.name === cur.name) : -1;
+            files = libraryFiles.slice();
+            sortFilesArray(true);
+            idx = cur ? files.findIndex((f) => f.name === cur.name) : -1;
+            currentTrackIndex = idx >= 0 ? idx : -1;
+            try { renderTrackList('🎵 সব গান (' + files.length + ')', true); updateLibraryNames(); } catch (e) {}
+        }
         function nextTrack() {
+            try { ensureLibraryContext(); } catch (e) {}
             saveTrackPosition();
             if (isShuffle && files.length > 0) {
                 playTrack(getRandomTrackIndex(currentTrackIndex), true);
@@ -2389,6 +2404,7 @@
             }
         }
         function prevTrack() {
+            try { ensureLibraryContext(); } catch (e) {}
             saveTrackPosition();
             if (isShuffle && files.length > 0) {
                 playTrack(getRandomTrackIndex(currentTrackIndex), true);
@@ -4241,8 +4257,8 @@
             }
         });
         // Also expose for MainActivity inject compatibility
-        window.__openNativeSongPicker = openPhoneMusicPicker;
-        window.__assignNativeToInput = assignNativeFileToInput;
+        try { Object.defineProperty(window, '__openNativeSongPicker', { value: openPhoneMusicPicker, writable: false, configurable: false }); } catch (e) { window.__openNativeSongPicker = openPhoneMusicPicker; }
+        try { Object.defineProperty(window, '__assignNativeToInput', { value: assignNativeFileToInput, writable: false, configurable: false }); } catch (e) { window.__assignNativeToInput = assignNativeFileToInput; }
 
         function playIndividualTrack(btn) {
             let row = btn.closest('.track-row');
@@ -5442,12 +5458,17 @@
         function fmtSize(n) { if (!n) return ''; return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
         function fmtDur(ms) { if (!ms) return ''; const t = Math.round(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 
-        window.populateAllAudioLists = function (list) {
+        let libraryFiles = [];
+        const populateAllAudioListsImpl = function (list) {
             try {
+                if (typeof list === 'string') { try { list = JSON.parse(list); } catch (e0) { return; } }
                 if (!Array.isArray(list)) return;
+                window.__nativeAudioList = list;
+                libraryRequested = true;
+                libraryFiles = list.map((o) => ({ lazy: true, uri: o.uri, name: o.name || o.title || 'audio', size: o.size || 0, dur: o.dur || 0,
+                    lastModified: (o.date || 0) * 1000, webkitRelativePath: (o.folder || '') + (o.name || '') }));
                 if (!(libForce || inLibrary() || files.length === 0)) return; // do not replace the user's own list
                 libForce = false;
-                libraryRequested = true;
                 const curUri = (inLibrary() && files[currentTrackIndex]) ? files[currentTrackIndex].uri : null;
                 const arr = list.map((o) => {
                     const t = { lazy: true, uri: o.uri, name: o.name || o.title || 'audio', size: o.size || 0, dur: o.dur || 0,
@@ -5455,6 +5476,7 @@
                     return t;
                 });
                 if (!arr.length) { setLibStatus('ফোনে কোনো অডিও ফাইল পাওয়া যায়নি।'); return; }
+                libraryFiles = arr.slice();
                 isDbPlaylistView = false;
                 currentBrowseFolder = null;
                 files = arr;
@@ -5467,6 +5489,9 @@
                 updateTrackListUI();
             } catch (e) { console.error('populateAllAudioLists', e); setLibStatus('তালিকা বানাতে সমস্যা: ' + e); }
         };
+        // older app builds inject their own plain list function after the page loads; keep ours (the injected one cannot start the player)
+        try { Object.defineProperty(window, 'populateAllAudioLists', { value: populateAllAudioListsImpl, writable: false, configurable: false }); }
+        catch (e) { window.populateAllAudioLists = populateAllAudioListsImpl; }
         // show size / duration next to each library song
         function updateLibraryNames() {
             document.querySelectorAll('#trackList .track-item[data-index]').forEach((el) => {
@@ -5485,7 +5510,7 @@
         }
 
         function enterPlayMode() {
-            if (!audio || !audio.src) return;
+            if (!files.length) return;
             document.body.classList.add('play-mode');
             window.scrollTo(0, 0);
             const t = document.getElementById('currentTrackName');
@@ -5593,8 +5618,6 @@
             skipTime = v;
             document.querySelectorAll('.skip-val').forEach(function (el) { el.innerText = v; });
             const st = document.getElementById('skipSetting'); if (st) st.value = v;
-            const sl = document.getElementById('skipSlider'); if (sl) { sl.value = v; sl.setAttribute('aria-valuetext', v + ' সেকেন্ড'); }
-            const lb = document.getElementById('skipSliderVal'); if (lb) lb.textContent = v;
             try { localStorage.setItem('swaralay_skip', String(v)); } catch (e) {}
         }
         function setSkipFromSlider(v) { applySkipValue(v); }
