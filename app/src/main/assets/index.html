@@ -2953,44 +2953,82 @@
         /** Synthetic fallback if WAV missing */
         function getSyntheticImpulseBuffer(ctx, amountPercent, type) {
             let rate = ctx.sampleRate;
-            let duration, decayPower, earlyN, stereoSpread;
-            switch (type) {
-                case 'room': duration = 0.35 + (amountPercent / 100) * 1.2; decayPower = 3.2; earlyN = 5; stereoSpread = 0.012; break;
-                case 'plate': duration = 0.5 + (amountPercent / 100) * 1.8; decayPower = 2.6; earlyN = 7; stereoSpread = 0.018; break;
-                case 'hall': duration = 0.9 + (amountPercent / 100) * 2.4; decayPower = 2.2; earlyN = 9; stereoSpread = 0.028; break;
-                case 'cathedral': duration = 1.4 + (amountPercent / 100) * 3.5; decayPower = 1.85; earlyN = 12; stereoSpread = 0.04; break;
-                default: duration = 0.6 + (amountPercent / 100) * 1.5; decayPower = 2.5; earlyN = 6; stereoSpread = 0.02;
+            let duration, decayPower, earlyReflections, density;
+
+            switch(type) {
+                case 'room':
+                    duration = 0.4 + (amountPercent / 100) * 1.6; // 0.4 - 2.0s
+                    decayPower = 2.8;
+                    earlyReflections = 4;
+                    density = 0.6;
+                    break;
+                case 'hall':
+                    duration = 1.2 + (amountPercent / 100) * 2.8; // 1.2 - 4.0s
+                    decayPower = 2.2;
+                    earlyReflections = 8;
+                    density = 0.85;
+                    break;
+                case 'plate':
+                    duration = 0.8 + (amountPercent / 100) * 2.2; // 0.8 - 3.0s
+                    decayPower = 1.9;
+                    earlyReflections = 6;
+                    density = 0.95;
+                    break;
+                case 'cathedral':
+                    duration = 2.0 + (amountPercent / 100) * 4.5; // 2.0 - 6.5s
+                    decayPower = 1.6;
+                    earlyReflections = 12;
+                    density = 0.75;
+                    break;
+                default:
+                    duration = 1.5;
+                    decayPower = 2.2;
+                    earlyReflections = 6;
+                    density = 0.8;
             }
-            let len = Math.max(1, Math.floor(rate * duration));
-            let ir = ctx.createBuffer(2, len, rate);
-            let L = ir.getChannelData(0), R = ir.getChannelData(1);
-            for (let e = 0; e < earlyN; e++) {
-                let t = 0.008 + e * (0.012 + e * 0.004);
-                let idx = Math.min(len - 1, Math.floor(t * rate));
-                let amp = (0.35 / (e + 1)) * (0.5 + Math.random() * 0.5);
-                let pan = (e % 2 === 0) ? 0.75 : -0.75;
-                L[idx] += amp * (1 - pan) * 0.5;
-                R[idx] += amp * (1 + pan) * 0.5;
+
+            let length = Math.floor(rate * duration);
+            let impulse = ctx.createBuffer(2, length, rate);
+            let left = impulse.getChannelData(0);
+            let right = impulse.getChannelData(1);
+
+            // Early reflections (simple discrete echoes)
+            for (let r = 0; r < earlyReflections; r++) {
+                let delay = Math.floor((0.01 + r * 0.012 + Math.random() * 0.008) * rate);
+                if (delay >= length) continue;
+                let amp = (0.35 / (r + 1)) * (0.7 + Math.random() * 0.3);
+                left[delay] += (Math.random() * 2 - 1) * amp;
+                right[delay] += (Math.random() * 2 - 1) * amp * (0.8 + Math.random() * 0.4);
             }
-            for (let i = 0; i < len; i++) {
-                let t = i / len, env = Math.pow(1 - t, decayPower);
-                let n1 = Math.random() * 2 - 1, n2 = Math.random() * 2 - 1, n3 = Math.random() * 2 - 1;
-                L[i] += ((n1 + n2) * 0.5) * env * 0.55;
-                R[i] += ((n2 + n3) * 0.5) * env * 0.55;
+
+            // Dense tail (noise with exponential decay)
+            for (let i = 0; i < length; i++) {
+                let t = i / length;
+                let decay = Math.pow(1 - t, decayPower);
+                // slight stereo difference + density control
+                let noiseL = (Math.random() * 2 - 1) * decay * density;
+                let noiseR = (Math.random() * 2 - 1) * decay * density;
+                left[i] += noiseL;
+                right[i] += noiseR;
             }
-            let peak = 1e-6;
-            for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
-            let g = 0.9 / peak;
-            for (let i = 0; i < len; i++) { L[i] *= g; R[i] *= g; }
-            return ir;
+
+            // Soft normalize
+            let max = 0;
+            for (let i = 0; i < length; i++) {
+                max = Math.max(max, Math.abs(left[i]), Math.abs(right[i]));
+            }
+            if (max > 0.001) {
+                let norm = 0.85 / max;
+                for (let i = 0; i < length; i++) {
+                    left[i] *= norm;
+                    right[i] *= norm;
+                }
+            }
+            return impulse;
         }
 
         async function getImpulseBuffer(ctx, amountPercent, type) {
-            const real = await loadRealIRBuffer(type || 'room');
-            if (real) {
-                const buf = irToContextBuffer(ctx, real, amountPercent);
-                if (buf) return buf;
-            }
+            // Prefer classic synthetic IR (user preference) — file IRs disabled
             return getSyntheticImpulseBuffer(ctx, amountPercent, type || 'room');
         }
 
