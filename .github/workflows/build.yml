@@ -3,29 +3,74 @@ name: Android Build APK
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# একসাথে একটাই বিল্ড
+concurrency:
+  group: build
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
+    # project.zip আপলোড করলে সেটা খুলে ভেতরের ফাইল রিপোজিটরিতে বসে যায় (তারপর zip মুছে যায়)
+    - name: Unpack project.zip
+      run: |
+        if [ -f project.zip ]; then
+          unzip -q -o project.zip
+          rm project.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Unpack project.zip" || true
+          git push || true
+        fi
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: '8.2'
-        
+
+    # স্থায়ী সই-কী: swaralay-keystore.txt থেকে debug.keystore বানানো, যাতে প্রতিটি বিল্ডের সই এক থাকে
+    - name: Use fixed signing key
+      run: |
+        if [ -f swaralay-keystore.txt ]; then
+          mkdir -p ~/.android
+          base64 -d swaralay-keystore.txt > ~/.android/debug.keystore
+          echo "fixed key in use"
+        else
+          echo "swaralay-keystore.txt not found: random key"
+        fi
+
     - name: Build with Gradle
       run: gradle assembleDebug
-      
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: Swaralay-App
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    # স্থায়ী সরাসরি ডাউনলোড লিংক (GitHub Release "latest")
+    - name: Publish APK as the "latest" release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        cp app/build/outputs/apk/debug/app-debug.apk Swaralay.apk
+        gh release delete latest --cleanup-tag --yes || true
+        gh release create latest Swaralay.apk \
+          --title "Swaralay - latest build" \
+          --notes "Built automatically from commit ${{ github.sha }}" \
+          --target ${{ github.sha }}
